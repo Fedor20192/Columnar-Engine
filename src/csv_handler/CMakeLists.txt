@@ -1,0 +1,5 @@
+project(CSV_Handler)
+set(SOURCES CsvReader.cpp)
+set(HEADERS CsvReader.h)
+add_library(csv_handler STATIC ${SOURCES} ${HEADERS})
+target_include_directories(csv_handler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

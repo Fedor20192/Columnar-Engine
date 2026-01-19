@@ -1,34 +1,40 @@
 #include "CsvReader.h"
-
-#include <stdexcept>
+#include "glog/logging.h"
 
 cngn::CsvReader::CsvReader(const std::string& filename, Parameters params)
     : parameters_(params), file_(filename) {
     if (!file_.good()) {
-        throw std::runtime_error("Error opening file");
+        DLOG(ERROR) << "Error opening file " << filename << std::endl;
     }
 
     if (parameters_.delimiter == parameters_.quote) {
-        throw std::runtime_error("Delimiter and quote symbols are equal");
+        DLOG(ERROR) << "Delimiter and quote symbols are equal" << std::endl;
     }
     if (parameters_.delimiter == parameters_.linebreak) {
-        throw std::runtime_error("Delimiter and linebreak symbols are equal");
+        DLOG(ERROR) << "Delimiter and linebreak symbols are equal" << std::endl;
     }
     if (parameters_.quote == parameters_.linebreak) {
-        throw std::runtime_error("Quote and linebreak symbols are equal");
+        DLOG(ERROR) << "Quote and linebreak symbols are equal" << std::endl;
     }
 }
 
 std::optional<cngn::CsvReader::Row> cngn::CsvReader::ReadLine() {
     LineState state;
 
-    while (file_.peek() != EOF && !state.need_break) {
+    while (!state.need_break && state.is_valid) {
         char c = file_.get();
+        if (c == EOF) {
+            break;
+        }
         state.has_read = true;
         FieldHandler(c, state);
     }
 
     if (!state.has_read) {
+        state.is_valid = false;
+    }
+
+    if (!state.is_valid) {
         return std::nullopt;
     }
 
@@ -46,20 +52,21 @@ void cngn::CsvReader::FieldHandler(char c, LineState& line_state) {
         } else if (field_state.is_quote_open) {
             field_state.is_quote_close = true;
         } else {
-            throw std::runtime_error("Bad quote in field");
+            DLOG(ERROR) << "Bad quote in field" << std::endl;
+            line_state.is_valid = false;
         }
     } else if (field_state.is_quote_open && !field_state.is_quote_close) {
         field_state.data += c;
-    } else if (c == parameters_.delimiter) {
+    } else if (c == parameters_.delimiter || c == parameters_.linebreak) {
         line_state.row.push_back(field_state.data);
         field_state = LineState::FieldState{};
-    } else if (c == parameters_.linebreak) {
-        line_state.row.push_back(field_state.data);
-        line_state.need_break = true;
-        field_state = LineState::FieldState{};
+        if (c == parameters_.linebreak) {
+            line_state.need_break = true;
+        }
     } else if (!field_state.is_quote_open) {
         field_state.data += c;
     } else {
-        throw std::runtime_error("Bad symbol");
+        DLOG(ERROR) << "Bad symbol" << std::endl;
+        line_state.is_valid = false;
     }
 }

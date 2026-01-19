@@ -9,7 +9,7 @@
 using Row = cngn::CsvReader::Row;
 
 void StringsToCsv(const std::string &filename, const std::vector<std::string> &lines) {
-    std::ofstream ofs("tmp/" + filename);
+    std::ofstream ofs(filename);
 
     if (!ofs.is_open()) {
         throw std::runtime_error("Could not open file for writing");
@@ -22,7 +22,7 @@ void StringsToCsv(const std::string &filename, const std::vector<std::string> &l
 
 std::vector<Row> StringsFromReader(const std::string &filename) {
     std::vector<Row> rows;
-    cngn::CsvReader reader("tmp/" + filename);
+    cngn::CsvReader reader(filename);
 
     while (true) {
         std::optional<Row> row = reader.ReadLine();
@@ -41,10 +41,10 @@ TEST_CASE("Empty File", "[CSVReader]") {
     StringsToCsv(filename, std::vector<std::string>());
 
     auto ans = StringsFromReader(filename);
-    REQUIRE(ans == std::vector<Row>{});
+    REQUIRE(ans.empty());
 
     // Проверим, что ридер и правда возвращает nullopt, когда строки кончились
-    cngn::CsvReader reader("tmp/" + filename);
+    cngn::CsvReader reader(filename);
     std::optional<Row> row = reader.ReadLine();
     REQUIRE(!row.has_value());
 }

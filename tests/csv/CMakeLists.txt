@@ -1,0 +1,4 @@
+add_executable(test_csv_reader CsvReader.cpp)
+target_link_libraries(test_csv_reader Catch2::Catch2WithMain csv_handler)
+include(Catch)
+catch_discover_tests(test_csv_reader)

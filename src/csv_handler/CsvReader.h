@@ -39,6 +39,7 @@ private:
         Row row;
         bool need_break = false;
         bool has_read = false;
+        bool is_valid = true;
         struct FieldState {
             FieldState() {
             }

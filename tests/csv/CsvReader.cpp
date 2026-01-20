@@ -1,5 +1,6 @@
 #include "catch2/catch_test_macros.hpp"
 #include "CsvReader.h"
+#include "../Fixtures.h"
 
 #include <fstream>
 #include <optional>
@@ -36,7 +37,7 @@ std::vector<Row> StringsFromReader(const std::string &filename) {
     return rows;
 }
 
-TEST_CASE("Empty File", "[CSVReader]") {
+TEST_CASE_METHOD(GlogFixture, "Empty File", "[CSVReader]") {
     std::string filename("example.csv");
     StringsToCsv(filename, std::vector<std::string>());
 
@@ -49,7 +50,7 @@ TEST_CASE("Empty File", "[CSVReader]") {
     REQUIRE(!row.has_value());
 }
 
-TEST_CASE("Simple Read", "[CSV Reader]") {
+TEST_CASE_METHOD(GlogFixture, "Simple Read", "[CSV Reader]") {
     std::string filename("example.csv");
     StringsToCsv(filename, {
                                "1,2,first,4",
@@ -63,7 +64,7 @@ TEST_CASE("Simple Read", "[CSV Reader]") {
                                     {"8", "17", "third", "2"}});
 }
 
-TEST_CASE("Some empty fields", "[CSVReader][empty fields]") {
+TEST_CASE_METHOD(GlogFixture, "Some empty fields", "[CSVReader][empty fields]") {
     std::string filename("example.csv");
     StringsToCsv(filename, {"a,"
                             ",c,"});
@@ -72,7 +73,7 @@ TEST_CASE("Some empty fields", "[CSVReader][empty fields]") {
     REQUIRE(ans == std::vector<Row>{{"a", "", "c", ""}});
 }
 
-TEST_CASE("Multiple empty fields", "[CSVReader][empty fields]") {
+TEST_CASE_METHOD(GlogFixture, "Multiple empty fields", "[CSVReader][empty fields]") {
     std::string filename("example.csv");
     StringsToCsv(filename, {",,,"});
 
@@ -80,7 +81,7 @@ TEST_CASE("Multiple empty fields", "[CSVReader][empty fields]") {
     REQUIRE(ans == std::vector<Row>{{"", "", "", ""}});
 }
 
-TEST_CASE("Spaces are preserved", "[CSVReader][spaces]") {
+TEST_CASE_METHOD(GlogFixture, "Spaces are preserved", "[CSVReader][spaces]") {
     std::string filename("example.csv");
     StringsToCsv(filename, {" a , b ,c ,d,  e "});
 
@@ -88,7 +89,7 @@ TEST_CASE("Spaces are preserved", "[CSVReader][spaces]") {
     REQUIRE(ans == std::vector<Row>{{" a ", " b ", "c ", "d", "  e "}});
 }
 
-TEST_CASE("Quoted field containing commas", "[CSVReader][quotes]") {
+TEST_CASE_METHOD(GlogFixture, "Quoted field containing commas", "[CSVReader][quotes]") {
     std::string filename("example.csv");
     StringsToCsv(filename, {R"("a,with,commas",b)"});
 
@@ -96,7 +97,7 @@ TEST_CASE("Quoted field containing commas", "[CSVReader][quotes]") {
     REQUIRE(ans == std::vector<Row>{{"a,with,commas", "b"}});
 }
 
-TEST_CASE("Escaped quotes inside quoted field", "[CSVReader][quotes]") {
+TEST_CASE_METHOD(GlogFixture, "Escaped quotes inside quoted field", "[CSVReader][quotes]") {
     std::string filename("example.csv");
     StringsToCsv(filename, {R"("He said ""hello""",world)"});
 
@@ -104,7 +105,7 @@ TEST_CASE("Escaped quotes inside quoted field", "[CSVReader][quotes]") {
     REQUIRE(ans == std::vector<Row>{{"He said \"hello\"", "world"}});
 }
 
-TEST_CASE("Multiline field inside quotes", "[CSVReader][multiline]") {
+TEST_CASE_METHOD(GlogFixture, "Multiline field inside quotes", "[CSVReader][multiline]") {
     std::string filename("example.csv");
     StringsToCsv(filename, {"1,2,3", R"("multi
 line",end)",
@@ -117,7 +118,7 @@ line",end)",
     REQUIRE(ans[2] == Row{"last", "row"});
 }
 
-TEST_CASE("Wikipedia test", "[CSVReader]") {
+TEST_CASE_METHOD(GlogFixture, "Wikipedia test", "[CSVReader]") {
     std::string filename("example.csv");
 
     StringsToCsv(filename,

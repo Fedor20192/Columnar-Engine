@@ -49,7 +49,7 @@ std::optional<CsvReader::Row> CsvReader::ReadLine() {
 void CsvReader::FieldHandler(char c, LineState& line_state) {
     LineState::FieldState& field_state = line_state.field;
     if (c == parameters_.quote) {
-        if (field_state.data.empty()) {
+        if (field_state.data.empty() && !field_state.is_quote_open) {
             field_state.is_quote_open = true;
         } else if (file_.peek() == parameters_.quote) {
             field_state.data += parameters_.quote;

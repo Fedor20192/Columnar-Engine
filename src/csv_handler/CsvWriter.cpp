@@ -5,20 +5,20 @@ namespace cngn {
 CsvWriter::CsvWriter(const std::string& filename, Parameters parameters)
     : file_(filename), parameters_(parameters) {
     if (!file_.is_open()) {
-        DLOG(ERROR) << "Error opening file " << filename << std::endl;
+        DLOG(FATAL) << "Error opening file " << filename << std::endl;
         throw std::runtime_error("Error opening file");
     }
 
     if (parameters_.delimiter == parameters_.quote) {
-        DLOG(ERROR) << "Delimiter and quote symbols are equal" << std::endl;
+        DLOG(FATAL) << "Delimiter and quote symbols are equal" << std::endl;
         throw std::runtime_error("Delimiter and quote symbols are equal");
     }
     if (parameters_.delimiter == parameters_.linebreak) {
-        DLOG(ERROR) << "Delimiter and linebreak symbols are equal" << std::endl;
+        DLOG(FATAL) << "Delimiter and linebreak symbols are equal" << std::endl;
         throw std::runtime_error("Delimiter and linebreak symbols are equal");
     }
     if (parameters_.quote == parameters_.linebreak) {
-        DLOG(ERROR) << "Quote and linebreak symbols are equal" << std::endl;
+        DLOG(FATAL) << "Quote and linebreak symbols are equal" << std::endl;
         throw std::runtime_error("Quote and linebreak symbols are equal");
     }
 }

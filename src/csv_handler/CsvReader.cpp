@@ -1,24 +1,29 @@
 #include "CsvReader.h"
 #include "glog/logging.h"
 
-cngn::CsvReader::CsvReader(const std::string& filename, Parameters params)
+namespace cngn {
+CsvReader::CsvReader(const std::string& filename, Parameters params)
     : parameters_(params), file_(filename) {
-    if (!file_.good()) {
+    if (!file_.is_open()) {
         DLOG(ERROR) << "Error opening file " << filename << std::endl;
+        throw std::runtime_error("Error opening file");
     }
 
     if (parameters_.delimiter == parameters_.quote) {
         DLOG(ERROR) << "Delimiter and quote symbols are equal" << std::endl;
+        throw std::runtime_error("Delimiter and quote symbols are equal");
     }
     if (parameters_.delimiter == parameters_.linebreak) {
         DLOG(ERROR) << "Delimiter and linebreak symbols are equal" << std::endl;
+        throw std::runtime_error("Delimiter and linebreak symbols are equal");
     }
     if (parameters_.quote == parameters_.linebreak) {
         DLOG(ERROR) << "Quote and linebreak symbols are equal" << std::endl;
+        throw std::runtime_error("Quote and linebreak symbols are equal");
     }
 }
 
-std::optional<cngn::CsvReader::Row> cngn::CsvReader::ReadLine() {
+std::optional<CsvReader::Row> CsvReader::ReadLine() {
     LineState state;
 
     while (!state.need_break && state.is_valid) {
@@ -41,10 +46,10 @@ std::optional<cngn::CsvReader::Row> cngn::CsvReader::ReadLine() {
     return state.row;
 }
 
-void cngn::CsvReader::FieldHandler(char c, LineState& line_state) {
+void CsvReader::FieldHandler(char c, LineState& line_state) {
     LineState::FieldState& field_state = line_state.field;
     if (c == parameters_.quote) {
-        if (field_state.data.empty()) {
+        if (field_state.data.empty() && !field_state.is_quote_open) {
             field_state.is_quote_open = true;
         } else if (file_.peek() == parameters_.quote) {
             field_state.data += parameters_.quote;
@@ -70,3 +75,4 @@ void cngn::CsvReader::FieldHandler(char c, LineState& line_state) {
         line_state.is_valid = false;
     }
 }
+}  // namespace cngn

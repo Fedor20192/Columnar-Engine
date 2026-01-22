@@ -2,42 +2,19 @@
 #include "CsvReader.h"
 #include "CsvWriter.h"
 #include "../Fixtures.h"
+#include "../utils/StringCsvConverter.h"
 
 #include <fstream>
 #include <string>
 
 using Row = cngn::CsvWriter::Row;
 
-void RowsToCsv(const std::string& filename, const std::vector<Row>& rows) {
-    cngn::CsvWriter writer(filename);
-
-    for (const auto& row : rows) {
-        writer.WriteRow(row);
-    }
-}
-
-std::vector<Row> StringsFromReader(const std::string& filename) {
-    std::vector<Row> rows;
-    cngn::CsvReader reader(filename);
-
-    while (true) {
-        std::optional<Row> row = reader.ReadLine();
-        if (!row.has_value()) {
-            break;
-        }
-
-        rows.push_back(std::move(row.value()));
-    }
-
-    return rows;
-}
-
 TEST_CASE_METHOD(GlogFixture, "Empty", "[CSVWriter]") {
     std::string filename("example.csv");
     std::vector<Row> rows;
-    RowsToCsv(filename, rows);
+    Converter::RowsToCsv(filename, rows);
 
-    auto ans = StringsFromReader(filename);
+    auto ans = Converter::StringsFromReader(filename);
     REQUIRE(ans.empty());
 }
 
@@ -45,9 +22,9 @@ TEST_CASE_METHOD(GlogFixture, "Single row with one field", "[CSVWriter]") {
     std::string filename("example.csv");
 
     std::vector<Row> rows = {{"Hello"}};
-    RowsToCsv(filename, rows);
+    Converter::RowsToCsv(filename, rows);
 
-    auto result = StringsFromReader(filename);
+    auto result = Converter::StringsFromReader(filename);
     REQUIRE(result.size() == 1);
     REQUIRE(result[0] == Row{"Hello"});
 }
@@ -56,9 +33,9 @@ TEST_CASE_METHOD(GlogFixture, "Many fields one row", "[CSVWriter]") {
     std::string filename("example.csv");
 
     std::vector<Row> rows = {{"Name", "Age", "City"}};
-    RowsToCsv(filename, rows);
+    Converter::RowsToCsv(filename, rows);
 
-    auto result = StringsFromReader(filename);
+    auto result = Converter::StringsFromReader(filename);
     REQUIRE(result.size() == 1);
     REQUIRE(result[0] == Row{"Name", "Age", "City"});
 }
@@ -71,9 +48,9 @@ TEST_CASE_METHOD(GlogFixture, "Multiple rows", "[CSVWriter]") {
                              {"Bob", "69", "Tynda"},
                              {"Charlie", "228", "Penza"}};
 
-    RowsToCsv(filename, rows);
+    Converter::RowsToCsv(filename, rows);
 
-    auto result = StringsFromReader(filename);
+    auto result = Converter::StringsFromReader(filename);
     REQUIRE(result.size() == 4);
 
     REQUIRE(result[0] == Row{"Name", "Age", "City"});
@@ -87,9 +64,9 @@ TEST_CASE_METHOD(GlogFixture, "Empty fields", "[CSVWriter]") {
 
     std::vector<Row> rows = {{"Field1", "", "Field3"}, {"", "Value2", ""}, {"OnlyOne", "", ""}};
 
-    RowsToCsv(filename, rows);
+    Converter::RowsToCsv(filename, rows);
 
-    auto result = StringsFromReader(filename);
+    auto result = Converter::StringsFromReader(filename);
     REQUIRE(result.size() == 3);
     REQUIRE(result[0] == Row{"Field1", "", "Field3"});
     REQUIRE(result[1] == Row{"", "Value2", ""});
@@ -102,9 +79,9 @@ TEST_CASE_METHOD(GlogFixture, "Special characters in fields", "[CSVWriter]") {
     std::vector<Row> rows = {{"Field, with comma", "Field with \"quotes\"", "Field with\nnewline"},
                              {"Normal", "Value", "Another"}};
 
-    RowsToCsv(filename, rows);
+    Converter::RowsToCsv(filename, rows);
 
-    auto result = StringsFromReader(filename);
+    auto result = Converter::StringsFromReader(filename);
     REQUIRE(result.size() == 2);
 }
 
@@ -120,9 +97,9 @@ TEST_CASE_METHOD(GlogFixture, "Large", "[CSVWriter]") {
                         "Data_" + std::to_string(i * 3)});
     }
 
-    RowsToCsv(filename, rows);
+    Converter::RowsToCsv(filename, rows);
 
-    auto result = StringsFromReader(filename);
+    auto result = Converter::StringsFromReader(filename);
     REQUIRE(result.size() == kRowCount);
     REQUIRE(result[0][0] == "Row_0");
     REQUIRE(result[499][1] == "Value_998");
@@ -135,9 +112,9 @@ TEST_CASE_METHOD(GlogFixture, "Whitespace handling", "[CSVWriter]") {
     std::vector<Row> rows = {{"  Leading", "Trailing  ", "  Both  "},
                              {"Tab\tHere", "New\nLine", "Spaces   Here"}};
 
-    RowsToCsv(filename, rows);
+    Converter::RowsToCsv(filename, rows);
 
-    auto result = StringsFromReader(filename);
+    auto result = Converter::StringsFromReader(filename);
     REQUIRE(result.size() == 2);
     REQUIRE(result[0] == Row{"  Leading", "Trailing  ", "  Both  "});
     REQUIRE(result[1] == Row{"Tab\tHere", "New\nLine", "Spaces   Here"});
@@ -147,12 +124,12 @@ TEST_CASE_METHOD(GlogFixture, "Append to existing file", "[CSVWriter]") {
     std::string filename("example.csv");
 
     std::vector<Row> rows1 = {{"First", "Batch"}};
-    RowsToCsv(filename, rows1);
+    Converter::RowsToCsv(filename, rows1);
 
     std::vector<Row> rows2 = {{"Second", "Batch"}};
-    RowsToCsv(filename, rows2);
+    Converter::RowsToCsv(filename, rows2);
 
-    auto result = StringsFromReader(filename);
+    auto result = Converter::StringsFromReader(filename);
     REQUIRE(result.size() == 1);
     REQUIRE(result[0][0] == "Second");
 }

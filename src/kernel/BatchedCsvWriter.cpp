@@ -7,16 +7,16 @@ BatchedCsvWriter::BatchedCsvWriter(const std::string& filename, Parameters param
 }
 
 void BatchedCsvWriter::WriteBatch(const Batch& batch, size_t lines_to_write) {
-    if (batch.empty()) {
+    if (batch.Empty()) {
         DLOG(ERROR) << "Trying to write empty batch" << std::endl;
         return;
     }
 
-    CsvWriter::Row row(batch.size());
+    CsvWriter::Row row(batch.ColumnCount());
     for (size_t i = 0; i < lines_to_write; ++i) {
-        for (size_t j = 0; j < batch.size(); ++j) {
-            if (batch[j].size() < lines_to_write) {
-                DLOG(ERROR) << "Column " << j << " is too short: " << batch[j].size() << " < "
+        for (size_t j = 0; j < batch.ColumnCount(); ++j) {
+            if (batch[j].Size() < lines_to_write) {
+                DLOG(ERROR) << "Column " << j << " is too short: " << batch[j].Size() << " < "
                             << lines_to_write << std::endl;
                 return;
             }

@@ -26,6 +26,7 @@ public:
     using Row = std::vector<std::string>;
 
     void WriteRow(const Row &row);
+    void WriteAllRows(const std::vector<Row> &rows);
 
 private:
     std::ofstream file_;

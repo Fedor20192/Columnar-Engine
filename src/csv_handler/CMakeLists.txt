@@ -1,6 +1,6 @@
 project(CSV_Handler)
-set(SOURCES CsvReader.cpp CsvWriter.cpp BatchedCsvReader.cpp)
-set(HEADERS CsvReader.h CsvReader.h BatchedCsvReader.h)
+set(SOURCES CsvReader.cpp CsvWriter.cpp BatchedCsvReader.cpp BatchedCsvWriter.cpp)
+set(HEADERS CsvReader.h CsvReader.h BatchedCsvReader.h BatchedCsvWriter.h)
 add_library(csv_handler STATIC ${SOURCES} ${HEADERS})
 target_include_directories(csv_handler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(csv_handler glog::glog)

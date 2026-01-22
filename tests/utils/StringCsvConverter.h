@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BatchedCsvReader.h"
+#include "BatchedCsvWriter.h"
 #include "CsvReader.h"
 #include "CsvWriter.h"
 
@@ -49,5 +50,10 @@ public:
         cngn::BatchedCsvReader reader(filename);
 
         return reader.ReadBatch(batch_size);
+    }
+
+    static void BatchToCsv(const std::string& filename, const Batch& batch, size_t batch_size = 1) {
+        cngn::BatchedCsvWriter writer(filename);
+        writer.WriteBatch(batch, batch_size);
     }
 };

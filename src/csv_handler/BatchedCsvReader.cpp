@@ -5,7 +5,7 @@ namespace cngn {
 BatchedCsvReader::BatchedCsvReader(const std::string& filename) : row_reader_(filename) {
 }
 
-std::optional<std::vector<BatchedCsvReader::Column>> BatchedCsvReader::ReadBatch(
+std::optional<BatchedCsvReader::Batch> BatchedCsvReader::ReadBatch(
     size_t batch_size) {
     std::vector<Column> columns;
 

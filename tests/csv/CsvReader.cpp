@@ -1,6 +1,7 @@
 #include "catch2/catch_test_macros.hpp"
 #include "CsvReader.h"
 #include "../Fixtures.h"
+#include "../utils/StringCsvConverter.h"
 
 #include <fstream>
 #include <optional>
@@ -9,39 +10,11 @@
 
 using Row = cngn::CsvReader::Row;
 
-void StringsToCsv(const std::string &filename, const std::vector<std::string> &lines) {
-    std::ofstream ofs(filename);
-
-    if (!ofs.is_open()) {
-        throw std::runtime_error("Could not open file for writing");
-    }
-
-    for (const auto &line : lines) {
-        ofs << line << '\n';
-    }
-}
-
-std::vector<Row> StringsFromReader(const std::string &filename) {
-    std::vector<Row> rows;
-    cngn::CsvReader reader(filename);
-
-    while (true) {
-        std::optional<Row> row = reader.ReadLine();
-        if (!row.has_value()) {
-            break;
-        }
-
-        rows.push_back(std::move(row.value()));
-    }
-
-    return rows;
-}
-
 TEST_CASE_METHOD(GlogFixture, "Empty File", "[CSVReader]") {
     std::string filename("example.csv");
-    StringsToCsv(filename, std::vector<std::string>());
+    Converter::StringsToCsv(filename, std::vector<std::string>());
 
-    auto ans = StringsFromReader(filename);
+    auto ans = Converter::StringsFromReader(filename);
     REQUIRE(ans.empty());
 
     // Проверим, что ридер и правда возвращает nullopt, когда строки кончились
@@ -52,13 +25,13 @@ TEST_CASE_METHOD(GlogFixture, "Empty File", "[CSVReader]") {
 
 TEST_CASE_METHOD(GlogFixture, "Simple Read", "[CSV Reader]") {
     std::string filename("example.csv");
-    StringsToCsv(filename, {
-                               "1,2,first,4",
-                               "5,1,second,2",
-                               "8,17,third,2",
-                           });
+    Converter::StringsToCsv(filename, {
+                                          "1,2,first,4",
+                                          "5,1,second,2",
+                                          "8,17,third,2",
+                                      });
 
-    auto ans = StringsFromReader(filename);
+    auto ans = Converter::StringsFromReader(filename);
     REQUIRE(ans == std::vector<Row>{{"1", "2", "first", "4"},
                                     {"5", "1", "second", "2"},
                                     {"8", "17", "third", "2"}});
@@ -66,52 +39,52 @@ TEST_CASE_METHOD(GlogFixture, "Simple Read", "[CSV Reader]") {
 
 TEST_CASE_METHOD(GlogFixture, "Some empty fields", "[CSVReader][empty fields]") {
     std::string filename("example.csv");
-    StringsToCsv(filename, {"a,"
-                            ",c,"});
+    Converter::StringsToCsv(filename, {"a,"
+                                       ",c,"});
 
-    auto ans = StringsFromReader(filename);
+    auto ans = Converter::StringsFromReader(filename);
     REQUIRE(ans == std::vector<Row>{{"a", "", "c", ""}});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Multiple empty fields", "[CSVReader][empty fields]") {
     std::string filename("example.csv");
-    StringsToCsv(filename, {",,,"});
+    Converter::StringsToCsv(filename, {",,,"});
 
-    auto ans = StringsFromReader(filename);
+    auto ans = Converter::StringsFromReader(filename);
     REQUIRE(ans == std::vector<Row>{{"", "", "", ""}});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Spaces are preserved", "[CSVReader][spaces]") {
     std::string filename("example.csv");
-    StringsToCsv(filename, {" a , b ,c ,d,  e "});
+    Converter::StringsToCsv(filename, {" a , b ,c ,d,  e "});
 
-    auto ans = StringsFromReader(filename);
+    auto ans = Converter::StringsFromReader(filename);
     REQUIRE(ans == std::vector<Row>{{" a ", " b ", "c ", "d", "  e "}});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Quoted field containing commas", "[CSVReader][quotes]") {
     std::string filename("example.csv");
-    StringsToCsv(filename, {R"("a,with,commas",b)"});
+    Converter::StringsToCsv(filename, {R"("a,with,commas",b)"});
 
-    auto ans = StringsFromReader(filename);
+    auto ans = Converter::StringsFromReader(filename);
     REQUIRE(ans == std::vector<Row>{{"a,with,commas", "b"}});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Escaped quotes inside quoted field", "[CSVReader][quotes]") {
     std::string filename("example.csv");
-    StringsToCsv(filename, {R"("He said ""hello""",world)"});
+    Converter::StringsToCsv(filename, {R"("He said ""hello""",world)"});
 
-    auto ans = StringsFromReader(filename);
+    auto ans = Converter::StringsFromReader(filename);
     REQUIRE(ans == std::vector<Row>{{"He said \"hello\"", "world"}});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Multiline field inside quotes", "[CSVReader][multiline]") {
     std::string filename("example.csv");
-    StringsToCsv(filename, {"1,2,3", R"("multi
+    Converter::StringsToCsv(filename, {"1,2,3", R"("multi
 line",end)",
-                            "last,row"});
+                                       "last,row"});
 
-    auto ans = StringsFromReader(filename);
+    auto ans = Converter::StringsFromReader(filename);
     REQUIRE(ans.size() == 3);
     REQUIRE(ans[0] == Row{"1", "2", "3"});
     REQUIRE(ans[1] == Row{std::string("multi\nline"), "end"});
@@ -121,12 +94,12 @@ line",end)",
 TEST_CASE_METHOD(GlogFixture, "Wikipedia test", "[CSVReader]") {
     std::string filename("example.csv");
 
-    StringsToCsv(filename,
-                 {R"(1997,Ford,E350,"ac, abs, moon",3000.00)",
-                  R"(1999,Chevy,"Venture ""Extended Edition""", ,4900.00)",
-                  R"(1996,Jeep,Grand Cherokee,"MUST SELL! air, moon roof, loaded",4799.00)"});
+    Converter::StringsToCsv(
+        filename, {R"(1997,Ford,E350,"ac, abs, moon",3000.00)",
+                   R"(1999,Chevy,"Venture ""Extended Edition""", ,4900.00)",
+                   R"(1996,Jeep,Grand Cherokee,"MUST SELL! air, moon roof, loaded",4799.00)"});
 
-    auto ans = StringsFromReader(filename);
+    auto ans = Converter::StringsFromReader(filename);
     REQUIRE(ans.size() == 3);
     REQUIRE(ans[0] == Row{"1997", "Ford", "E350", "ac, abs, moon", "3000.00"});
     REQUIRE(ans[1] == Row{"1999", "Chevy", "Venture \"Extended Edition\"", " ", "4900.00"});

@@ -6,5 +6,9 @@ target_link_libraries(test_csv_reader Catch2::Catch2WithMain csv_handler)
 add_executable(test_csv_writer CsvWriter.cpp)
 target_link_libraries(test_csv_writer Catch2::Catch2WithMain csv_handler)
 
+add_executable(test_batched_csv_reader BatchedCsvReader.cpp)
+target_link_libraries(test_batched_csv_reader Catch2::Catch2WithMain csv_handler)
+
 catch_discover_tests(test_csv_reader)
 catch_discover_tests(test_csv_writer)
+catch_discover_tests(test_batched_csv_reader)

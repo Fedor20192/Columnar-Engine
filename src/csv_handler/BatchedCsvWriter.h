@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Batch.h"
 #include "CsvWriter.h"
 
 #include <string>
@@ -8,6 +7,8 @@
 namespace cngn {
 class BatchedCsvWriter {
 public:
+    using Column = std::vector<std::string>;
+    using Batch = std::vector<Column>;
     using Parameters = CsvWriter::Parameters;
 
     explicit BatchedCsvWriter(const std::string &filename, Parameters parameters = Parameters());

@@ -75,13 +75,4 @@ void CsvReader::FieldHandler(char c, LineState& line_state) {
         line_state.is_valid = false;
     }
 }
-
-std::vector<CsvReader::Row> CsvReader::ReadAllLines() {
-    std::vector<Row> rows;
-    while (std::optional<Row> row = ReadLine()) {
-        rows.push_back(std::move(row.value()));
-    }
-    return rows;
-}
-
 }  // namespace cngn

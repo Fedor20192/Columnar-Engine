@@ -2,11 +2,11 @@
 #include "glog/logging.h"
 
 namespace cngn {
-BatchedCsvReader::BatchedCsvReader(const std::string& filename) : row_reader_(filename) {
+BatchedCsvReader::BatchedCsvReader(const std::string& filename, Parameters parameters)
+    : row_reader_(filename, parameters) {
 }
 
-std::optional<BatchedCsvReader::Batch> BatchedCsvReader::ReadBatch(
-    size_t batch_size) {
+std::optional<BatchedCsvReader::Batch> BatchedCsvReader::ReadBatch(size_t batch_size) {
     std::vector<Column> columns;
 
     std::optional<CsvReader::Row> row = row_reader_.ReadLine();

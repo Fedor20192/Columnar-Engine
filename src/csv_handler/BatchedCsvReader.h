@@ -9,10 +9,11 @@ namespace cngn {
 
 class BatchedCsvReader {
 public:
-    explicit BatchedCsvReader(const std::string& filename);
-
     using Column = std::vector<std::string>;
     using Batch = std::vector<Column>;
+    using Parameters = CsvReader::Parameters;
+
+    explicit BatchedCsvReader(const std::string& filename, Parameters parameters = Parameters());
 
     std::optional<Batch> ReadBatch(size_t batch_size);
 

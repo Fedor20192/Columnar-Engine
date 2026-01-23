@@ -5,9 +5,7 @@ include(cmake/compile_options.cmake)
 include(cmake/dependencies.cmake)
 
 find_program(CLANG_TIDY_EXE clang-tidy)
-if (CLANG_TIDY_EXE)
-    set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXE};)
-endif ()
+set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXE};)
 
 enable_testing()
 add_subdirectory(src)

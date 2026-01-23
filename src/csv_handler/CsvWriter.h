@@ -1,8 +1,8 @@
 #pragma once
 
 #include <fstream>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace cngn {
 class CsvWriter {
@@ -18,15 +18,17 @@ public:
 
     explicit CsvWriter(const std::string &filename, Parameters parameters = Parameters{});
 
-    CsvWriter(const CsvWriter&) = delete;
-    CsvWriter& operator=(const CsvWriter&) = delete;
-    CsvWriter(CsvWriter&&) = default;
-    CsvWriter& operator=(CsvWriter&&) = default;
+    CsvWriter(const CsvWriter &) = delete;
+    CsvWriter &operator=(const CsvWriter &) = delete;
+    CsvWriter(CsvWriter &&) = default;
+    CsvWriter &operator=(CsvWriter &&) = default;
 
     using Row = std::vector<std::string>;
 
-    void WriteRow(const Row &row);
-    void WriteAllRows(const std::vector<Row> &rows);
+    size_t WriteRow(const Row &row);
+    size_t WriteAllRows(const std::vector<Row> &rows);
+
+    void Flush();
 
 private:
     std::ofstream file_;

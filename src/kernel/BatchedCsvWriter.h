@@ -1,20 +1,25 @@
 #pragma once
 
+#include <string>
+
 #include "Batch.h"
 #include "CsvWriter.h"
-
-#include <string>
+#include "Metadata.h"
 
 namespace cngn {
 class BatchedCsvWriter {
 public:
     using Parameters = CsvWriter::Parameters;
 
-    explicit BatchedCsvWriter(const std::string &filename, Parameters parameters = Parameters());
+    explicit BatchedCsvWriter(const std::string& filename, const Schema& schema,
+                              Parameters parameters = Parameters());
 
-    void WriteBatch(const Batch& batch, size_t lines_to_write);
+    void WriteBatch(const Batch& batch);
+
+    void WriteMetadata();
 
 private:
     CsvWriter row_writer_;
+    Metadata metadata_;
 };
 }  // namespace cngn

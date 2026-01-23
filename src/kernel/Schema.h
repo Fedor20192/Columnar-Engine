@@ -50,6 +50,20 @@ public:
         return schema_;
     }
 
+    using Row = std::vector<std::string>;
+    std::vector<Row> Serialize() const {
+        std::vector<Row> result;
+        result.reserve(schema_.size() + 1);
+
+        result.push_back({std::to_string(schema_.size())});
+
+        for (size_t i = 0; i < schema_.size(); i++) {
+            result.push_back({schema_[i].column_name, SerializeType(schema_[i].column_type)});
+        }
+
+        return result;
+    }
+
 private:
     std::vector<ColumnData> schema_;
 };

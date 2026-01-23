@@ -1,4 +1,5 @@
 #include "CsvWriter.h"
+
 #include "glog/logging.h"
 
 namespace cngn {
@@ -23,7 +24,7 @@ CsvWriter::CsvWriter(const std::string& filename, Parameters parameters)
     }
 }
 
-void CsvWriter::WriteRow(const Row& row) {
+size_t CsvWriter::WriteRow(const Row& row) {
     bool is_first = true;
     for (const auto& field : row) {
         if (!is_first) {
@@ -33,14 +34,15 @@ void CsvWriter::WriteRow(const Row& row) {
         is_first = false;
     }
     file_ << parameters_.linebreak;
+    return file_.tellp();
 }
 
-void CsvWriter::WriteAllRows(const std::vector<Row>& rows) {
+size_t CsvWriter::WriteAllRows(const std::vector<Row>& rows) {
     for (const auto& row : rows) {
         WriteRow(row);
     }
+    return file_.tellp();
 }
-
 
 std::string CsvWriter::StringToField(const std::string& str) const {
     std::string ans;
@@ -60,4 +62,7 @@ std::string CsvWriter::StringToField(const std::string& str) const {
     return ans;
 }
 
+void CsvWriter::Flush() {
+    file_.flush();
+}
 }  // namespace cngn

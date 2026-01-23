@@ -24,7 +24,7 @@ struct PhysTypeWrapper<Type::String> {
 };
 
 template <Type type>
-using PhysicalType = PhysTypeWrapper<type>;
+using PhysicalType = PhysTypeWrapper<type>::PhysicalType;
 
 template <Type type>
 using ArrayType = std::vector<PhysicalType<type>>;

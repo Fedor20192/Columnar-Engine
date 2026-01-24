@@ -1,0 +1,6 @@
+include(Catch)
+
+add_executable(test_batched_csv_reader BatchedWriter.cpp)
+target_link_libraries(test_batched_csv_reader Catch2::Catch2WithMain columnar_kernel)
+
+catch_discover_tests(test_batched_csv_reader)

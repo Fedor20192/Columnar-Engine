@@ -14,7 +14,7 @@ public:
         }
 
         for (const auto& line : lines) {
-            ofs << line << '\n';
+            ofs << line << std::endl;
         }
     }
 };

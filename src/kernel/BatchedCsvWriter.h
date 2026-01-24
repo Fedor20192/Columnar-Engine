@@ -18,6 +18,8 @@ public:
 
     void WriteMetadata();
 
+    void Flush();
+
 private:
     CsvWriter row_writer_;
     Metadata metadata_;

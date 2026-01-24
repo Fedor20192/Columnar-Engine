@@ -43,15 +43,18 @@ public:
 
     using Row = Schema::Row;
     std::vector<Row> Serialize() const {
+        size_t old_offset = now_offset_;
         std::vector<Row> result = schema_.Serialize();
 
-        result.reserve(result.size() + rows_cnt_.size() + 1);
+        result.reserve(result.size() + rows_cnt_.size() + 2);
 
         result.push_back({std::to_string(rows_cnt_.size())});
 
         for (size_t i = 0; i < rows_cnt_.size(); i++) {
             result.push_back({std::to_string(batch_offsets_[i]), std::to_string(rows_cnt_[i])});
         }
+
+        result.push_back({std::to_string(old_offset)});
 
         return result;
     }

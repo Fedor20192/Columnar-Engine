@@ -24,7 +24,7 @@ CsvWriter::CsvWriter(const std::string& filename, Parameters parameters)
     }
 }
 
-size_t CsvWriter::WriteRow(const Row& row) {
+void CsvWriter::WriteRow(const Row& row) {
     bool is_first = true;
     for (const auto& field : row) {
         if (!is_first) {
@@ -34,14 +34,12 @@ size_t CsvWriter::WriteRow(const Row& row) {
         is_first = false;
     }
     file_ << parameters_.linebreak;
-    return file_.tellp();
 }
 
-size_t CsvWriter::WriteAllRows(const std::vector<Row>& rows) {
+void CsvWriter::WriteAllRows(const std::vector<Row>& rows) {
     for (const auto& row : rows) {
         WriteRow(row);
     }
-    return file_.tellp();
 }
 
 std::string CsvWriter::StringToField(const std::string& str) const {

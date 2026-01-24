@@ -1,4 +1,5 @@
 #include "CsvReader.h"
+
 #include "glog/logging.h"
 
 namespace cngn {

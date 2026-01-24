@@ -25,8 +25,8 @@ public:
 
     using Row = std::vector<std::string>;
 
-    size_t WriteRow(const Row &row);
-    size_t WriteAllRows(const std::vector<Row> &rows);
+    void WriteRow(const Row &row);
+    void WriteAllRows(const std::vector<Row> &rows);
 
     void Flush();
 

@@ -9,8 +9,6 @@
 namespace cngn {
 class Value {
 public:
-    using PhysTypeVariant = std::variant<PhysicalType<Type::Int64>, PhysicalType<Type::String>>;
-
     explicit Value(const PhysicalType<Type::Int64>& value) : value_(value) {
     }
     explicit Value(const PhysicalType<Type::String>& value) : value_(value) {

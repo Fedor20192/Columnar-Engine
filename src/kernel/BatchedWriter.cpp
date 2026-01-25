@@ -33,7 +33,7 @@ void BatchedWriter::WriteMetadata() {
     std::vector<PhysTypeVariant> serialized_metadata = metadata_.Serialize();
     for (size_t i = 0; i < serialized_metadata.size(); ++i) {
         std::visit([this](const auto& value) {
-            WriteElem(Value(value));
+            WriteElem(ValuePad(value));
         }, serialized_metadata[i]);
     }
 

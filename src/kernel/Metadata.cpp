@@ -6,25 +6,6 @@ namespace cngn {
 Metadata::Metadata(const Schema& schema) : schema_(schema) {
 }
 
-Metadata::Metadata(Metadata&& other) noexcept
-    : schema_(std::move(other.schema_)),
-      columns_cnt_(std::move(other.columns_cnt_)),
-      rows_cnt_(std::move(other.rows_cnt_)),
-      now_offset_(std::move(other.now_offset_)) {
-}
-
-Metadata& Metadata::operator=(Metadata&& other) noexcept {
-    if (this == &other) {
-        return *this;
-    }
-
-    schema_ = std::move(other.schema_);
-    columns_cnt_ = std::move(other.columns_cnt_);
-    rows_cnt_ = std::move(other.rows_cnt_);
-    now_offset_ = std::move(other.now_offset_);
-    return *this;
-}
-
 Metadata::Metadata(Schema schema, std::vector<int64_t> batch_offsets,
                    std::vector<int64_t> columns_cnt, std::vector<int64_t> rows_cnt)
     : schema_(std::move(schema)),
@@ -66,7 +47,7 @@ int64_t Metadata::GetNowOffset() const {
     return now_offset_;
 }
 
-size_t Metadata::GetBatchSize() const {
+size_t Metadata::GetBatchCnt() const {
     return batch_offsets_.size();
 }
 

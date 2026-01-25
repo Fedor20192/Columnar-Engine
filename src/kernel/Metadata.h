@@ -10,8 +10,8 @@ class Metadata {
 public:
     Metadata() = default;
     explicit Metadata(const Schema& schema);
-    explicit Metadata(Metadata&& other) noexcept;
-    Metadata& operator=(Metadata&& other) noexcept;
+    explicit Metadata(Metadata&& other) noexcept = default;
+    Metadata& operator=(Metadata&& other) noexcept = default;
 
     explicit Metadata(Schema schema, std::vector<int64_t> batch_offsets,
                       std::vector<int64_t> columns_cnt, std::vector<int64_t> rows_cnt);
@@ -28,7 +28,7 @@ public:
 
     int64_t GetNowOffset() const;
 
-    size_t GetBatchSize() const;
+    size_t GetBatchCnt() const;
 
     void SetNowOffset(int64_t offset);
 
@@ -37,6 +37,6 @@ public:
 private:
     Schema schema_;
     std::vector<int64_t> batch_offsets_, columns_cnt_, rows_cnt_;
-    size_t now_offset_{0};
+    int64_t now_offset_{0};
 };
 }  // namespace cngn

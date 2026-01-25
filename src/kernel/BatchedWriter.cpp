@@ -1,5 +1,4 @@
 #include "BatchedWriter.h"
-
 #include "glog/logging.h"
 
 namespace cngn {

@@ -12,6 +12,8 @@ public:
     struct ColumnData {
         std::string column_name;
         Type column_type;
+
+        bool operator==(const ColumnData &other) const = default;
     };
 
     Schema() = default;
@@ -25,6 +27,8 @@ public:
     const std::vector<ColumnData> &GetData() const;
 
     std::vector<PhysTypeVariant> Serialize() const;
+
+    bool operator==(const Schema &other) const = default;
 
 private:
     std::vector<ColumnData> schema_;

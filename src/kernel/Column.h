@@ -4,6 +4,7 @@
 
 #include "Types.h"
 #include "Value.h"
+
 namespace cngn {
 class Column {
 public:
@@ -20,6 +21,8 @@ public:
     Value operator[](size_t index) const {
         return std::visit([index](const auto& value) { return Value(value[index]); }, array_);
     }
+
+    bool operator==(const Column&) const = default;
 
 private:
     ArrayTypeVariant array_;

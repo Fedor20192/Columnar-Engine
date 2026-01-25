@@ -12,9 +12,9 @@ BatchedReader::BatchedReader(const std::string &filename) : file_(filename, std:
 }
 
 std::optional<Batch> BatchedReader::ReadBatch(size_t num_of_batch) {
-    if (num_of_batch >= metadata_.GetBatchSize()) {
-        DLOG(ERROR) << "ReadBatch num_of_batch=" << num_of_batch << " > "
-                    << metadata_.GetBatchSize() << std::endl;
+    if (num_of_batch >= metadata_.GetBatchCnt()) {
+        DLOG(ERROR) << "ReadBatch num_of_batch=" << num_of_batch << " > " << metadata_.GetBatchCnt()
+                    << std::endl;
         return std::nullopt;
     }
 
@@ -26,14 +26,14 @@ std::optional<Batch> BatchedReader::ReadBatch(size_t num_of_batch) {
 
     Batch batch(metadata_.GetSchema());
     for (int64_t column_index = 0; column_index < columns_cnt; column_index++) {
-        Type column_type = metadata_.GetSchema().GetData()[num_of_batch].column_type;
+        Type column_type = metadata_.GetSchema().GetData()[column_index].column_type;
 
         switch (column_type) {
             case Type::Int64:
-                batch.AddColumn(Column(ReadColumnOfType<Type::Int64>(file_, rows_cnt)));
+                batch.AddColumn(Column(ReadColumn<Type::Int64>(rows_cnt)));
                 break;
             case Type::String:
-                batch.AddColumn(Column(ReadColumnOfType<Type::String>(file_, rows_cnt)));
+                batch.AddColumn(Column(ReadColumn<Type::String>(rows_cnt)));
                 break;
             default:
                 DLOG(FATAL) << "Unknown column type" << std::endl;
@@ -44,18 +44,20 @@ std::optional<Batch> BatchedReader::ReadBatch(size_t num_of_batch) {
     return batch;
 }
 
+const Metadata &BatchedReader::GetMetadata() const {
+    return metadata_;
+}
+
 Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
     in.seekg(-sizeof(int64_t), std::ios::end);
 
-    int64_t meta_offset;
-    in >> meta_offset;
+    int64_t meta_offset = Read<int64_t>(in);
 
     in.seekg(meta_offset);
 
     Schema schema = ReadSchema(in);
 
-    int64_t batch_cnt;
-    in >> batch_cnt;
+    int64_t batch_cnt = Read<int64_t>(in);
 
     std::vector<int64_t> batch_offsets;
     std::vector<int64_t> columns_cnt;
@@ -77,14 +79,15 @@ Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
 }
 
 Schema BatchedReader::ReadSchema(std::ifstream &in) {
-    int64_t size;
-    in >> size;
+    int64_t size = Read<int64_t>(in);
 
     std::vector<Schema::ColumnData> data;
     data.reserve(size);
 
     for (int64_t i = 0; i < size; i++) {
-        data.emplace_back(Read<std::string>(in), DeserializeType(Read<std::string>(in)));
+        auto name = Read<std::string>(in);
+        Type type = DeserializeType(Read<std::string>(in));
+        data.emplace_back(std::move(name), type);
     }
 
     return Schema(std::move(data));

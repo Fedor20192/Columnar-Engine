@@ -78,16 +78,6 @@ inline std::string Read(std::ifstream &file) {
     return value;
 }
 
-template <Type T>
-ArrayType<T> ReadColumnOfType(std::ifstream &in, int64_t rows_cnt) {
-    ArrayType<T> column;
-    column.reserve(rows_cnt);
-    for (int64_t i = 0; i < rows_cnt; ++i) {
-        column.push_back(Read<PhysicalType<T>>(in));
-    }
-    return column;
-}
-
 template <typename T>
 void Write(const T &value, std::ofstream &file);
 

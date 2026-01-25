@@ -28,6 +28,10 @@ public:
 
     std::vector<PhysTypeVariant> Serialize() const;
 
+    size_t GetColumnsCount() const;
+
+    const ColumnData& operator[](size_t index) const;
+
     bool operator==(const Schema &other) const = default;
 
 private:

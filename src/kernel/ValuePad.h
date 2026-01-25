@@ -7,11 +7,11 @@
 #include "Types.h"
 
 namespace cngn {
-class Value {
+class ValuePad {
 public:
-    explicit Value(const PhysicalType<Type::Int64>& value) : value_(value) {
+    explicit ValuePad(const PhysicalType<Type::Int64>& value) : value_(value) {
     }
-    explicit Value(const PhysicalType<Type::String>& value) : value_(value) {
+    explicit ValuePad(const PhysicalType<Type::String>& value) : value_(value) {
     }
 
     PhysTypeVariant GetValue() const {

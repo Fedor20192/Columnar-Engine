@@ -3,7 +3,7 @@
 #include <variant>
 
 #include "Types.h"
-#include "Value.h"
+#include "ValuePad.h"
 
 namespace cngn {
 class Column {
@@ -18,8 +18,8 @@ public:
         return std::visit([](const auto& arr) { return arr.size(); }, array_);
     }
 
-    Value operator[](size_t index) const {
-        return std::visit([index](const auto& value) { return Value(value[index]); }, array_);
+    ValuePad operator[](size_t index) const {
+        return std::visit([index](const auto& value) { return ValuePad(value[index]); }, array_);
     }
 
     bool operator==(const Column&) const = default;

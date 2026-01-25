@@ -26,19 +26,8 @@ std::optional<Batch> BatchedReader::ReadBatch(size_t num_of_batch) {
 
     Batch batch(metadata_.GetSchema());
     for (int64_t column_index = 0; column_index < columns_cnt; column_index++) {
-        Type column_type = metadata_.GetSchema().GetData()[column_index].column_type;
-
-        switch (column_type) {
-            case Type::Int64:
-                batch.AddColumn(Column(ReadColumn<Type::Int64>(rows_cnt)));
-                break;
-            case Type::String:
-                batch.AddColumn(Column(ReadColumn<Type::String>(rows_cnt)));
-                break;
-            default:
-                DLOG(FATAL) << "Unknown column type" << std::endl;
-                throw std::runtime_error("Unknown column type");
-        }
+        Type column_type = metadata_.GetSchema()[column_index].column_type;
+        batch.AddColumn(DispatchOnType(column_type, ReadColumn(), rows_cnt, file_));
     }
 
     return batch;
@@ -51,13 +40,15 @@ const Metadata &BatchedReader::GetMetadata() const {
 Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
     in.seekg(-sizeof(int64_t), std::ios::end);
 
-    int64_t meta_offset = Read<int64_t>(in);
+    Reader reader;
+
+    int64_t meta_offset = reader.operator()<int64_t>(in);
 
     in.seekg(meta_offset);
 
     Schema schema = ReadSchema(in);
 
-    int64_t batch_cnt = Read<int64_t>(in);
+    int64_t batch_cnt = reader.operator()<int64_t>(in);
 
     std::vector<int64_t> batch_offsets;
     std::vector<int64_t> columns_cnt;
@@ -67,9 +58,9 @@ Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
     rows_cnt.reserve(batch_cnt);
 
     for (int64_t i = 0; i < batch_cnt; i++) {
-        batch_offsets.push_back(Read<int64_t>(in));
-        columns_cnt.push_back(Read<int64_t>(in));
-        rows_cnt.push_back(Read<int64_t>(in));
+        batch_offsets.push_back(reader.operator()<int64_t>(in));
+        columns_cnt.push_back(reader.operator()<int64_t>(in));
+        rows_cnt.push_back(reader.operator()<int64_t>(in));
     }
 
     in.seekg(0, std::ios::beg);
@@ -79,14 +70,15 @@ Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
 }
 
 Schema BatchedReader::ReadSchema(std::ifstream &in) {
-    int64_t size = Read<int64_t>(in);
+    Reader reader;
+    int64_t size = reader.operator()<int64_t>(in);
 
     std::vector<Schema::ColumnData> data;
     data.reserve(size);
 
     for (int64_t i = 0; i < size; i++) {
-        auto name = Read<std::string>(in);
-        Type type = DeserializeType(Read<std::string>(in));
+        auto name = reader.operator()<std::string>(in);
+        Type type = DeserializeType(reader.operator()<std::string>(in));
         data.emplace_back(std::move(name), type);
     }
 
@@ -94,15 +86,7 @@ Schema BatchedReader::ReadSchema(std::ifstream &in) {
 }
 
 PhysTypeVariant BatchedReader::ReadElem(Type type) {
-    switch (type) {
-        case Type::Int64:
-            return Read<int64_t>(file_);
-        case Type::String:
-            return Read<std::string>(file_);
-        default:
-            DLOG(FATAL) << "Unknown type" << std::endl;
-            throw std::runtime_error("Unknown element type");
-    }
+    return DispatchOnPhysType(type, Reader(), file_);
 }
 
 }  // namespace cngn

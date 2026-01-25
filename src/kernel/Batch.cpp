@@ -23,6 +23,41 @@ Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
     }
 }
 
+Batch::Batch(const std::vector<Row>& rows, const Schema& schema)
+    : schema_(schema) {
+    if (rows.empty()) {
+        return;
+    }
+
+    const size_t rows_count = rows.size(), columns_count = rows[0].size();
+
+    if (columns_count > schema.GetColumnsCount()) {
+        DLOG(FATAL) << "Columns count mismatch: " << columns_count
+                    << " > " << schema.GetColumnsCount() << std::endl;
+        throw std::invalid_argument("Batch num_of_batch mismatch");
+    }
+
+    columns_.reserve(columns_count);
+
+    for (size_t column_index = 0; column_index < columns_count; ++column_index) {
+        auto get_column = [&]<Type type>() {
+            std::vector<PhysicalType<type>> arr;
+            arr.reserve(rows_count);
+            for (size_t row_index = 0; row_index < rows_count; ++row_index) {
+                if (column_index >= rows[row_index].size()) {
+                    DLOG(FATAL) << "Batch column index mismatch: " << column_index
+                                << " != " << rows[row_index].size() << std::endl;
+                    throw std::invalid_argument("Batch column index mismatch");
+                }
+                arr.push_back(Deserialize<type>(rows[row_index][column_index]));
+            }
+            return Column(arr);
+        };
+
+        columns_.push_back(DispatchOnType(schema[column_index].column_type, get_column));
+    }
+}
+
 size_t Batch::ColumnCount() const {
     return columns_.size();
 }
@@ -43,6 +78,28 @@ void Batch::AddColumn(Column&& column) {
     }
 
     columns_.push_back(std::move(column));
+}
+
+std::vector<Batch::Row> Batch::Serialize() const {
+    std::vector<Row> result;
+
+    if (Empty()) {
+        return result;
+    }
+
+    const size_t rows_count = columns_[0].Size();
+    result.resize(rows_count);
+    for (size_t i = 0; i < rows_count; ++i) {
+        result[i].reserve(columns_.size());
+    }
+
+    for (size_t column_index = 0; column_index < columns_.size(); ++column_index) {
+        for (size_t row_index = 0; row_index < rows_count; ++row_index) {
+            result[row_index].push_back(columns_[column_index][row_index].ToString());
+        }
+    }
+
+    return result;
 }
 
 }  // namespace cngn

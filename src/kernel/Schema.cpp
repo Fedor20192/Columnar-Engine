@@ -35,7 +35,8 @@ void Schema::WriteToFile(const std::string& file_name) const {
     std::ofstream file(file_name);
 
     for (size_t i = 0; i < schema_.size(); i++) {
-        file << schema_[i].column_name << ',' << SerializeType(schema_[i].column_type) << '\n';
+        file << schema_[i].column_name << ','
+             << DispatchOnType(schema_[i].column_type, SerializeType()) << '\n';
     }
 }
 
@@ -51,10 +52,18 @@ std::vector<PhysTypeVariant> Schema::Serialize() const {
 
     for (size_t i = 0; i < schema_.size(); i++) {
         result.push_back(schema_[i].column_name);
-        result.push_back(SerializeType(schema_[i].column_type));
+        result.push_back(DispatchOnType(schema_[i].column_type, SerializeType()));
     }
 
     return result;
+}
+
+size_t Schema::GetColumnsCount() const {
+    return schema_.size();
+}
+
+const Schema::ColumnData& Schema::operator[](size_t index) const {
+    return schema_[index];
 }
 
 }  // namespace cngn

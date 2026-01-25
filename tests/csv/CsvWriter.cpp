@@ -169,7 +169,7 @@ TEST_CASE_METHOD(GlogFixture, "Append to existing file", "[CSVWriter]") {
     std::string filename("example.csv");
 
     std::vector<Row> rows1 = {{"First", "Batch"}};
-    Converter::StringsToCsv(filename, rows1[0]);
+    StringCSVConverter::StringsToCsv(filename, rows1[0]);
 
     std::vector<Row> rows2 = {{"Second", "Batch"}};
     cngn::CsvWriter writer(filename);

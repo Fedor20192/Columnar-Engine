@@ -9,7 +9,7 @@
 
 using Row = cngn::CsvWriter::Row;
 
-TEST_CASE_METHOD(GlogFixture, "CrossValidation", "[BatchedRW]") {
+TEST_CASE_METHOD(GlogFixture, "Batched RW CrossValidation", "[BatchedRW]") {
     cngn::Schema schema({std::vector<cngn::Schema::ColumnData>{
         {"a", cngn::Type::Int64},
         {"b", cngn::Type::Int64},

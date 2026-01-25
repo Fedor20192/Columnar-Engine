@@ -11,10 +11,10 @@ namespace cngn {
 constexpr size_t kRowsInBatch = 100;
 
 void FromCsvToFormat(const std::string &schema_name, const std::string &source_name,
-                     const std::string &target_name) {
+                     const std::string &table_name) {
     CsvReader csv_reader(source_name);
     Schema schema = Schema::ReadFromCsv(schema_name);
-    BatchedWriter batched_writer(target_name, schema);
+    BatchedWriter batched_writer(table_name + ".chsv", schema);
 
     while (true) {
         bool is_empty = true;
@@ -39,9 +39,9 @@ void FromCsvToFormat(const std::string &schema_name, const std::string &source_n
     batched_writer.WriteMetadata();
 }
 
-void FromFormatToCsv(const std::string &source_name, const std::string &target_name) {
+void FromFormatToCsv(const std::string &table_name, const std::string &target_name) {
     CsvWriter csv_writer(target_name);
-    BatchedReader batched_reader(source_name);
+    BatchedReader batched_reader(table_name + ".chsv");
 
     size_t num_of_batch = 0;
     while (std::optional<Batch> batch = batched_reader.ReadBatch(num_of_batch++)) {

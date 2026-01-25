@@ -22,7 +22,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Cross Validation", "[Converter]") {
     };
     StringCSVConverter().StringsToCsv(data_filename, data);
 
-    std::string target_filename("target.chsv");
+    std::string target_filename("target");
     cngn::FromCsvToFormat(scheme_filename, data_filename, target_filename);
 
     std::string new_csv_filename("new.csv");
@@ -48,7 +48,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Empty CSV", "[Converter]") {
     std::vector<std::string> data;
     StringCSVConverter().StringsToCsv(data_filename, data);
 
-    std::string target_filename("empty_target.chsv");
+    std::string target_filename("empty_target");
     cngn::FromCsvToFormat(scheme_filename, data_filename, target_filename);
 
     std::string new_csv_filename("empty_new.csv");
@@ -72,7 +72,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Single Column Int64", "[Converter]") {
     };
     StringCSVConverter().StringsToCsv(data_filename, data);
 
-    std::string target_filename("single_int_target.chsv");
+    std::string target_filename("single_int_target");
     cngn::FromCsvToFormat(scheme_filename, data_filename, target_filename);
 
     std::string new_csv_filename("single_int_new.csv");
@@ -105,7 +105,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Single Column String", "[Converter]") {
     };
     StringCSVConverter().StringsToCsv(data_filename, data);
 
-    std::string target_filename("single_str_target.chsv");
+    std::string target_filename("single_str_target");
     cngn::FromCsvToFormat(scheme_filename, data_filename, target_filename);
 
     std::string new_csv_filename("single_str_new.csv");
@@ -138,7 +138,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Mixed Types", "[Converter]") {
     };
     StringCSVConverter().StringsToCsv(data_filename, data);
 
-    std::string target_filename("mixed_target.chsv");
+    std::string target_filename("mixed_target");
     cngn::FromCsvToFormat(scheme_filename, data_filename, target_filename);
 
     std::string new_csv_filename("mixed_new.csv");
@@ -174,7 +174,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter All String Columns", "[Converter]") {
     };
     StringCSVConverter().StringsToCsv(data_filename, data);
 
-    std::string target_filename("all_string_target.chsv");
+    std::string target_filename("all_string_target");
     cngn::FromCsvToFormat(scheme_filename, data_filename, target_filename);
 
     std::string new_csv_filename("all_string_new.csv");
@@ -211,7 +211,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Large Int64 Values", "[Converter]") {
     };
     StringCSVConverter().StringsToCsv(data_filename, data);
 
-    std::string target_filename("large_int_target.chsv");
+    std::string target_filename("large_int_target");
     cngn::FromCsvToFormat(scheme_filename, data_filename, target_filename);
 
     std::string new_csv_filename("large_int_new.csv");
@@ -243,7 +243,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Special Characters in Strings", "[Conve
     };
     StringCSVConverter().StringsToCsv(data_filename, data);
 
-    std::string target_filename("special_chars_target.chsv");
+    std::string target_filename("special_chars_target");
     cngn::FromCsvToFormat(scheme_filename, data_filename, target_filename);
 
     std::string new_csv_filename("special_chars_new.csv");
@@ -274,7 +274,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Many Rows", "[Converter]") {
     }
     StringCSVConverter().StringsToCsv(data_filename, data);
 
-    std::string target_filename("many_rows_target.chsv");
+    std::string target_filename("many_rows_target");
     cngn::FromCsvToFormat(scheme_filename, data_filename, target_filename);
 
     std::string new_csv_filename("many_rows_new.csv");

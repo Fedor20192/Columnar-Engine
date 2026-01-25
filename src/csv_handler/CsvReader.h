@@ -27,6 +27,7 @@ public:
     using Row = std::vector<std::string>;
 
     std::optional<Row> ReadLine();
+    std::vector<Row> ReadAllLines();
 
 private:
     Parameters parameters_;

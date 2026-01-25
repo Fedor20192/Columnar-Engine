@@ -1,0 +1,10 @@
+include(Catch)
+
+add_executable(test_schema_reader Schema.cpp)
+target_link_libraries(test_schema_reader Catch2::Catch2WithMain columnar_kernel)
+
+add_executable(test_batched_reader BatchedRW.cpp)
+target_link_libraries(test_batched_reader Catch2::Catch2WithMain columnar_kernel)
+
+catch_discover_tests(test_schema_reader)
+catch_discover_tests(test_batched_reader)

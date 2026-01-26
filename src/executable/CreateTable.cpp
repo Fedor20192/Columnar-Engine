@@ -1,6 +1,6 @@
 #include <string>
 
-#include "CHSVConverter.h"
+#include "../interface/CHSVConverter.h"
 #include "glog/logging.h"
 
 int main(int argc, char* argv[]) {

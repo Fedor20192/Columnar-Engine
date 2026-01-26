@@ -27,7 +27,18 @@ std::optional<Batch> BatchedReader::ReadBatch(size_t num_of_batch) {
     Batch batch(metadata_.GetSchema());
     for (int64_t column_index = 0; column_index < columns_cnt; column_index++) {
         Type column_type = metadata_.GetSchema()[column_index].column_type;
-        batch.AddColumn(DispatchOnType(column_type, ReadColumn(), rows_cnt, file_));
+
+        auto read_column = [this]<Type type>(int64_t rows_cnt) {
+            ArrayType<type> array;
+            array.reserve(rows_cnt);
+
+            for (int64_t i = 0; i < rows_cnt; i++) {
+                array.emplace_back(Reader().operator()<PhysicalType<type>>(file_));
+            }
+            return Column(std::move(array));
+        };
+
+        batch.AddColumn(DispatchOnType(column_type, read_column, rows_cnt));
     }
 
     return batch;

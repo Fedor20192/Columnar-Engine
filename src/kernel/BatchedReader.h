@@ -22,19 +22,6 @@ private:
 
     PhysTypeVariant ReadElem(Type type);
 
-    struct ReadColumn {
-        template <Type type>
-        Column operator()(int64_t rows_cnt, std::ifstream& in) {
-            ArrayType<type> array;
-            array.reserve(rows_cnt);
-
-            for (int64_t i = 0; i < rows_cnt; i++) {
-                array.emplace_back(Reader().operator()<PhysicalType<type>>(in));
-            }
-            return Column(std::move(array));
-        }
-    };
-
     std::ifstream file_;
     Metadata metadata_;
 };

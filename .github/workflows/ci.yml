@@ -17,7 +17,7 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential ninja-build cmake clang-tidy
       - name: Configure cmake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug -G Ninja
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
       - name: Build
         run: cmake --build build
       - name: Run tests

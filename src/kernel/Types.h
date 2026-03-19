@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <concepts>
 #include <fstream>
 #include <stdexcept>
@@ -10,7 +11,11 @@
 namespace cngn {
 enum class Type {
     Int64,
+    Int32,
+    Int16,
     String,
+    Timestamp,
+    Date,
 };
 
 template <Type>
@@ -22,27 +27,59 @@ struct PhysTypeWrapper<Type::Int64> {
 };
 
 template <>
+struct PhysTypeWrapper<Type::Int32> {
+    using PhysicalType = int32_t;
+};
+
+template <>
+struct PhysTypeWrapper<Type::Int16> {
+    using PhysicalType = int16_t;
+};
+
+template <>
 struct PhysTypeWrapper<Type::String> {
     using PhysicalType = std::string;
+};
+
+template <>
+struct PhysTypeWrapper<Type::Timestamp> {
+    using PhysicalType = uint64_t;
+};
+
+template <>
+struct PhysTypeWrapper<Type::Date> {
+    using PhysicalType = uint32_t;
 };
 
 template <Type type>
 using PhysicalType = PhysTypeWrapper<type>::PhysicalType;
 
-using PhysTypeVariant = std::variant<PhysicalType<Type::Int64>, PhysicalType<Type::String>>;
+using PhysTypeVariant = std::variant<PhysicalType<Type::Int64>, PhysicalType<Type::Int32>,
+                                     PhysicalType<Type::Int16>, PhysicalType<Type::String>,
+                                     PhysicalType<Type::Timestamp>, PhysicalType<Type::Date>>;
 
 template <Type type>
 using ArrayType = std::vector<PhysicalType<type>>;
 
-using ArrayTypeVariant = std::variant<ArrayType<Type::Int64>, ArrayType<Type::String>>;
+using ArrayTypeVariant =
+    std::variant<ArrayType<Type::Int64>, ArrayType<Type::Int32>, ArrayType<Type::Int16>,
+                 ArrayType<Type::String>, ArrayType<Type::Timestamp>, ArrayType<Type::Date>>;
 
 struct SerializeType {
     template <Type type>
     std::string operator()() const {
         if constexpr (type == Type::Int64) {
             return "int64";
+        } else if constexpr (type == Type::Int32) {
+            return "int32";
+        } else if constexpr (type == Type::Int16) {
+            return "int16";
         } else if constexpr (type == Type::String) {
             return "string";
+        } else if constexpr (type == Type::Timestamp) {
+            return "timestamp";
+        } else if constexpr (type == Type::Date) {
+            return "date";
         } else {
             throw std::runtime_error("Unknown type");
         }
@@ -52,17 +89,43 @@ struct SerializeType {
 inline Type DeserializeType(const std::string &name) {
     if (name == "int64") {
         return Type::Int64;
-    } else if (name == "string") {
-        return Type::String;
-    } else {
-        throw std::runtime_error("Unknown type: " + name);
     }
+    if (name == "int32") {
+        return Type::Int32;
+    }
+    if (name == "int16") {
+        return Type::Int16;
+    }
+    if (name == "string") {
+        return Type::String;
+    }
+    if (name == "timestamp") {
+        return Type::Timestamp;
+    }
+    if (name == "date") {
+        return Type::Date;
+    }
+
+    throw std::runtime_error("Unknown type: " + name);
 }
 
 template <Type type>
 PhysicalType<type> Deserialize(const std::string &s) {
-    if constexpr (std::is_integral_v<PhysicalType<type>>) {
-        return PhysicalType<type>(stoll(s));
+    // "2013-07-09 06:36:26","2013-07-09" --- timestamp/data example
+    constexpr std::chrono::system_clock::time_point kSinceEpoch{};
+    using PT = PhysicalType<type>;
+    if constexpr (type == Type::Timestamp) {
+        std::stringstream ss{s};
+        std::chrono::system_clock::time_point tp;
+        ss >> std::chrono::parse("%F %T", tp);
+        return PT(std::chrono::duration_cast<std::chrono::milliseconds>(tp - kSinceEpoch).count());
+    } else if constexpr (type == Type::Date) {
+        std::stringstream ss{s};
+        std::chrono::system_clock::time_point tp;
+        ss >> std::chrono::parse("%F", tp);
+        return PT(std::chrono::duration_cast<std::chrono::days>(tp - kSinceEpoch).count());
+    } else if constexpr (std::is_integral_v<PT>) {
+        return PT(stoll(s));
     } else if constexpr (type == Type::String) {
         return s;
     } else {
@@ -108,8 +171,20 @@ auto DispatchOnType(Type type, Callable &&f, Args &&...args) {
         case Type::Int64:
             return std::forward<Callable>(f).template operator()<Type::Int64>(
                 std::forward<Args>(args)...);
+        case Type::Int32:
+            return std::forward<Callable>(f).template operator()<Type::Int32>(
+                std::forward<Args>(args)...);
+        case Type::Int16:
+            return std::forward<Callable>(f).template operator()<Type::Int16>(
+                std::forward<Args>(args)...);
         case Type::String:
             return std::forward<Callable>(f).template operator()<Type::String>(
+                std::forward<Args>(args)...);
+        case Type::Timestamp:
+            return std::forward<Callable>(f).template operator()<Type::Timestamp>(
+                std::forward<Args>(args)...);
+        case Type::Date:
+            return std::forward<Callable>(f).template operator()<Type::Date>(
                 std::forward<Args>(args)...);
         default:
             throw std::runtime_error("Unknown Type");
@@ -123,9 +198,25 @@ auto DispatchOnPhysType(Type type, Callable &&f, Args &&...args) {
             return PhysTypeVariant(
                 std::forward<Callable>(f).template operator()<PhysicalType<Type::Int64>>(
                     std::forward<Args>(args)...));
+        case Type::Int32:
+            return PhysTypeVariant(
+                std::forward<Callable>(f).template operator()<PhysicalType<Type::Int32>>(
+                    std::forward<Args>(args)...));
+        case Type::Int16:
+            return PhysTypeVariant(
+                std::forward<Callable>(f).template operator()<PhysicalType<Type::Int16>>(
+                    std::forward<Args>(args)...));
         case Type::String:
             return PhysTypeVariant(
                 std::forward<Callable>(f).template operator()<PhysicalType<Type::String>>(
+                    std::forward<Args>(args)...));
+        case Type::Timestamp:
+            return PhysTypeVariant(
+                std::forward<Callable>(f).template operator()<PhysicalType<Type::Timestamp>>(
+                    std::forward<Args>(args)...));
+        case Type::Date:
+            return PhysTypeVariant(
+                std::forward<Callable>(f).template operator()<PhysicalType<Type::Date>>(
                     std::forward<Args>(args)...));
         default:
             throw std::runtime_error("Unknown Type");

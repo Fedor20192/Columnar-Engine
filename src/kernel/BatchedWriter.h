@@ -18,10 +18,7 @@ public:
     void Flush();
 
 private:
-    int64_t WriteElem(const ValuePad& value) {
-        std::visit([this](const auto& to_print) { Write(to_print, file_); }, value.GetValue());
-        return file_.tellp();
-    }
+    size_t WriteElem(const ValuePad& value);
 
     std::ofstream file_;
     Metadata metadata_;

@@ -11,7 +11,15 @@ class ValuePad {
 public:
     explicit ValuePad(const PhysicalType<Type::Int64>& value) : value_(value) {
     }
+    explicit ValuePad(const PhysicalType<Type::Int32>& value) : value_(value) {
+    }
+    explicit ValuePad(const PhysicalType<Type::Int16>& value) : value_(value) {
+    }
     explicit ValuePad(const PhysicalType<Type::String>& value) : value_(value) {
+    }
+    explicit ValuePad(const PhysicalType<Type::Date>& value) : value_(value) {
+    }
+    explicit ValuePad(const PhysicalType<Type::Timestamp>& value) : value_(value) {
     }
 
     PhysTypeVariant GetValue() const {
@@ -22,7 +30,9 @@ public:
         return std::visit(
             []<typename T>(const T& value) -> std::string {
                 using NowType = std::decay_t<T>;
-                if constexpr (std::is_same_v<NowType, PhysicalType<Type::Int64>>) {
+                if constexpr (std::is_same_v<NowType, PhysicalType<Type::Int64>> ||
+                              std::is_same_v<NowType, PhysicalType<Type::Int32>> ||
+                              std::is_same_v<NowType, PhysicalType<Type::Int16>>) {
                     return std::to_string(value);
                 } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::String>>) {
                     return value;

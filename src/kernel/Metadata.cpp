@@ -62,7 +62,7 @@ std::vector<PhysTypeVariant> Metadata::Serialize() const {
 
     result.reserve(result.size() + columns_cnt_.size() * 3 + 2);
 
-    result.push_back(static_cast<int64_t>(columns_cnt_.size()));
+    result.emplace_back(static_cast<int64_t>(columns_cnt_.size()));
 
     for (size_t i = 0; i < columns_cnt_.size(); i++) {
         result.emplace_back(batch_offsets_[i]);
@@ -70,7 +70,7 @@ std::vector<PhysTypeVariant> Metadata::Serialize() const {
         result.emplace_back(rows_cnt_[i]);
     }
 
-    result.push_back(old_offset);
+    result.emplace_back(old_offset);
 
     return result;
 }

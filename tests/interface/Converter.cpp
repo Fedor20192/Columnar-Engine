@@ -9,9 +9,9 @@ TEST_CASE_METHOD(GlogFixture, "Converter Cross Validation", "[Converter]") {
 
     std::vector<std::string> schema_data{
         R"(a,int64)",
-        R"(b,int64)",
+        R"(b,int32)",
         R"(name123,string)",
-        R"(d,int64)",
+        R"(d,int16)",
     };
     StringCSVConverter().StringsToCsv(scheme_filename, schema_data);
 
@@ -125,7 +125,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Mixed Types", "[Converter]") {
     std::string scheme_filename("mixed_schema.csv"), data_filename("mixed_data.csv");
 
     std::vector<std::string> schema_data{
-        R"(id,int64)", R"(name,string)", R"(age,int64)", R"(city,string)", R"(salary,int64)",
+        R"(id,int32)", R"(name,string)", R"(age,int64)", R"(city,string)", R"(salary,int32)",
     };
     StringCSVConverter().StringsToCsv(scheme_filename, schema_data);
 
@@ -263,7 +263,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Many Rows", "[Converter]") {
     std::string scheme_filename("many_rows_schema.csv"), data_filename("many_rows_data.csv");
 
     std::vector<std::string> schema_data{
-        R"(index,int64)",
+        R"(index,int16)",
         R"(value,string)",
     };
     StringCSVConverter().StringsToCsv(scheme_filename, schema_data);

@@ -95,7 +95,7 @@ std::vector<Batch::Row> Batch::Serialize() const {
 
     for (size_t column_index = 0; column_index < columns_.size(); ++column_index) {
         for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-            result[row_index].push_back(columns_[column_index][row_index].ToString());
+            result[row_index].push_back(ToString(columns_[column_index][row_index]));
         }
     }
 

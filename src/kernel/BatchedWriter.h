@@ -18,7 +18,7 @@ public:
     void Flush();
 
 private:
-    size_t WriteElem(const ValuePad& value);
+    size_t WriteElem(const PhysTypeVariant& value);
 
     std::ofstream file_;
     Metadata metadata_;

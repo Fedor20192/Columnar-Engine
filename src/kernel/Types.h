@@ -18,6 +18,16 @@ enum class Type {
     Date,
 };
 
+struct Date {
+    uint32_t days;
+    bool operator==(const Date &rhs) const = default;
+};
+
+struct Timestamp {
+    uint64_t seconds;
+    bool operator==(const Timestamp&) const = default;
+};
+
 template <Type>
 struct PhysTypeWrapper {};
 
@@ -43,12 +53,12 @@ struct PhysTypeWrapper<Type::String> {
 
 template <>
 struct PhysTypeWrapper<Type::Timestamp> {
-    using PhysicalType = uint64_t;
+    using PhysicalType = Timestamp;
 };
 
 template <>
 struct PhysTypeWrapper<Type::Date> {
-    using PhysicalType = uint32_t;
+    using PhysicalType = Date;
 };
 
 template <Type type>
@@ -88,18 +98,22 @@ struct SerializeType {
 
 Type DeserializeType(const std::string &name);
 
-std::chrono::system_clock::time_point ParseDatetime(const std::string &s, bool need_time);
+std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> ParseDatetime(
+    const std::string &s, bool need_time);
 
 template <Type type>
 PhysicalType<type> Deserialize(const std::string &s) {
-    constexpr std::chrono::system_clock::time_point kSinceEpoch{};
+    using SysSeconds = std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>;
+    constexpr SysSeconds kSinceEpoch{};
     using PT = PhysicalType<type>;
     if constexpr (type == Type::Timestamp) {
         auto tp = ParseDatetime(s, true);
-        return PT(std::chrono::duration_cast<std::chrono::milliseconds>(tp - kSinceEpoch).count());
+        auto seconds = std::chrono::duration_cast<std::chrono::seconds>(tp - kSinceEpoch).count();
+        return PT(seconds);
     } else if constexpr (type == Type::Date) {
         auto tp = ParseDatetime(s, false);
-        return PT(std::chrono::duration_cast<std::chrono::days>(tp - kSinceEpoch).count());
+        auto days = std::chrono::duration_cast<std::chrono::days>(tp - kSinceEpoch).count();
+        return PT(days);
     } else if constexpr (std::is_integral_v<PT>) {
         return PT(stoll(s));
     } else if constexpr (type == Type::String) {
@@ -112,7 +126,8 @@ PhysicalType<type> Deserialize(const std::string &s) {
 struct Reader {
     template <typename T>
     T operator()(std::ifstream &file) const {
-        if constexpr (std::is_integral_v<T>) {
+        if constexpr (std::is_integral_v<T> || std::is_same_v<T, Date> ||
+                      std::is_same_v<T, Timestamp>) {
             T value;
             file.read(reinterpret_cast<char *>(&value), sizeof(T));
             return value;
@@ -136,10 +151,13 @@ void Write(const T &value, std::ofstream &file) {
 }
 
 template <>
-inline void Write(const std::string &value, std::ofstream &file) {
-    Write(value.size(), file);
-    file.write(value.data(), value.size());
-}
+void Write(const Date &value, std::ofstream &file);
+
+template <>
+void Write(const Timestamp &value, std::ofstream &file);
+
+template <>
+void Write(const std::string &value, std::ofstream &file);
 
 std::string ToString(const PhysTypeVariant &x);
 

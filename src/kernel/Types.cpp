@@ -1,10 +1,14 @@
 #include "Types.h"
 
+#include <format>
+
 #include "glog/logging.h"
 
 namespace cngn {
 
-std::chrono::system_clock::time_point ParseDatetime(const std::string& s, bool need_time) {
+using SysSeconds = std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>;
+
+SysSeconds ParseDatetime(const std::string &s, bool need_time) {
     std::vector<unsigned> numbers;
     numbers.reserve(6);
 
@@ -32,17 +36,22 @@ std::chrono::system_clock::time_point ParseDatetime(const std::string& s, bool n
     auto time = hours{0} + minutes{0} + seconds{0};
 
     if (need_time) {
-        if (numbers.size() < 6) {
-            DLOG(ERROR) << "Too little datetime string: " << s << std::endl;
-            throw std::runtime_error("Too little datetime string");
+        if (numbers.size() > 3) {
+            time = hours{numbers[3]};
         }
-        time = hours{numbers[3]} + minutes{numbers[4]} + seconds{numbers[5]};
+        if (numbers.size() > 4) {
+            time += minutes{numbers[4]};
+        }
+        if (numbers.size() > 5) {
+            time += seconds{numbers[5]};
+        }
     }
 
-    return sys_days{ymd} + time;
+    SysSeconds ans = sys_days{ymd} + time;
+    return ans;
 }
 
-Type DeserializeType(const std::string& name) {
+Type DeserializeType(const std::string &name) {
     if (name == "int64") {
         return Type::Int64;
     }
@@ -65,14 +74,39 @@ Type DeserializeType(const std::string& name) {
     throw std::runtime_error("Unknown type: " + name);
 }
 
-std::string ToString(const PhysTypeVariant& x) {
+template <>
+void Write(const Date &value, std::ofstream &file) {
+    file.write(reinterpret_cast<const char *>(&value.days), sizeof(value.days));
+}
+
+template <>
+void Write(const Timestamp &value, std::ofstream &file) {
+    file.write(reinterpret_cast<const char *>(&value.seconds), sizeof(value.seconds));
+}
+
+template <>
+void Write(const std::string &value, std::ofstream &file) {
+    Write(value.size(), file);
+    file.write(value.data(), value.size());
+}
+
+std::string ToString(const PhysTypeVariant &x) {
+    using std::chrono::seconds, std::chrono::year, std::chrono::days;
+    using std::chrono::sys_seconds, std::chrono::sys_days;
+
     return std::visit(
-        []<typename T>(const T& value) -> std::string {
+        []<typename T>(const T &value) -> std::string {
             using NowType = std::decay_t<T>;
             if constexpr (std::is_same_v<NowType, PhysicalType<Type::Int64>> ||
                           std::is_same_v<NowType, PhysicalType<Type::Int32>> ||
                           std::is_same_v<NowType, PhysicalType<Type::Int16>>) {
                 return std::to_string(value);
+            } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::Date>>) {
+                auto current_date = sys_days{} + days{value.days};
+                return std::format("{:%Y-%m-%d}", current_date);
+            } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::Timestamp>>) {
+                auto current_time = sys_seconds{} + seconds{value.seconds};
+                return std::format("{:%Y-%m-%d %H:%M:%S}", current_time);
             } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::String>>) {
                 return value;
             } else {

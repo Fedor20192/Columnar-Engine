@@ -143,21 +143,20 @@ struct Reader {
 };
 
 template <typename T>
-void Write(const T &value, std::ofstream &file);
-
-template <std::integral T>
+requires std::integral<T> || std::is_same_v<T, Date> || std::is_same_v<T, Timestamp>
 void Write(const T &value, std::ofstream &file) {
     file.write(reinterpret_cast<const char *>(&value), sizeof(value));
 }
 
-template <>
-void Write(const Date &value, std::ofstream &file);
-
-template <>
-void Write(const Timestamp &value, std::ofstream &file);
-
-template <>
 void Write(const std::string &value, std::ofstream &file);
+
+template <typename T>
+requires std::integral<T> || std::is_same_v<T, Date> || std::is_same_v<T, Timestamp>
+void Write(const std::vector<T> &value, std::ofstream &file) {
+    file.write(reinterpret_cast<const char *>(value.data()), sizeof(T) * value.size());
+}
+
+void Write(const std::vector<std::string> &value, std::ofstream &file);
 
 std::string ToString(const PhysTypeVariant &x);
 

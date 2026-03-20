@@ -74,20 +74,15 @@ Type DeserializeType(const std::string &name) {
     throw std::runtime_error("Unknown type: " + name);
 }
 
-template <>
-void Write(const Date &value, std::ofstream &file) {
-    file.write(reinterpret_cast<const char *>(&value.days), sizeof(value.days));
-}
-
-template <>
-void Write(const Timestamp &value, std::ofstream &file) {
-    file.write(reinterpret_cast<const char *>(&value.seconds), sizeof(value.seconds));
-}
-
-template <>
 void Write(const std::string &value, std::ofstream &file) {
     Write(value.size(), file);
     file.write(value.data(), value.size());
+}
+
+void Write(const std::vector<std::string> &value, std::ofstream &file) {
+    for (const auto &str : value) {
+        Write(str, file);
+    }
 }
 
 std::string ToString(const PhysTypeVariant &x) {

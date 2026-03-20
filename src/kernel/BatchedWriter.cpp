@@ -21,9 +21,7 @@ void BatchedWriter::WriteBatch(const Batch& batch) {
 
     size_t now_offset{};
     for (size_t column_index = 0; column_index < batch.ColumnCount(); ++column_index) {
-        for (size_t row_index = 0; row_index < row_cnt; ++row_index) {
-            now_offset = WriteElem(batch[column_index][row_index]);
-        }
+        now_offset = WriteElem(batch[column_index].GetData());
     }
     metadata_.AddBatch(now_offset, batch.ColumnCount(), row_cnt);
 }
@@ -44,6 +42,11 @@ void BatchedWriter::Flush() {
 }
 
 size_t BatchedWriter::WriteElem(const PhysTypeVariant& value) {
+    std::visit([this](const auto& to_print) { Write(to_print, file_); }, value);
+    return file_.tellp();
+}
+
+size_t BatchedWriter::WriteElem(const ArrayTypeVariant& value) {
     std::visit([this](const auto& to_print) { Write(to_print, file_); }, value);
     return file_.tellp();
 }

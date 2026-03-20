@@ -28,11 +28,11 @@ std::optional<Batch> BatchedReader::ReadBatch(size_t num_of_batch) {
     for (int64_t column_index = 0; column_index < columns_cnt; column_index++) {
         Type column_type = metadata_.GetSchema()[column_index].column_type;
 
-        auto read_column = [this]<Type type>(int64_t rows_cnt) {
+        auto read_column = [this]<Type type>(int64_t cnt) {
             ArrayType<type> array;
-            array.reserve(rows_cnt);
+            array.reserve(cnt);
 
-            for (int64_t i = 0; i < rows_cnt; i++) {
+            for (int64_t i = 0; i < cnt; i++) {
                 array.emplace_back(Reader().operator()<PhysicalType<type>>(file_));
             }
             return Column(std::move(array));

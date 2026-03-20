@@ -19,6 +19,7 @@ public:
 
 private:
     size_t WriteElem(const PhysTypeVariant& value);
+    size_t WriteElem(const ArrayTypeVariant& value);
 
     std::ofstream file_;
     Metadata metadata_;

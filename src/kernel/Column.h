@@ -32,6 +32,10 @@ public:
 
     bool operator==(const Column&) const = default;
 
+    const ArrayTypeVariant& GetData() const {
+        return array_;
+    }
+
 private:
     ArrayTypeVariant array_;
 };

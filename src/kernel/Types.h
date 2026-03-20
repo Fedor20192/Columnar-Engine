@@ -141,6 +141,8 @@ inline void Write(const std::string &value, std::ofstream &file) {
     file.write(value.data(), value.size());
 }
 
+std::string ToString(const PhysTypeVariant &x);
+
 template <typename Callable, typename... Args>
 auto DispatchOnType(Type type, Callable &&f, Args &&...args) {
     switch (type) {

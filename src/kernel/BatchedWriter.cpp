@@ -33,8 +33,7 @@ void BatchedWriter::WriteMetadata() {
 
     std::vector<PhysTypeVariant> serialized_metadata = metadata_.Serialize();
     for (size_t i = 0; i < serialized_metadata.size(); ++i) {
-        std::visit([this](const auto& value) { WriteElem(ValuePad(value)); },
-                   serialized_metadata[i]);
+        WriteElem(serialized_metadata[i]);
     }
 
     DLOG(INFO) << "Finished writing metadata" << std::endl;
@@ -44,8 +43,8 @@ void BatchedWriter::Flush() {
     file_.flush();
 }
 
-size_t BatchedWriter::WriteElem(const ValuePad& value) {
-    std::visit([this](const auto& to_print) { Write(to_print, file_); }, value.GetValue());
+size_t BatchedWriter::WriteElem(const PhysTypeVariant& value) {
+    std::visit([this](const auto& to_print) { Write(to_print, file_); }, value);
     return file_.tellp();
 }
 

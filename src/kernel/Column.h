@@ -3,7 +3,6 @@
 #include <variant>
 
 #include "Types.h"
-#include "ValuePad.h"
 
 namespace cngn {
 class Column {
@@ -25,9 +24,9 @@ public:
         return std::visit([](const auto& arr) { return arr.size(); }, array_);
     }
 
-    ValuePad operator[](size_t index) const {
+    PhysTypeVariant operator[](size_t index) const {
         return std::visit([index](const auto& value) {
-            return ValuePad(value[index]);
+            return PhysTypeVariant(value[index]);
         }, array_);
     }
 

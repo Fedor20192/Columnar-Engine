@@ -86,43 +86,19 @@ struct SerializeType {
     }
 };
 
-inline Type DeserializeType(const std::string &name) {
-    if (name == "int64") {
-        return Type::Int64;
-    }
-    if (name == "int32") {
-        return Type::Int32;
-    }
-    if (name == "int16") {
-        return Type::Int16;
-    }
-    if (name == "string") {
-        return Type::String;
-    }
-    if (name == "timestamp") {
-        return Type::Timestamp;
-    }
-    if (name == "date") {
-        return Type::Date;
-    }
+Type DeserializeType(const std::string &name);
 
-    throw std::runtime_error("Unknown type: " + name);
-}
+std::chrono::system_clock::time_point ParseDatetime(const std::string &s, bool need_time);
 
 template <Type type>
 PhysicalType<type> Deserialize(const std::string &s) {
-    // "2013-07-09 06:36:26","2013-07-09" --- timestamp/data example
     constexpr std::chrono::system_clock::time_point kSinceEpoch{};
     using PT = PhysicalType<type>;
     if constexpr (type == Type::Timestamp) {
-        std::stringstream ss{s};
-        std::chrono::system_clock::time_point tp;
-        ss >> std::chrono::parse("%F %T", tp);
+        auto tp = ParseDatetime(s, true);
         return PT(std::chrono::duration_cast<std::chrono::milliseconds>(tp - kSinceEpoch).count());
     } else if constexpr (type == Type::Date) {
-        std::stringstream ss{s};
-        std::chrono::system_clock::time_point tp;
-        ss >> std::chrono::parse("%F", tp);
+        auto tp = ParseDatetime(s, false);
         return PT(std::chrono::duration_cast<std::chrono::days>(tp - kSinceEpoch).count());
     } else if constexpr (std::is_integral_v<PT>) {
         return PT(stoll(s));

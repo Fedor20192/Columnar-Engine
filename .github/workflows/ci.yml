@@ -17,11 +17,20 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential ninja-build cmake clang-tidy g++-14
       - name: Configure cmake
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -G Ninja
-      - name: Build
-        run: cmake --build build
-      - name: Run tests
         run: |
-          mkdir -p build/test-results
-          cd build
+          cmake -S . -B build_debug -DCMAKE_BUILD_TYPE=Debug -G Ninja
+          cmake -S . -B build_release -DCMAKE_BUILD_TYPE=Release -G Ninja
+      - name: Build
+        run: |
+          cmake --build build_debug
+          cmake --build build_release
+      - name: Run tests debug
+        run: |
+          mkdir -p build_debug/test-results
+          cd build_debug
+          ctest --output-on-failure
+      - name: Run tests release
+        run: |
+          mkdir -p build_release/test-results
+          cd build_release
           ctest --output-on-failure

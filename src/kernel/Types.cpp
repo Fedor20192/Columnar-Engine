@@ -79,7 +79,11 @@ std::string ToString(const PhysTypeVariant& x) {
                 throw std::invalid_argument("Unknown type");
             }
         },
+<<<<<<< HEAD
         x);
+=======
+        value);
+>>>>>>> 86056a80c648854e37d8e1097aa755507c5e1686
 }
 
 }  // namespace cngn

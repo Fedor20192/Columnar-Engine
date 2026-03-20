@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(ColumnarEngine)
+project(ColumnarEngine CXX)
 
 include(cmake/compile_options.cmake)
 include(cmake/dependencies.cmake)

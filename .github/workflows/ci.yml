@@ -15,7 +15,7 @@ jobs:
       - name: Install required packages
         run: |
           sudo apt update
-          sudo apt install -y build-essential ninja-build cmake clang-tidy
+          sudo apt install -y build-essential ninja-build cmake clang-tidy g++-14
       - name: Configure cmake
         run: |
           cmake -S . -B build_debug -DCMAKE_BUILD_TYPE=Debug -G Ninja

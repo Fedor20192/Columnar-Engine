@@ -18,11 +18,13 @@ Schema Schema::ReadFromCsv(const std::string& file_name) {
     auto rows = reader.ReadAllLines();
     std::vector<ColumnData> data;
     data.reserve(rows.size());
-    for (auto& row : rows) {
+    for (size_t i = 0; i < rows.size(); i++) {
+        const auto& row = rows[i];
         if (row.size() != 2) {
-            DLOG(FATAL) << "Wrong number of rows in file: " << file_name << '\n'
-                        << "Rows count: " << rows.size() << std::endl;
-            throw std::runtime_error("Wrong number of rows in file: " + file_name);
+            DLOG(FATAL) << "Wrong number of columns in file: " << file_name << '\n'
+                        << "Columns count: " << row.size() << '\n'
+                        << "Line number " << i << std::endl;
+            throw std::runtime_error("Wrong number of columns in file: " + file_name);
         }
 
         data.emplace_back(row[0], DeserializeType(row[1]));

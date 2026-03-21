@@ -49,12 +49,12 @@ Batch::Batch(const std::vector<Row>& rows, const Schema& schema)
                                 << " != " << rows[row_index].size() << std::endl;
                     throw std::invalid_argument("Batch column index mismatch");
                 }
-                arr.push_back(Deserialize<type>(rows[row_index][column_index]));
+                arr.emplace_back(Deserialize<type>(rows[row_index][column_index]));
             }
             return Column(arr);
         };
 
-        columns_.push_back(DispatchOnType(schema[column_index].column_type, get_column));
+        columns_.emplace_back(DispatchOnType(schema[column_index].column_type, get_column));
     }
 }
 
@@ -95,7 +95,7 @@ std::vector<Batch::Row> Batch::Serialize() const {
 
     for (size_t column_index = 0; column_index < columns_.size(); ++column_index) {
         for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-            result[row_index].push_back(columns_[column_index][row_index].ToString());
+            result[row_index].push_back(ToString(columns_[column_index][row_index]));
         }
     }
 

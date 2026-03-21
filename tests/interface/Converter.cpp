@@ -9,9 +9,9 @@ TEST_CASE_METHOD(GlogFixture, "Converter Cross Validation", "[Converter]") {
 
     std::vector<std::string> schema_data{
         R"(a,int64)",
-        R"(b,int64)",
+        R"(b,int32)",
         R"(name123,string)",
-        R"(d,int64)",
+        R"(d,int16)",
     };
     StringCSVConverter().StringsToCsv(scheme_filename, schema_data);
 
@@ -124,17 +124,17 @@ TEST_CASE_METHOD(GlogFixture, "Converter Single Column String", "[Converter]") {
 TEST_CASE_METHOD(GlogFixture, "Converter Mixed Types", "[Converter]") {
     std::string scheme_filename("mixed_schema.csv"), data_filename("mixed_data.csv");
 
-    std::vector<std::string> schema_data{
-        R"(id,int64)", R"(name,string)", R"(age,int64)", R"(city,string)", R"(salary,int64)",
-    };
+    std::vector<std::string> schema_data{R"(id,int32)",     R"(name,string)",
+                                         R"(age,int64)",    R"(city,string)",
+                                         R"(salary,int32)", R"(birthday,timestamp)"};
     StringCSVConverter().StringsToCsv(scheme_filename, schema_data);
 
     std::vector<std::string> data{
-        R"(1,John,25,New York,50000)",
-        R"(2,Jane,30,London,60000)",
-        R"(3,Bob,35,"""Paris, France""",70000)",
-        R"(4,Alice,28,Tokyo,55000)",
-        R"(5,Charlie,40,"""San Francisco, CA""",80000)",
+        R"(1,John,25,New York,50000,"1972-01-01 18:46:17")",
+        R"(2,Jane,30,London,60000,"1971-02-01 18:46:18")",
+        R"(3,Bob,35,"""Paris, France""",70000,"1979-01-01 18:46:17")",
+        R"(4,Alice,28,Tokyo,55000,"2971-01-01 18:46:17")",
+        R"(5,Charlie,40,"""San Francisco, CA""",80000,"3971-01-01 18:47:17")",
     };
     StringCSVConverter().StringsToCsv(data_filename, data);
 
@@ -147,12 +147,12 @@ TEST_CASE_METHOD(GlogFixture, "Converter Mixed Types", "[Converter]") {
     cngn::CsvReader reader(new_csv_filename);
     auto result = reader.ReadAllLines();
     REQUIRE(result.size() == data.size());
-    REQUIRE(result[0] == cngn::CsvReader::Row{"1", "John", "25", "New York", "50000"});
-    REQUIRE(result[1] == cngn::CsvReader::Row{"2", "Jane", "30", "London", "60000"});
-    REQUIRE(result[2] == cngn::CsvReader::Row{"3", "Bob", "35", "\"Paris, France\"", "70000"});
-    REQUIRE(result[3] == cngn::CsvReader::Row{"4", "Alice", "28", "Tokyo", "55000"});
+    REQUIRE(result[0] == cngn::CsvReader::Row{"1", "John", "25", "New York", "50000", "1972-01-01 18:46:17"});
+    REQUIRE(result[1] == cngn::CsvReader::Row{"2", "Jane", "30", "London", "60000", "1971-02-01 18:46:18"});
+    REQUIRE(result[2] == cngn::CsvReader::Row{"3", "Bob", "35", "\"Paris, France\"", "70000", "1979-01-01 18:46:17"});
+    REQUIRE(result[3] == cngn::CsvReader::Row{"4", "Alice", "28", "Tokyo", "55000", "2971-01-01 18:46:17"});
     REQUIRE(result[4] ==
-            cngn::CsvReader::Row{"5", "Charlie", "40", "\"San Francisco, CA\"", "80000"});
+            cngn::CsvReader::Row{"5", "Charlie", "40", "\"San Francisco, CA\"", "80000", "3971-01-01 18:47:17"});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Converter All String Columns", "[Converter]") {
@@ -263,7 +263,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Many Rows", "[Converter]") {
     std::string scheme_filename("many_rows_schema.csv"), data_filename("many_rows_data.csv");
 
     std::vector<std::string> schema_data{
-        R"(index,int64)",
+        R"(index,int16)",
         R"(value,string)",
     };
     StringCSVConverter().StringsToCsv(scheme_filename, schema_data);

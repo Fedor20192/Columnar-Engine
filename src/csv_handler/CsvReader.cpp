@@ -125,7 +125,7 @@ std::optional<CsvReader::Row> CsvReader::ReadLine() {
     return state.row;
 }
 
-void CsvReader::FieldHandler(char c, LineState& line_state) {
+void CsvReader::FieldHandler(int c, LineState& line_state) {
     LineState::FieldState& field_state = line_state.field;
     if (c == Parameters::kQuote) {
         if (field_state.data.empty() && !field_state.is_quote_open) {

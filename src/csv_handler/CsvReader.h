@@ -76,6 +76,6 @@ private:
 
     Buffer buffer_;
 
-    void FieldHandler(char c, LineState& line_state);
+    void FieldHandler(int c, LineState& line_state);
 };
 }  // namespace cngn

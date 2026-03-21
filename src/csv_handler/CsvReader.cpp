@@ -28,12 +28,12 @@ std::optional<CsvReader::Row> CsvReader::ReadLine() {
     LineState state;
 
     while (!state.need_break && state.is_valid) {
-        char c = file_.get();
+        int c = file_.get();
+        FieldHandler(c, state);
         if (c == EOF) {
             break;
         }
         state.has_read = true;
-        FieldHandler(c, state);
     }
 
     if (!state.has_read) {
@@ -63,7 +63,7 @@ void CsvReader::FieldHandler(char c, LineState& line_state) {
         }
     } else if (field_state.is_quote_open && !field_state.is_quote_close) {
         field_state.data += c;
-    } else if (c == parameters_.delimiter || c == parameters_.linebreak) {
+    } else if (c == parameters_.delimiter || c == parameters_.linebreak || c == EOF) {
         line_state.row.push_back(field_state.data);
         field_state = LineState::FieldState{};
         if (c == parameters_.linebreak) {

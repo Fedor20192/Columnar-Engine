@@ -25,7 +25,7 @@ struct Date {
 
 struct Timestamp {
     uint64_t seconds;
-    bool operator==(const Timestamp&) const = default;
+    bool operator==(const Timestamp &) const = default;
 };
 
 template <Type>
@@ -115,7 +115,9 @@ PhysicalType<type> Deserialize(const std::string &s) {
         auto days = std::chrono::duration_cast<std::chrono::days>(tp - kSinceEpoch).count();
         return PT(days);
     } else if constexpr (std::is_integral_v<PT>) {
-        return PT(stoll(s));
+        int64_t val;
+        std::from_chars(s.data(), s.data() + s.size(), val);
+        return PT(val);
     } else if constexpr (type == Type::String) {
         return s;
     } else {
@@ -143,7 +145,7 @@ struct Reader {
 };
 
 template <typename T>
-requires std::integral<T> || std::is_same_v<T, Date> || std::is_same_v<T, Timestamp>
+    requires std::integral<T> || std::is_same_v<T, Date> || std::is_same_v<T, Timestamp>
 void Write(const T &value, std::ofstream &file) {
     file.write(reinterpret_cast<const char *>(&value), sizeof(value));
 }
@@ -151,7 +153,7 @@ void Write(const T &value, std::ofstream &file) {
 void Write(const std::string &value, std::ofstream &file);
 
 template <typename T>
-requires std::integral<T> || std::is_same_v<T, Date> || std::is_same_v<T, Timestamp>
+    requires std::integral<T> || std::is_same_v<T, Date> || std::is_same_v<T, Timestamp>
 void Write(const std::vector<T> &value, std::ofstream &file) {
     file.write(reinterpret_cast<const char *>(value.data()), sizeof(T) * value.size());
 }

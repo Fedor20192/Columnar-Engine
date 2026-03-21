@@ -50,7 +50,7 @@ Batch::Batch(const std::vector<Row>& rows, const Schema& schema) : schema_(schem
                 }
                 arr.emplace_back(Deserialize<type>(rows[row_index][column_index]));
             }
-            return Column(arr);
+            return Column(std::move(arr));
         };
 
         columns_.emplace_back(DispatchOnType(schema[column_index].column_type, get_column));

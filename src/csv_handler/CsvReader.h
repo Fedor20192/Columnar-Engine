@@ -1,9 +1,10 @@
 #pragma once
 
+#include <array>
 #include <fstream>
 #include <optional>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace cngn {
 class CsvReader {
@@ -31,7 +32,6 @@ public:
 
 private:
     Parameters parameters_;
-    std::ifstream file_;
 
     struct LineState {
         LineState() {
@@ -51,6 +51,23 @@ private:
         };
         FieldState field{};
     };
+
+    class Buffer {
+    public:
+        explicit Buffer(const std::string& filename);
+        int GetChar();
+        int Peek();
+    private:
+        static constexpr size_t kBufCp = 1024 * 1024 + 64;
+        std::ifstream file_;
+
+        std::array<char, kBufCp> buffer_;
+        size_t buffer_pos_ = 0, buffer_sz_ = 0;
+
+        void Update();
+    };
+
+    Buffer buffer_;
 
     void FieldHandler(char c, LineState& line_state);
 };

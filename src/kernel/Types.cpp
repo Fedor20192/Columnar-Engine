@@ -80,9 +80,22 @@ void Write(const std::string &value, std::ofstream &file) {
 }
 
 void Write(const std::vector<std::string> &value, std::ofstream &file) {
+    size_t buffer_size = value.size() * sizeof(size_t);
     for (const auto &str : value) {
-        Write(str, file);
+        buffer_size += str.size() * sizeof(char);
     }
+
+    std::vector<char> buffer;
+    buffer.reserve(buffer_size);
+
+    for (const auto &str : value) {
+        size_t str_size = str.size();
+        auto bytes = reinterpret_cast<const char *>(&str_size);
+        buffer.insert(buffer.end(), bytes, bytes + sizeof(size_t));
+        buffer.insert(buffer.end(), str.begin(), str.end());  // todo: поменять на memcpy
+    }
+
+    file.write(buffer.data(), buffer_size);
 }
 
 std::string ToString(const PhysTypeVariant &x) {

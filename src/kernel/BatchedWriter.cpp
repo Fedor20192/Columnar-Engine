@@ -6,14 +6,14 @@ namespace cngn {
 BatchedWriter::BatchedWriter(const std::string& filename, const Schema& schema)
     : file_(filename, std::ios::binary), metadata_(schema) {
     if (!file_.is_open()) {
-        DLOG(FATAL) << "Batched writer cannot open file " << filename << std::endl;
+        DLOG(FATAL) << "Batched writer cannot open file " << filename << '\n';
         throw std::runtime_error("Cannot open file " + filename + ".");
     }
 }
 
 void BatchedWriter::WriteBatch(const Batch& batch) {
     if (batch.Empty()) {
-        DLOG(ERROR) << "Trying to write empty batch" << std::endl;
+        DLOG(ERROR) << "Trying to write empty batch" << '\n';
         return;
     }
 
@@ -27,14 +27,14 @@ void BatchedWriter::WriteBatch(const Batch& batch) {
 }
 
 void BatchedWriter::WriteMetadata() {
-    DLOG(INFO) << "Start writing metadata" << std::endl;
+    DLOG(INFO) << "Start writing metadata" << '\n';
 
     std::vector<PhysTypeVariant> serialized_metadata = metadata_.Serialize();
     for (size_t i = 0; i < serialized_metadata.size(); ++i) {
         WriteElem(serialized_metadata[i]);
     }
 
-    DLOG(INFO) << "Finished writing metadata" << std::endl;
+    DLOG(INFO) << "Finished writing metadata" << '\n';
 }
 
 void BatchedWriter::Flush() {

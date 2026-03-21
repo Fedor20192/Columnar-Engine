@@ -6,20 +6,20 @@ namespace cngn {
 CsvReader::CsvReader(const std::string& filename, Parameters params)
     : parameters_(params), file_(filename) {
     if (!file_.is_open()) {
-        DLOG(FATAL) << "Error opening file " << filename << std::endl;
+        DLOG(FATAL) << "Error opening file " << filename << '\n';
         throw std::runtime_error("Error opening file");
     }
 
     if (parameters_.delimiter == parameters_.quote) {
-        DLOG(FATAL) << "Delimiter and quote symbols are equal" << std::endl;
+        DLOG(FATAL) << "Delimiter and quote symbols are equal" << '\n';
         throw std::runtime_error("Delimiter and quote symbols are equal");
     }
     if (parameters_.delimiter == parameters_.linebreak) {
-        DLOG(FATAL) << "Delimiter and linebreak symbols are equal" << std::endl;
+        DLOG(FATAL) << "Delimiter and linebreak symbols are equal" << '\n';
         throw std::runtime_error("Delimiter and linebreak symbols are equal");
     }
     if (parameters_.quote == parameters_.linebreak) {
-        DLOG(FATAL) << "Quote and linebreak symbols are equal" << std::endl;
+        DLOG(FATAL) << "Quote and linebreak symbols are equal" << '\n';
         throw std::runtime_error("Quote and linebreak symbols are equal");
     }
 }
@@ -58,7 +58,7 @@ void CsvReader::FieldHandler(char c, LineState& line_state) {
         } else if (field_state.is_quote_open) {
             field_state.is_quote_close = true;
         } else {
-            DLOG(ERROR) << "Bad quote in field" << std::endl;
+            DLOG(ERROR) << "Bad quote in field" << '\n';
             line_state.is_valid = false;
         }
     } else if (field_state.is_quote_open && !field_state.is_quote_close) {
@@ -72,7 +72,7 @@ void CsvReader::FieldHandler(char c, LineState& line_state) {
     } else if (!field_state.is_quote_open) {
         field_state.data += c;
     } else {
-        DLOG(ERROR) << "Bad symbol" << std::endl;
+        DLOG(ERROR) << "Bad symbol" << '\n';
         line_state.is_valid = false;
     }
 }

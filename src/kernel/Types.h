@@ -115,8 +115,13 @@ PhysicalType<type> Deserialize(const std::string &s) {
         auto days = std::chrono::duration_cast<std::chrono::days>(tp - kSinceEpoch).count();
         return PT(days);
     } else if constexpr (std::is_integral_v<PT>) {
-        int64_t val;
-        std::from_chars(s.data(), s.data() + s.size(), val);
+        int64_t val = 0;
+        for (size_t pos = s[0] == '-'; pos < s.size(); ++pos) {
+            val = val * 10 + s[pos] - '0';
+        }
+        if (s[0] == '-') {
+            val *= -1;
+        }
         return PT(val);
     } else if constexpr (type == Type::String) {
         return s;

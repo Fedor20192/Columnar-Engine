@@ -7,17 +7,17 @@
 namespace cngn {
 class Column {
 public:
-    explicit Column(ArrayType<Type::Int64> array) : array_(std::move(array)) {
+    explicit Column(ArrayType<Type::Int64>&& array) noexcept : array_(std::move(array)) {
     }
-    explicit Column(ArrayType<Type::Int32> array) : array_(std::move(array)) {
+    explicit Column(ArrayType<Type::Int32>&& array) noexcept : array_(std::move(array)) {
     }
-    explicit Column(ArrayType<Type::Int16> array) : array_(std::move(array)) {
+    explicit Column(ArrayType<Type::Int16>&& array) noexcept : array_(std::move(array)) {
     }
-    explicit Column(ArrayType<Type::String> array) : array_(std::move(array)) {
+    explicit Column(ArrayType<Type::String>&& array) noexcept : array_(std::move(array)) {
     }
-    explicit Column(ArrayType<Type::Date> array) : array_(std::move(array)) {
+    explicit Column(ArrayType<Type::Date>&& array) noexcept : array_(std::move(array)) {
     }
-    explicit Column(ArrayType<Type::Timestamp> array) : array_(std::move(array)) {
+    explicit Column(ArrayType<Type::Timestamp>&& array) noexcept : array_(std::move(array)) {
     }
 
     size_t Size() const {
@@ -25,9 +25,8 @@ public:
     }
 
     PhysTypeVariant operator[](size_t index) const {
-        return std::visit([index](const auto& value) {
-            return PhysTypeVariant(value[index]);
-        }, array_);
+        return std::visit([index](const auto& value) { return PhysTypeVariant(value[index]); },
+                          array_);
     }
 
     bool operator==(const Column&) const = default;

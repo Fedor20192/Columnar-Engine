@@ -1,9 +1,10 @@
 #pragma once
 
+#include <array>
 #include <fstream>
 #include <optional>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace cngn {
 class CsvReader {
@@ -12,12 +13,12 @@ public:
         Parameters() {
         }
 
-        char delimiter = ',';
-        char quote = '"';
-        char linebreak = '\n';
+        static constexpr char kDelimiter = ',';
+        static constexpr char kQuote = '"';
+        static constexpr char kLinebreak = '\n';
     };
 
-    explicit CsvReader(const std::string& filename, Parameters params = Parameters{});
+    explicit CsvReader(const std::string& filename);
 
     CsvReader(const CsvReader&) = delete;
     CsvReader& operator=(const CsvReader&) = delete;
@@ -30,8 +31,6 @@ public:
     std::vector<Row> ReadAllLines();
 
 private:
-    Parameters parameters_;
-    std::ifstream file_;
 
     struct LineState {
         LineState() {
@@ -48,10 +47,35 @@ private:
             bool is_quote_open = false;
             bool is_quote_close = false;
             std::string data{};
+
+            void Reset();
         };
         FieldState field{};
     };
 
-    void FieldHandler(char c, LineState& line_state);
+    class Buffer {
+    public:
+        explicit Buffer(const std::string& filename);
+        int GetChar();
+        int Peek();
+        std::string_view FindSymb(char symb);
+        std::string_view FindDels() const;
+        void UpdatePos(size_t plus);
+        size_t GetSize() const;
+        size_t GetPos() const;
+    private:
+        static constexpr size_t kBufCp = 1024 * 1024 + 64;
+        std::ifstream file_;
+
+        std::array<char, kBufCp> buffer_;
+        size_t buffer_pos_ = 0, buffer_sz_ = 0;
+
+        void Update();
+        friend Parameters;
+    };
+
+    Buffer buffer_;
+
+    void FieldHandler(int c, LineState& line_state);
 };
 }  // namespace cngn

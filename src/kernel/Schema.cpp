@@ -23,7 +23,7 @@ Schema Schema::ReadFromCsv(const std::string& file_name) {
         if (row.size() != 2) {
             DLOG(FATAL) << "Wrong number of columns in file: " << file_name << '\n'
                         << "Columns count: " << row.size() << '\n'
-                        << "Line number " << i << std::endl;
+                        << "Line number " << i << '\n';
             throw std::runtime_error("Wrong number of columns in file: " + file_name);
         }
 

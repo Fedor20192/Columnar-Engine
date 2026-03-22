@@ -9,25 +9,25 @@ namespace cngn {
 using SysSeconds = std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>;
 
 SysSeconds ParseDatetime(const std::string &s, bool need_time) {
-    std::vector<unsigned> numbers;
-    numbers.reserve(6);
+    unsigned numbers[6];
 
-    std::string now;
+    unsigned now = 0;
+    size_t pos = 0;
     for (char c : s) {
         if (c == ' ' || c == ':' || c == '-') {
-            numbers.push_back(std::stoull(now));
-            now.clear();
+            numbers[pos++] = now;
+            now = 0;
         } else {
-            now += c;
+            now = now * 10 + c - '0';
         }
     }
-    numbers.push_back(std::stoull(now));
+    numbers[pos++] = now;
 
     using std::chrono::hours, std::chrono::minutes, std::chrono::seconds;
     using std::chrono::year, std::chrono::month, std::chrono::day;
     using std::chrono::year_month_day, std::chrono::sys_days;
 
-    if (numbers.size() < 3) {
+    if (pos < 3) {
         DLOG(ERROR) << "Too little date string: " << s << std::endl;
         throw std::runtime_error("Too little date string");
     }
@@ -36,13 +36,13 @@ SysSeconds ParseDatetime(const std::string &s, bool need_time) {
     auto time = hours{0} + minutes{0} + seconds{0};
 
     if (need_time) {
-        if (numbers.size() > 3) {
+        if (pos > 3) {
             time = hours{numbers[3]};
         }
-        if (numbers.size() > 4) {
+        if (pos > 4) {
             time += minutes{numbers[4]};
         }
-        if (numbers.size() > 5) {
+        if (pos > 5) {
             time += seconds{numbers[5]};
         }
     }

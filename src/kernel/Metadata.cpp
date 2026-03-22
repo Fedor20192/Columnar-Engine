@@ -40,7 +40,7 @@ void Metadata::AddBatch(size_t offset, size_t columns, size_t rows) {
                   "Offset: "
                << now_offset_ << '\n'
                << "Columns count: " << columns << '\n'
-               << "Rows count: " << rows << std::endl;
+               << "Rows count: " << rows << '\n';
 }
 
 int64_t Metadata::GetNowOffset() const {

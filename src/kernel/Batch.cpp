@@ -10,21 +10,20 @@ Batch::Batch(const Schema& schema) : schema_(schema) {
 Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
     : columns_(columns), schema_(schema) {
     if (columns.size() != schema.GetData().size()) {
-        DLOG(FATAL) << "You are trying to make batch with wrong schema" << std::endl;
+        DLOG(FATAL) << "You are trying to make batch with wrong schema" << '\n';
         throw std::invalid_argument("Wrong number of batch columns");
     }
 
     for (size_t i = 1; i < columns_.size(); ++i) {
         if (columns_[0].Size() != columns_[i].Size()) {
             DLOG(FATAL) << "Batch column size mismatch: " << columns_[0].Size()
-                        << " != " << columns_[i].Size() << std::endl;
+                        << " != " << columns_[i].Size() << '\n';
             throw std::invalid_argument("Batch column size mismatch");
         }
     }
 }
 
-Batch::Batch(const std::vector<Row>& rows, const Schema& schema)
-    : schema_(schema) {
+Batch::Batch(const std::vector<Row>& rows, const Schema& schema) : schema_(schema) {
     if (rows.empty()) {
         return;
     }
@@ -32,8 +31,8 @@ Batch::Batch(const std::vector<Row>& rows, const Schema& schema)
     const size_t rows_count = rows.size(), columns_count = rows[0].size();
 
     if (columns_count > schema.GetColumnsCount()) {
-        DLOG(FATAL) << "Columns count mismatch: " << columns_count
-                    << " > " << schema.GetColumnsCount() << std::endl;
+        DLOG(FATAL) << "Columns count mismatch: " << columns_count << " > "
+                    << schema.GetColumnsCount() << '\n';
         throw std::invalid_argument("Batch num_of_batch mismatch");
     }
 
@@ -46,12 +45,12 @@ Batch::Batch(const std::vector<Row>& rows, const Schema& schema)
             for (size_t row_index = 0; row_index < rows_count; ++row_index) {
                 if (column_index >= rows[row_index].size()) {
                     DLOG(FATAL) << "Batch column index mismatch: " << column_index
-                                << " != " << rows[row_index].size() << std::endl;
+                                << " != " << rows[row_index].size() << '\n';
                     throw std::invalid_argument("Batch column index mismatch");
                 }
                 arr.emplace_back(Deserialize<type>(rows[row_index][column_index]));
             }
-            return Column(arr);
+            return Column(std::move(arr));
         };
 
         columns_.emplace_back(DispatchOnType(schema[column_index].column_type, get_column));
@@ -73,7 +72,7 @@ const Column& Batch::operator[](size_t index) const {
 void Batch::AddColumn(Column&& column) {
     if (!Empty() && column.Size() != columns_[0].Size()) {
         DLOG(ERROR) << "Bad column size: " << columns_[0].Size() << "!=" << column.Size()
-                    << std::endl;
+                    << '\n';
         throw std::invalid_argument("Wrong number of batch columns");
     }
 

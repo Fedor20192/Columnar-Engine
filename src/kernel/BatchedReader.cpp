@@ -5,7 +5,7 @@
 namespace cngn {
 BatchedReader::BatchedReader(const std::string &filename) : file_(filename, std::ios::binary) {
     if (!file_.is_open()) {
-        DLOG(FATAL) << "Batched reader cannot open file " << filename << std::endl;
+        DLOG(FATAL) << "Batched reader cannot open file " << filename << '\n';
         throw std::runtime_error("Cannot open file " + filename + ".");
     }
     metadata_ = Metadata(ReadMetadata(file_));
@@ -14,7 +14,7 @@ BatchedReader::BatchedReader(const std::string &filename) : file_(filename, std:
 std::optional<Batch> BatchedReader::ReadBatch(size_t num_of_batch) {
     if (num_of_batch >= metadata_.GetBatchCnt()) {
         DLOG(ERROR) << "ReadBatch num_of_batch=" << num_of_batch << " > " << metadata_.GetBatchCnt()
-                    << std::endl;
+                    << '\n';
         return std::nullopt;
     }
 

@@ -27,7 +27,7 @@ Schema Schema::ReadFromCsv(const std::string& file_name) {
             throw std::runtime_error("Wrong number of columns in file: " + file_name);
         }
 
-        data.emplace_back(row[0], DeserializeType(row[1]));
+        data.emplace_back(std::move(row[0]), DeserializeType(row[1]));
     }
 
     return Schema(data);
@@ -53,8 +53,8 @@ std::vector<PhysTypeVariant> Schema::Serialize() const {
     result.push_back(static_cast<int64_t>(schema_.size()));
 
     for (size_t i = 0; i < schema_.size(); i++) {
-        result.push_back(schema_[i].column_name);
-        result.push_back(DispatchOnType(schema_[i].column_type, SerializeType()));
+        result.emplace_back(schema_[i].column_name);
+        result.emplace_back(DispatchOnType(schema_[i].column_type, SerializeType()));
     }
 
     return result;

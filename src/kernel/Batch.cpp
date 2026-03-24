@@ -76,7 +76,7 @@ void Batch::AddColumn(Column&& column) {
         throw std::invalid_argument("Wrong number of batch columns");
     }
 
-    columns_.push_back(std::move(column));
+    columns_.emplace_back(std::move(column));
 }
 
 std::vector<Batch::Row> Batch::Serialize() const {
@@ -94,7 +94,7 @@ std::vector<Batch::Row> Batch::Serialize() const {
 
     for (size_t column_index = 0; column_index < columns_.size(); ++column_index) {
         for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-            result[row_index].push_back(ToString(columns_[column_index][row_index]));
+            result[row_index].emplace_back(ToString(columns_[column_index][row_index]));
         }
     }
 

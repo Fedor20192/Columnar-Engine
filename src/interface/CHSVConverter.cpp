@@ -8,7 +8,7 @@
 #include "CsvWriter.h"
 
 namespace cngn {
-constexpr size_t kRowsInBatch = 8192;
+constexpr size_t kRowsInBatch = 4097;
 
 void FromCsvToFormat(const std::string &schema_name, const std::string &source_name,
                      const std::string &table_name) {
@@ -27,7 +27,7 @@ void FromCsvToFormat(const std::string &schema_name, const std::string &source_n
                 break;
             }
             is_empty = false;
-            rows.push_back(row.value());
+            rows.emplace_back(std::move(row.value()));
         }
 
         if (is_empty) {

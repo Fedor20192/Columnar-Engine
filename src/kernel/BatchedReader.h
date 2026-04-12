@@ -16,7 +16,7 @@ public:
 
     const Metadata& GetMetadata() const;
 
-    void InitReading(const std::optional<std::vector<uint64_t>>& column_indices);
+    void SetIndices(std::vector<uint64_t>&& column_indices);
 
 private:
     static Schema ReadSchema(std::ifstream& in);
@@ -27,6 +27,6 @@ private:
     std::ifstream file_;
     Metadata metadata_;
     uint64_t num_of_batch_{0};
-    std::optional<std::vector<uint64_t>> column_indices_;
+    std::vector<uint64_t> column_indices_;
 };
 }  // namespace cngn

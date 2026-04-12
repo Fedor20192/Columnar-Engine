@@ -9,21 +9,28 @@ BatchedReader::BatchedReader(const std::string &filename) : file_(filename, std:
         throw std::runtime_error("Cannot open file " + filename + ".");
     }
     metadata_ = Metadata(ReadMetadata(file_));
+    uint64_t columns_cnt = metadata_.GetColumnsCnt();
+    column_indices_.resize(columns_cnt);
+    for (uint64_t i = 0; i < columns_cnt; i++) {
+        column_indices_[i] = i;
+    }
 }
 
-void BatchedReader::InitReading(const std::optional<std::vector<uint64_t>> &column_indices) {
+void BatchedReader::SetIndices(std::vector<uint64_t> &&column_indices) {
     num_of_batch_ = 0;
-    column_indices_ = column_indices;
+    column_indices_ = std::move(column_indices);
 }
 
 std::optional<Batch> BatchedReader::ReadBatch() {
     if (num_of_batch_ >= metadata_.GetBatchCnt()) {
         return std::nullopt;
     }
+    file_.seekg(metadata_.GetOffsets()[num_of_batch_], std::ios::beg);
     uint64_t rows_cnt = metadata_.GetRowsCnt()[num_of_batch_];
-    uint64_t columns_cnt = metadata_.GetColumnsCnt();
 
     Batch batch(metadata_.GetSchema());
+    size_t i = 0;
+    uint64_t columns_cnt = metadata_.GetColumnsCnt();
     for (uint64_t column_index = 0; column_index < columns_cnt; column_index++) {
         Type column_type = metadata_.GetSchema()[column_index].column_type;
 
@@ -37,7 +44,13 @@ std::optional<Batch> BatchedReader::ReadBatch() {
             return Column(std::move(array));
         };
 
-        batch.AddColumn(DispatchOnType(column_type, read_column, rows_cnt));
+        auto column = DispatchOnType(column_type, read_column, rows_cnt);
+        while (i < column_indices_.size() && column_indices_[i] < column_index) {
+            i++;
+        }
+        if (i < column_indices_.size() && column_indices_[i] == column_index) {
+            batch.AddColumn(std::move(column));
+        }
     }
     num_of_batch_++;
     return batch;
@@ -70,7 +83,11 @@ Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
         rows_cnt.push_back(reader.operator()<uint64_t>(in));
     }
 
-    in.seekg(0, std::ios::beg);
+    if (!batch_offsets.empty()) {
+        in.seekg(batch_offsets[0], std::ios::beg);
+    } else {
+        in.seekg(0, std::ios::beg);
+    }
 
     return Metadata(std::move(schema), std::move(batch_offsets), std::move(rows_cnt));
 }

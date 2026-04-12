@@ -11,8 +11,10 @@ public:
         : next_operator_(std::move(next_operator)) {
     }
     void Open() override {
+        next_operator_->Open();
     }
     void Close() override {
+        next_operator_->Close();
     }
     std::optional<Batch> Next() override {
         if (finished_) {

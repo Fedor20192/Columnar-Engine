@@ -15,6 +15,5 @@ public:
 
 private:
     BatchedReader reader_;
-    std::optional<std::vector<std::string>> columns_names_{std::nullopt};
 };
 }  // namespace cngn

@@ -33,7 +33,7 @@ TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
 
     std::unique_ptr<cngn::Operator> count =
         std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename));
-
+    count->Open();
     auto count_batch = count->Next();
 
     REQUIRE(count_batch.has_value());
@@ -42,6 +42,7 @@ TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
 
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());
+    count->Close();
 }
 
 TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
@@ -61,7 +62,8 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
     cngn::Batch batch2(schema);
     batch2.AddColumn(cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}));
     batch2.AddColumn(cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}));
-    batch2.AddColumn(cngn::Column(std::vector<std::string>{"first", "second", "third", "fourth", "fifth", "sixth"}));
+    batch2.AddColumn(cngn::Column(
+        std::vector<std::string>{"first", "second", "third", "fourth", "fifth", "sixth"}));
     batch2.AddColumn(cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}));
 
     std::string filename("test.chsv");
@@ -73,6 +75,7 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
 
     std::unique_ptr<cngn::Operator> count =
         std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename));
+    count->Open();
 
     auto count_batch = count->Next();
 
@@ -82,4 +85,39 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
 
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());
+    count->Close();
+}
+
+TEST_CASE_METHOD(GlogFixture, "Some columns Count", "[Count Operator]") {
+    cngn::Schema schema({std::vector<cngn::Schema::ColumnData>{
+        {"a", cngn::Type::Int64},
+        {"b", cngn::Type::Int64},
+        {"name123", cngn::Type::String},
+        {"d", cngn::Type::Int64},
+    }});
+
+    cngn::Batch batch(schema);
+    batch.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
+    batch.AddColumn(cngn::Column(std::vector<int64_t>{2, 1, 17}));
+    batch.AddColumn(cngn::Column(std::vector<std::string>{"first", "second", "third"}));
+    batch.AddColumn(cngn::Column(std::vector<int64_t>{4, 2, 2}));
+
+    std::string filename("test.chsv");
+    cngn::BatchedWriter writer(filename, schema);
+    writer.WriteBatch(batch);
+    writer.WriteMetadata();
+    writer.Flush();
+
+    std::unique_ptr<cngn::Operator> count = std::make_unique<cngn::Count>(
+        std::make_unique<cngn::Scan>(filename, std::vector<std::string>({"b"})));
+    count->Open();
+    auto count_batch = count->Next();
+
+    REQUIRE(count_batch.has_value());
+    REQUIRE(count_batch->ColumnCount() == 1);
+    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::Int64>(3)));
+
+    count_batch = count->Next();
+    REQUIRE(!count_batch.has_value());
+    count->Close();
 }

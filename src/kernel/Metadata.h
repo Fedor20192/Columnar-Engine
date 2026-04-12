@@ -24,7 +24,7 @@ public:
 
     const std::vector<uint64_t>& GetRowsCnt() const;
 
-    void AddBatch(size_t offset, size_t columns, size_t rows);
+    void AddBatch(size_t offset, size_t rows);
 
     uint64_t GetNowOffset() const;
 

@@ -29,11 +29,7 @@ const std::vector<uint64_t>& Metadata::GetRowsCnt() const {
     return rows_cnt_;
 }
 
-void Metadata::AddBatch(size_t offset, size_t columns, size_t rows) {
-    if (GetColumnsCnt() != columns) {
-        DLOG(ERROR) << "Bad columns count: " << columns << " != " << GetColumnsCnt() << '\n';
-        throw std::runtime_error("Bad columns count");
-    }
+void Metadata::AddBatch(size_t offset, size_t rows) {
     batch_offsets_.push_back(now_offset_);
     now_offset_ = offset;
     rows_cnt_.push_back(rows);
@@ -41,7 +37,6 @@ void Metadata::AddBatch(size_t offset, size_t columns, size_t rows) {
     DLOG(INFO) << "Added batch info:"
                   "Offset: "
                << now_offset_ << '\n'
-               << "Columns count: " << columns << '\n'
                << "Rows count: " << rows << '\n';
 }
 

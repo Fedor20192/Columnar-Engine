@@ -16,6 +16,11 @@ void BatchedWriter::WriteBatch(const Batch& batch) {
         DLOG(ERROR) << "Trying to write empty batch" << '\n';
         return;
     }
+    if (batch.ColumnCount() != metadata_.GetColumnsCnt()) {
+        DLOG(ERROR) << "Bad columns count: " << batch.ColumnCount()
+                    << " != " << metadata_.GetColumnsCnt() << '\n';
+        throw std::runtime_error("Bad columns count");
+    }
 
     const size_t row_cnt = batch[0].Size();
 
@@ -23,7 +28,7 @@ void BatchedWriter::WriteBatch(const Batch& batch) {
     for (size_t column_index = 0; column_index < batch.ColumnCount(); ++column_index) {
         now_offset = WriteElem(batch[column_index].GetData());
     }
-    metadata_.AddBatch(now_offset, batch.ColumnCount(), row_cnt);
+    metadata_.AddBatch(now_offset, row_cnt);
 }
 
 void BatchedWriter::WriteMetadata() {

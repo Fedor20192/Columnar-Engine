@@ -12,9 +12,11 @@ class BatchedReader {
 public:
     explicit BatchedReader(const std::string& filename);
 
-    std::optional<Batch> ReadBatch(size_t num_of_batch);
+    std::optional<Batch> ReadBatch();
 
     const Metadata& GetMetadata() const;
+
+    void InitReading(const std::optional<std::vector<uint64_t>>& column_indices);
 
 private:
     static Schema ReadSchema(std::ifstream& in);
@@ -24,5 +26,7 @@ private:
 
     std::ifstream file_;
     Metadata metadata_;
+    uint64_t num_of_batch_{0};
+    std::optional<std::vector<uint64_t>> column_indices_;
 };
 }  // namespace cngn

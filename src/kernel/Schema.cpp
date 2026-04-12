@@ -50,7 +50,7 @@ std::vector<PhysTypeVariant> Schema::Serialize() const {
     std::vector<PhysTypeVariant> result;
     result.reserve(schema_.size() * 2 + 1);
 
-    result.push_back(static_cast<int64_t>(schema_.size()));
+    result.push_back(schema_.size());
 
     for (size_t i = 0; i < schema_.size(); i++) {
         result.emplace_back(schema_[i].column_name);

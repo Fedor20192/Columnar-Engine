@@ -10,6 +10,7 @@
 
 namespace cngn {
 enum class Type {
+    UInt64,
     Int64,
     Int32,
     Int16,
@@ -30,6 +31,11 @@ struct Timestamp {
 
 template <Type>
 struct PhysTypeWrapper {};
+
+template <>
+struct PhysTypeWrapper<Type::UInt64> {
+    using PhysicalType = uint64_t;
+};
 
 template <>
 struct PhysTypeWrapper<Type::Int64> {
@@ -64,21 +70,25 @@ struct PhysTypeWrapper<Type::Date> {
 template <Type type>
 using PhysicalType = PhysTypeWrapper<type>::PhysicalType;
 
-using PhysTypeVariant = std::variant<PhysicalType<Type::Int64>, PhysicalType<Type::Int32>,
-                                     PhysicalType<Type::Int16>, PhysicalType<Type::String>,
-                                     PhysicalType<Type::Timestamp>, PhysicalType<Type::Date>>;
+using PhysTypeVariant =
+    std::variant<PhysicalType<Type::UInt64>, PhysicalType<Type::Int64>, PhysicalType<Type::Int32>,
+                 PhysicalType<Type::Int16>, PhysicalType<Type::String>,
+                 PhysicalType<Type::Timestamp>, PhysicalType<Type::Date>>;
 
 template <Type type>
 using ArrayType = std::vector<PhysicalType<type>>;
 
 using ArrayTypeVariant =
-    std::variant<ArrayType<Type::Int64>, ArrayType<Type::Int32>, ArrayType<Type::Int16>,
-                 ArrayType<Type::String>, ArrayType<Type::Timestamp>, ArrayType<Type::Date>>;
+    std::variant<ArrayType<Type::UInt64>, ArrayType<Type::Int64>, ArrayType<Type::Int32>,
+                 ArrayType<Type::Int16>, ArrayType<Type::String>, ArrayType<Type::Timestamp>,
+                 ArrayType<Type::Date>>;
 
 struct SerializeType {
     template <Type type>
     std::string operator()() const {
-        if constexpr (type == Type::Int64) {
+        if constexpr (type == Type::UInt64) {
+            return "uint64";
+        } else if constexpr (type == Type::Int64) {
             return "int64";
         } else if constexpr (type == Type::Int32) {
             return "int32";
@@ -170,6 +180,9 @@ std::string ToString(const PhysTypeVariant &x);
 template <typename Callable, typename... Args>
 auto DispatchOnType(Type type, Callable &&f, Args &&...args) {
     switch (type) {
+        case Type::UInt64:
+            return std::forward<Callable>(f).template operator()<Type::UInt64>(
+                std::forward<Args>(args)...);
         case Type::Int64:
             return std::forward<Callable>(f).template operator()<Type::Int64>(
                 std::forward<Args>(args)...);
@@ -196,6 +209,10 @@ auto DispatchOnType(Type type, Callable &&f, Args &&...args) {
 template <typename Callable, typename... Args>
 auto DispatchOnPhysType(Type type, Callable &&f, Args &&...args) {
     switch (type) {
+        case Type::UInt64:
+            return PhysTypeVariant(
+                std::forward<Callable>(f).template operator()<PhysicalType<Type::UInt64>>(
+                    std::forward<Args>(args)...));
         case Type::Int64:
             return PhysTypeVariant(
                 std::forward<Callable>(f).template operator()<PhysicalType<Type::Int64>>(

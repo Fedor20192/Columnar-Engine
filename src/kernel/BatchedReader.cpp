@@ -18,21 +18,21 @@ std::optional<Batch> BatchedReader::ReadBatch(size_t num_of_batch) {
         return std::nullopt;
     }
 
-    int64_t offset = metadata_.GetOffsets()[num_of_batch];
+    uint64_t offset = metadata_.GetOffsets()[num_of_batch];
     file_.seekg(offset);
 
-    int64_t rows_cnt = metadata_.GetRowsCnt()[num_of_batch];
-    int64_t columns_cnt = metadata_.GetColumnsCnt()[num_of_batch];
+    uint64_t rows_cnt = metadata_.GetRowsCnt()[num_of_batch];
+    uint64_t columns_cnt = metadata_.GetColumnsCnt()[num_of_batch];
 
     Batch batch(metadata_.GetSchema());
-    for (int64_t column_index = 0; column_index < columns_cnt; column_index++) {
+    for (uint64_t column_index = 0; column_index < columns_cnt; column_index++) {
         Type column_type = metadata_.GetSchema()[column_index].column_type;
 
-        auto read_column = [this]<Type type>(int64_t cnt) {
+        auto read_column = [this]<Type type>(uint64_t cnt) {
             ArrayType<type> array;
             array.reserve(cnt);
 
-            for (int64_t i = 0; i < cnt; i++) {
+            for (uint64_t i = 0; i < cnt; i++) {
                 array.emplace_back(Reader().operator()<PhysicalType<type>>(file_));
             }
             return Column(std::move(array));
@@ -49,29 +49,29 @@ const Metadata &BatchedReader::GetMetadata() const {
 }
 
 Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
-    in.seekg(-sizeof(int64_t), std::ios::end);
+    in.seekg(-sizeof(uint64_t), std::ios::end);
 
     Reader reader;
 
-    int64_t meta_offset = reader.operator()<int64_t>(in);
+    uint64_t meta_offset = reader.operator()<uint64_t>(in);
 
     in.seekg(meta_offset);
 
     Schema schema = ReadSchema(in);
 
-    int64_t batch_cnt = reader.operator()<int64_t>(in);
+    uint64_t batch_cnt = reader.operator()<uint64_t>(in);
 
-    std::vector<int64_t> batch_offsets;
-    std::vector<int64_t> columns_cnt;
-    std::vector<int64_t> rows_cnt;
+    std::vector<uint64_t> batch_offsets;
+    std::vector<uint64_t> columns_cnt;
+    std::vector<uint64_t> rows_cnt;
     batch_offsets.reserve(batch_cnt);
     columns_cnt.reserve(batch_cnt);
     rows_cnt.reserve(batch_cnt);
 
-    for (int64_t i = 0; i < batch_cnt; i++) {
-        batch_offsets.push_back(reader.operator()<int64_t>(in));
-        columns_cnt.push_back(reader.operator()<int64_t>(in));
-        rows_cnt.push_back(reader.operator()<int64_t>(in));
+    for (uint64_t i = 0; i < batch_cnt; i++) {
+        batch_offsets.push_back(reader.operator()<uint64_t>(in));
+        columns_cnt.push_back(reader.operator()<uint64_t>(in));
+        rows_cnt.push_back(reader.operator()<uint64_t>(in));
     }
 
     in.seekg(0, std::ios::beg);
@@ -82,12 +82,12 @@ Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
 
 Schema BatchedReader::ReadSchema(std::ifstream &in) {
     Reader reader;
-    int64_t size = reader.operator()<int64_t>(in);
+    uint64_t size = reader.operator()<uint64_t>(in);
 
     std::vector<Schema::ColumnData> data;
     data.reserve(size);
 
-    for (int64_t i = 0; i < size; i++) {
+    for (uint64_t i = 0; i < size; i++) {
         auto name = reader.operator()<std::string>(in);
         Type type = DeserializeType(reader.operator()<std::string>(in));
         data.emplace_back(std::move(name), type);

@@ -7,6 +7,8 @@
 namespace cngn {
 class Column {
 public:
+    explicit Column(ArrayType<Type::UInt64>&& array) noexcept : array_(std::move(array)) {
+    }
     explicit Column(ArrayType<Type::Int64>&& array) noexcept : array_(std::move(array)) {
     }
     explicit Column(ArrayType<Type::Int32>&& array) noexcept : array_(std::move(array)) {

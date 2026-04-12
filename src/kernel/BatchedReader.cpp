@@ -11,18 +11,17 @@ BatchedReader::BatchedReader(const std::string &filename) : file_(filename, std:
     metadata_ = Metadata(ReadMetadata(file_));
 }
 
-std::optional<Batch> BatchedReader::ReadBatch(size_t num_of_batch) {
-    if (num_of_batch >= metadata_.GetBatchCnt()) {
-        DLOG(ERROR) << "ReadBatch num_of_batch=" << num_of_batch << " > " << metadata_.GetBatchCnt()
-                    << '\n';
+void BatchedReader::InitReading(const std::optional<std::vector<uint64_t>> &column_indices) {
+    num_of_batch_ = 0;
+    column_indices_ = column_indices;
+}
+
+std::optional<Batch> BatchedReader::ReadBatch() {
+    if (num_of_batch_ >= metadata_.GetBatchCnt()) {
         return std::nullopt;
     }
-
-    uint64_t offset = metadata_.GetOffsets()[num_of_batch];
-    file_.seekg(offset);
-
-    uint64_t rows_cnt = metadata_.GetRowsCnt()[num_of_batch];
-    uint64_t columns_cnt = metadata_.GetColumnsCnt()[num_of_batch];
+    uint64_t rows_cnt = metadata_.GetRowsCnt()[num_of_batch_];
+    uint64_t columns_cnt = metadata_.GetColumnsCnt();
 
     Batch batch(metadata_.GetSchema());
     for (uint64_t column_index = 0; column_index < columns_cnt; column_index++) {
@@ -40,7 +39,7 @@ std::optional<Batch> BatchedReader::ReadBatch(size_t num_of_batch) {
 
         batch.AddColumn(DispatchOnType(column_type, read_column, rows_cnt));
     }
-
+    num_of_batch_++;
     return batch;
 }
 
@@ -62,22 +61,18 @@ Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
     uint64_t batch_cnt = reader.operator()<uint64_t>(in);
 
     std::vector<uint64_t> batch_offsets;
-    std::vector<uint64_t> columns_cnt;
     std::vector<uint64_t> rows_cnt;
     batch_offsets.reserve(batch_cnt);
-    columns_cnt.reserve(batch_cnt);
     rows_cnt.reserve(batch_cnt);
 
     for (uint64_t i = 0; i < batch_cnt; i++) {
         batch_offsets.push_back(reader.operator()<uint64_t>(in));
-        columns_cnt.push_back(reader.operator()<uint64_t>(in));
         rows_cnt.push_back(reader.operator()<uint64_t>(in));
     }
 
     in.seekg(0, std::ios::beg);
 
-    return Metadata(std::move(schema), std::move(batch_offsets), std::move(columns_cnt),
-                    std::move(rows_cnt));
+    return Metadata(std::move(schema), std::move(batch_offsets), std::move(rows_cnt));
 }
 
 Schema BatchedReader::ReadSchema(std::ifstream &in) {

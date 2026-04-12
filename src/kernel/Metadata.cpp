@@ -7,10 +7,9 @@ Metadata::Metadata(const Schema& schema) : schema_(schema) {
 }
 
 Metadata::Metadata(Schema schema, std::vector<uint64_t> batch_offsets,
-                   std::vector<uint64_t> columns_cnt, std::vector<uint64_t> rows_cnt)
+                   std::vector<uint64_t> rows_cnt)
     : schema_(std::move(schema)),
       batch_offsets_(std::move(batch_offsets)),
-      columns_cnt_(std::move(columns_cnt)),
       rows_cnt_(std::move(rows_cnt)) {
 }
 
@@ -22,8 +21,8 @@ const std::vector<uint64_t>& Metadata::GetOffsets() const {
     return batch_offsets_;
 }
 
-const std::vector<uint64_t>& Metadata::GetColumnsCnt() const {
-    return columns_cnt_;
+uint64_t Metadata::GetColumnsCnt() const {
+    return schema_.GetColumnsCount();
 }
 
 const std::vector<uint64_t>& Metadata::GetRowsCnt() const {
@@ -31,9 +30,12 @@ const std::vector<uint64_t>& Metadata::GetRowsCnt() const {
 }
 
 void Metadata::AddBatch(size_t offset, size_t columns, size_t rows) {
+    if (GetColumnsCnt() != columns) {
+        DLOG(ERROR) << "Bad columns count: " << columns << " != " << GetColumnsCnt() << '\n';
+        throw std::runtime_error("Bad columns count");
+    }
     batch_offsets_.push_back(now_offset_);
     now_offset_ = offset;
-    columns_cnt_.push_back(columns);
     rows_cnt_.push_back(rows);
 
     DLOG(INFO) << "Added batch info:"
@@ -51,22 +53,21 @@ size_t Metadata::GetBatchCnt() const {
     return batch_offsets_.size();
 }
 
-
 void Metadata::SetNowOffset(uint64_t offset) {
     now_offset_ = offset;
 }
 
 std::vector<PhysTypeVariant> Metadata::Serialize() const {
     uint64_t old_offset = now_offset_;
+    uint64_t batches_cnt = rows_cnt_.size();
     std::vector<PhysTypeVariant> result = schema_.Serialize();
 
-    result.reserve(result.size() + columns_cnt_.size() * 3 + 2);
+    result.reserve(result.size() + batches_cnt * 2 + 2);
 
-    result.emplace_back(columns_cnt_.size());
+    result.emplace_back(batches_cnt);
 
-    for (size_t i = 0; i < columns_cnt_.size(); i++) {
+    for (size_t i = 0; i < rows_cnt_.size(); i++) {
         result.emplace_back(batch_offsets_[i]);
-        result.emplace_back(columns_cnt_[i]);
         result.emplace_back(rows_cnt_[i]);
     }
 

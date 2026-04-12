@@ -14,7 +14,7 @@ void Scan::Open() {
 }
 
 std::optional<Batch> Scan::Next() {
-    return reader_.ReadBatch(batch_num_++);
+    return reader_.ReadBatch();
 }
 
 void Scan::Close() {

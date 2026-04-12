@@ -43,8 +43,7 @@ void FromFormatToCsv(const std::string &table_name, const std::string &target_na
     CsvWriter csv_writer(target_name);
     BatchedReader batched_reader(table_name + ".chsv");
 
-    size_t num_of_batch = 0;
-    while (std::optional<Batch> batch = batched_reader.ReadBatch(num_of_batch++)) {
+    while (std::optional<Batch> batch = batched_reader.ReadBatch()) {
         csv_writer.WriteAllRows(batch->Serialize());
     }
 }

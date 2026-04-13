@@ -32,24 +32,26 @@ std::optional<Batch> BatchedReader::ReadBatch() {
     size_t i = 0;
     uint64_t columns_cnt = metadata_.GetColumnsCnt();
     for (uint64_t column_index = 0; column_index < columns_cnt; column_index++) {
+        while (i < column_indices_.size() && column_indices_[i] < column_index) {
+            i++;
+        }
         Type column_type = metadata_.GetSchema()[column_index].column_type;
 
         auto read_column = [this]<Type type>(uint64_t cnt) {
             ArrayType<type> array;
             array.reserve(cnt);
 
-            for (uint64_t i = 0; i < cnt; i++) {
+            for (uint64_t _ = 0; _ < cnt; _++) {
                 array.emplace_back(Reader().operator()<PhysicalType<type>>(file_));
             }
             return Column(std::move(array));
         };
 
         auto column = DispatchOnType(column_type, read_column, rows_cnt);
-        while (i < column_indices_.size() && column_indices_[i] < column_index) {
-            i++;
-        }
         if (i < column_indices_.size() && column_indices_[i] == column_index) {
             batch.AddColumn(std::move(column));
+        } else {
+            // file_.seekg(, std::ios::cur);
         }
     }
     num_of_batch_++;
@@ -106,10 +108,6 @@ Schema BatchedReader::ReadSchema(std::ifstream &in) {
     }
 
     return Schema(std::move(data));
-}
-
-PhysTypeVariant BatchedReader::ReadElem(Type type) {
-    return DispatchOnPhysType(type, Reader(), file_);
 }
 
 }  // namespace cngn

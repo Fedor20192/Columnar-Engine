@@ -7,3 +7,7 @@ target_link_libraries(create_table glog::glog columnar_engine)
 add_executable(extract_table ExtractTable.cpp)
 target_include_directories(extract_table PUBLIC ${CMAKE_CURRENT_DIR})
 target_link_libraries(extract_table glog::glog columnar_engine)
+
+add_executable(execute_query Queries.cpp)
+target_include_directories(execute_query PUBLIC ${CMAKE_CURRENT_DIR})
+target_link_libraries(execute_query columnar_operator)

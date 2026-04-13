@@ -74,13 +74,13 @@ Type DeserializeType(const std::string &name) {
     throw std::runtime_error("Unknown type: " + name);
 }
 
-void Write(const std::string &value, std::ofstream &file) {
-    Write(value.size(), file);
+void Write(std::string_view value, std::ofstream &file) {
+    Write(static_cast<uint32_t>(value.size()), file);
     file.write(value.data(), value.size());
 }
 
-void Write(const std::vector<std::string> &value, std::ofstream &file) {
-    size_t buffer_size = value.size() * sizeof(size_t);
+void Write(const std::vector<std::string_view> &value, std::ofstream &file) {
+    size_t buffer_size = (value.size() + 1) * sizeof(uint32_t);
     for (const auto &str : value) {
         buffer_size += str.size() * sizeof(char);
     }
@@ -88,10 +88,16 @@ void Write(const std::vector<std::string> &value, std::ofstream &file) {
     std::vector<char> buffer;
     buffer.reserve(buffer_size);
 
+    uint32_t su = 0;
+    for (const auto &str: value) {
+        auto bytes = reinterpret_cast<const char *>(&su);
+        buffer.insert(buffer.end(), bytes, bytes + sizeof(uint32_t));
+        su += str.size();
+    }
+    auto bytes = reinterpret_cast<const char *>(&su);
+    buffer.insert(buffer.end(), bytes, bytes + sizeof(uint32_t));
+
     for (const auto &str : value) {
-        size_t str_size = str.size();
-        auto bytes = reinterpret_cast<const char *>(&str_size);
-        buffer.insert(buffer.end(), bytes, bytes + sizeof(size_t));
         buffer.insert(buffer.end(), str.begin(), str.end());  // todo: поменять на memcpy
     }
 
@@ -116,7 +122,7 @@ std::string ToString(const PhysTypeVariant &x) {
                 auto current_time = sys_seconds{} + seconds{value.seconds};
                 return std::format("{:%Y-%m-%d %H:%M:%S}", current_time);
             } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::String>>) {
-                return value;
+                return std::string(value);
             } else {
                 throw std::invalid_argument("Unknown type");
             }

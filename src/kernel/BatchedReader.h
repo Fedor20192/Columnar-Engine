@@ -22,7 +22,6 @@ private:
     static Schema ReadSchema(std::ifstream& in);
     static Metadata ReadMetadata(std::ifstream& in);
 
-    Column ReadColumn(uint64_t rows_cnt);
 
     std::ifstream file_;
     Metadata metadata_;

@@ -37,14 +37,10 @@ std::optional<Batch> BatchedReader::ReadBatch() {
         }
         Type column_type = metadata_.GetSchema()[column_index].column_type;
 
-        auto read_column = [this]<Type type>(uint64_t cnt) {
-            ArrayType<type> array;
-            array.reserve(cnt);
-
-            for (uint64_t _ = 0; _ < cnt; _++) {
-                array.emplace_back(Reader().operator()<PhysicalType<type>>(file_));
-            }
-            return Column(std::move(array));
+        auto read_column = [this]<Type type>(uint32_t cnt) {
+            Column::OwningPtr ptr;
+            auto read = Reader().operator()<PhysicalType<type>>(file_, cnt, ptr);
+            return Column(std::move(read), ptr);
         };
 
         auto column = DispatchOnType(column_type, read_column, rows_cnt);

@@ -22,7 +22,7 @@ TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
     cngn::Batch batch(schema);
     batch.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
     batch.AddColumn(cngn::Column(std::vector<int64_t>{2, 1, 17}));
-    batch.AddColumn(cngn::Column(std::vector<std::string>{"first", "second", "third"}));
+    batch.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
     batch.AddColumn(cngn::Column(std::vector<int64_t>{4, 2, 2}));
 
     std::string filename("test.chsv");
@@ -56,14 +56,14 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
     cngn::Batch batch1(schema);
     batch1.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
     batch1.AddColumn(cngn::Column(std::vector<int64_t>{2, 1, 17}));
-    batch1.AddColumn(cngn::Column(std::vector<std::string>{"first", "second", "third"}));
+    batch1.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
     batch1.AddColumn(cngn::Column(std::vector<int64_t>{4, 2, 2}));
 
     cngn::Batch batch2(schema);
     batch2.AddColumn(cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}));
     batch2.AddColumn(cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}));
     batch2.AddColumn(cngn::Column(
-        std::vector<std::string>{"first", "second", "third", "fourth", "fifth", "sixth"}));
+        std::vector<std::string_view>{"first", "second", "third", "fourth", "fifth", "sixth"}));
     batch2.AddColumn(cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}));
 
     std::string filename("test.chsv");
@@ -99,7 +99,7 @@ TEST_CASE_METHOD(GlogFixture, "Some columns Count", "[Count Operator]") {
     cngn::Batch batch(schema);
     batch.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
     batch.AddColumn(cngn::Column(std::vector<int64_t>{2, 1, 17}));
-    batch.AddColumn(cngn::Column(std::vector<std::string>{"first", "second", "third"}));
+    batch.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
     batch.AddColumn(cngn::Column(std::vector<int64_t>{4, 2, 2}));
 
     std::string filename("test.chsv");

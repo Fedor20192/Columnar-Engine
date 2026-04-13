@@ -15,6 +15,7 @@ enum class Type {
     Int32,
     Int16,
     String,
+    MetaString,
     Timestamp,
     Date,
 };
@@ -54,6 +55,11 @@ struct PhysTypeWrapper<Type::Int16> {
 
 template <>
 struct PhysTypeWrapper<Type::String> {
+    using PhysicalType = std::string_view;
+};
+
+template <>
+struct PhysTypeWrapper<Type::MetaString> {
     using PhysicalType = std::string;
 };
 
@@ -70,22 +76,22 @@ struct PhysTypeWrapper<Type::Date> {
 template <Type type>
 using PhysicalType = PhysTypeWrapper<type>::PhysicalType;
 
-using PhysTypeVariant =
-    std::variant<PhysicalType<Type::UInt64>, PhysicalType<Type::Int64>, PhysicalType<Type::Int32>,
-                 PhysicalType<Type::Int16>, PhysicalType<Type::String>,
-                 PhysicalType<Type::Timestamp>, PhysicalType<Type::Date>>;
+using PhysTypeVariant = std::variant<PhysicalType<Type::UInt64>, PhysicalType<Type::Int64>,
+                                     PhysicalType<Type::Int32>, PhysicalType<Type::Int16>,
+                                     PhysicalType<Type::String>, PhysicalType<Type::MetaString>,
+                                     PhysicalType<Type::Timestamp>, PhysicalType<Type::Date>>;
 
 template <Type type>
 using ArrayType = std::vector<PhysicalType<type>>;
 
 using ArrayTypeVariant =
     std::variant<ArrayType<Type::UInt64>, ArrayType<Type::Int64>, ArrayType<Type::Int32>,
-                 ArrayType<Type::Int16>, ArrayType<Type::String>, ArrayType<Type::Timestamp>,
-                 ArrayType<Type::Date>>;
+                 ArrayType<Type::Int16>, ArrayType<Type::String>, ArrayType<Type::MetaString>,
+                 ArrayType<Type::Timestamp>, ArrayType<Type::Date>>;
 
 struct SerializeType {
     template <Type type>
-    std::string operator()() const {
+    constexpr std::string operator()() const {
         if constexpr (type == Type::UInt64) {
             return "uint64";
         } else if constexpr (type == Type::Int64) {
@@ -96,6 +102,8 @@ struct SerializeType {
             return "int16";
         } else if constexpr (type == Type::String) {
             return "string";
+        } else if constexpr (type == Type::MetaString) {
+            return "metastring";
         } else if constexpr (type == Type::Timestamp) {
             return "timestamp";
         } else if constexpr (type == Type::Date) {
@@ -134,6 +142,8 @@ PhysicalType<type> Deserialize(const std::string &s) {
         }
         return PT(val);
     } else if constexpr (type == Type::String) {
+        return s; //todo: Опасное место, надо подумать, как запретить доступ к Deserilize без мгновенного использования
+    } else if constexpr (type == Type::MetaString) {
         return s;
     } else {
         throw std::runtime_error("Unknown type");
@@ -142,19 +152,52 @@ PhysicalType<type> Deserialize(const std::string &s) {
 
 struct Reader {
     template <typename T>
-    T operator()(std::ifstream &file) const {
+    static constexpr bool IsIntegral() {
         if constexpr (std::is_integral_v<T> || std::is_same_v<T, Date> ||
                       std::is_same_v<T, Timestamp>) {
+            return true;
+        }
+        return false;
+    }
+
+    template <typename T>
+    T operator()(std::ifstream &file) const {
+        if constexpr (IsIntegral<T>()) {
             T value;
             file.read(reinterpret_cast<char *>(&value), sizeof(T));
             return value;
-        } else if constexpr (std::is_same_v<T, std::string>) {
-            int64_t size = operator()<int64_t>(file);
+        } else {
+            uint32_t size = operator()<uint32_t>(file);
             std::string value(size, 'a');
             file.read(value.data(), size);
             return value;
+        }
+    }
+
+    template <typename T>
+    std::vector<T> operator()(std::ifstream &file, uint32_t rows_cnt,
+                              std::shared_ptr<std::vector<char>> &buf_ptr) {
+        if constexpr (IsIntegral<T>()) {
+            std::vector<T> ans(rows_cnt);
+            file.read(reinterpret_cast<char *>(ans.data()), ans.size() * sizeof(T));
+            buf_ptr = nullptr;
+            return ans;
         } else {
-            throw std::runtime_error("Unknown type");
+            std::vector<uint32_t> offsets(rows_cnt + 1);
+            file.read(reinterpret_cast<char *>(offsets.data()), offsets.size() * sizeof(uint32_t));
+
+            uint32_t size = offsets.back() - offsets[0];
+            buf_ptr = std::make_shared<std::vector<char>>(size);
+            file.read(buf_ptr->data(), size);
+
+            std::vector<std::string_view> ans(rows_cnt);
+
+            for (uint32_t i = 0; i < rows_cnt; i++) {
+                uint32_t sz = offsets[i + 1] - offsets[i];
+                ans[i] = std::string_view(buf_ptr->data() + offsets[i], sz);
+            }
+
+            return ans;
         }
     }
 };
@@ -165,7 +208,7 @@ void Write(const T &value, std::ofstream &file) {
     file.write(reinterpret_cast<const char *>(&value), sizeof(value));
 }
 
-void Write(const std::string &value, std::ofstream &file);
+void Write(std::string_view value, std::ofstream &file);
 
 template <typename T>
     requires std::integral<T> || std::is_same_v<T, Date> || std::is_same_v<T, Timestamp>
@@ -173,7 +216,7 @@ void Write(const std::vector<T> &value, std::ofstream &file) {
     file.write(reinterpret_cast<const char *>(value.data()), sizeof(T) * value.size());
 }
 
-void Write(const std::vector<std::string> &value, std::ofstream &file);
+void Write(const std::vector<std::string_view> &value, std::ofstream &file);
 
 std::string ToString(const PhysTypeVariant &x);
 

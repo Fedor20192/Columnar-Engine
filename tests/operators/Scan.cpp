@@ -20,7 +20,7 @@ TEST_CASE_METHOD(GlogFixture, "Simple Scan", "[ScanOperator]") {
     cngn::Batch batch(schema);
     batch.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
     batch.AddColumn(cngn::Column(std::vector<int64_t>{2, 1, 17}));
-    batch.AddColumn(cngn::Column(std::vector<std::string>{"first", "second", "third"}));
+    batch.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
     batch.AddColumn(cngn::Column(std::vector<int64_t>{4, 2, 2}));
 
     std::string filename("test.chsv");
@@ -57,7 +57,7 @@ TEST_CASE_METHOD(GlogFixture, "Scan columns", "[ScanOperator]") {
     batch.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
     batch.AddColumn(cngn::Column(std::vector<int64_t>{2, 1, 17}));
     batch.AddColumn(cngn::Column(std::vector<int64_t>{4, 2, 2}));
-    batch.AddColumn(cngn::Column(std::vector<std::string>{"first", "second", "third"}));
+    batch.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
 
     std::string filename("test.chsv");
     cngn::BatchedWriter writer(filename, schema);
@@ -90,7 +90,7 @@ TEST_CASE_METHOD(GlogFixture, "Scan bad names columns", "[ScanOperator]") {
 
     cngn::Batch batch(schema);
     batch.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
-    batch.AddColumn(cngn::Column(std::vector<std::string>{"first", "second", "third"}));
+    batch.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
 
     std::string filename("test.chsv");
     cngn::BatchedWriter writer(filename, schema);

@@ -177,7 +177,7 @@ struct Reader {
 
     template <typename T>
     std::vector<T> operator()(std::ifstream &file, uint32_t rows_cnt,
-                              std::shared_ptr<std::vector<char>> &buf_ptr) {
+                              std::shared_ptr<char[]> &buf_ptr) {
         if constexpr (IsIntegral<T>()) {
             std::vector<T> ans(rows_cnt);
             file.read(reinterpret_cast<char *>(ans.data()), ans.size() * sizeof(T));
@@ -188,14 +188,15 @@ struct Reader {
             file.read(reinterpret_cast<char *>(offsets.data()), offsets.size() * sizeof(uint32_t));
 
             uint32_t size = offsets.back() - offsets[0];
-            std::vector<T> ans(rows_cnt); // todo: поменять на reserve и emplace_back
+            std::vector<T> ans;
+            ans.reserve(rows_cnt);
 
-            buf_ptr = std::make_shared<std::vector<char>>(size);
-            file.read(buf_ptr->data(), size);
+            buf_ptr = std::make_shared<char[]>(size);
+            file.read(buf_ptr.get(), size);
 
             for (uint32_t i = 0; i < rows_cnt; i++) {
                 uint32_t sz = offsets[i + 1] - offsets[i];
-                ans[i] = T(buf_ptr->data() + (offsets[i] - offsets[0]), sz);
+                ans.emplace_back(buf_ptr.get() + (offsets[i] - offsets[0]), sz);
             }
 
             if constexpr (std::is_same_v<T, std::string>) {

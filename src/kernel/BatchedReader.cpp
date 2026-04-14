@@ -43,11 +43,29 @@ std::optional<Batch> BatchedReader::ReadBatch() {
             return Column(std::move(read), ptr);
         };
 
-        auto column = DispatchOnType(column_type, read_column, rows_cnt);
+        auto skip_column = [this]<Type type>(uint32_t cnt) {
+            using PT = PhysicalType<type>;
+
+            if constexpr (Reader::IsIntegral<PT>()) {
+                file_.seekg(sizeof(PT) * cnt, std::ios::cur);
+            } else {
+                auto offsets_start_pos = file_.tellg();
+                uint32_t first_offset, last_offset;
+                file_.read(reinterpret_cast<char*>(&first_offset), sizeof(uint32_t));
+                file_.seekg(offsets_start_pos + static_cast<std::streampos>(cnt * sizeof(uint32_t)));
+
+                file_.read(reinterpret_cast<char*>(&last_offset), sizeof(uint32_t));
+
+                uint32_t strings_size = last_offset - first_offset;
+
+                file_.seekg(strings_size, std::ios::cur);
+            }
+        };
+
         if (i < column_indices_.size() && column_indices_[i] == column_index) {
-            batch.AddColumn(std::move(column));
+            batch.AddColumn(DispatchOnType(column_type, read_column, rows_cnt));
         } else {
-            // file_.seekg(, std::ios::cur);
+            DispatchOnType(column_type, skip_column, rows_cnt);
         }
     }
     num_of_batch_++;

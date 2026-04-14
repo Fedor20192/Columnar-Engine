@@ -283,44 +283,4 @@ auto DispatchOnType(Type type, Callable &&f, Args &&...args) {
     }
 }
 
-template <typename Callable, typename... Args>
-auto DispatchOnPhysType(Type type, Callable &&f, Args &&...args) {
-    switch (type) {
-        case Type::UInt64:
-            return PhysTypeVariant(
-                std::forward<Callable>(f).template operator()<PhysicalType<Type::UInt64>>(
-                    std::forward<Args>(args)...));
-        case Type::Int64:
-            return PhysTypeVariant(
-                std::forward<Callable>(f).template operator()<PhysicalType<Type::Int64>>(
-                    std::forward<Args>(args)...));
-        case Type::Int32:
-            return PhysTypeVariant(
-                std::forward<Callable>(f).template operator()<PhysicalType<Type::Int32>>(
-                    std::forward<Args>(args)...));
-        case Type::Int16:
-            return PhysTypeVariant(
-                std::forward<Callable>(f).template operator()<PhysicalType<Type::Int16>>(
-                    std::forward<Args>(args)...));
-        case Type::String:
-            return PhysTypeVariant(
-                std::forward<Callable>(f).template operator()<PhysicalType<Type::String>>(
-                    std::forward<Args>(args)...));
-        case Type::MetaString:
-            return PhysTypeVariant(
-                std::forward<Callable>(f).template operator()<PhysicalType<Type::MetaString>>(
-                    std::forward<Args>(args)...));
-        case Type::Timestamp:
-            return PhysTypeVariant(
-                std::forward<Callable>(f).template operator()<PhysicalType<Type::Timestamp>>(
-                    std::forward<Args>(args)...));
-        case Type::Date:
-            return PhysTypeVariant(
-                std::forward<Callable>(f).template operator()<PhysicalType<Type::Date>>(
-                    std::forward<Args>(args)...));
-        default:
-            throw std::runtime_error("Unknown Type");
-    }
-}
-
 }  // namespace cngn

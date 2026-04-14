@@ -7,7 +7,7 @@
 namespace cngn {
 class Column {
 public:
-    using OwningPtr = std::shared_ptr<std::vector<char>>;
+    using OwningPtr = std::shared_ptr<std::vector<char>>; //todo: поменять на просто указатель на char[]
     explicit Column(ArrayType<Type::UInt64>&& array, const OwningPtr& ptr = nullptr) noexcept
         : array_(std::move(array)), buffer_ptr_(ptr) {
     }
@@ -21,6 +21,9 @@ public:
         : array_(std::move(array)), buffer_ptr_(ptr) {
     }
     explicit Column(ArrayType<Type::String>&& array, const OwningPtr& ptr = nullptr) noexcept
+        : array_(std::move(array)), buffer_ptr_(ptr) {
+    }
+    explicit Column(ArrayType<Type::MetaString>&& array, const OwningPtr& ptr = nullptr) noexcept
         : array_(std::move(array)), buffer_ptr_(ptr) {
     }
     explicit Column(ArrayType<Type::Date>&& array, const OwningPtr& ptr = nullptr) noexcept

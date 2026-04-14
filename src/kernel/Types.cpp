@@ -79,31 +79,6 @@ void Write(std::string_view value, std::ofstream &file) {
     file.write(value.data(), value.size());
 }
 
-void Write(const std::vector<std::string_view> &value, std::ofstream &file) {
-    size_t buffer_size = (value.size() + 1) * sizeof(uint32_t);
-    for (const auto &str : value) {
-        buffer_size += str.size() * sizeof(char);
-    }
-
-    std::vector<char> buffer;
-    buffer.reserve(buffer_size);
-
-    uint32_t su = 0;
-    for (const auto &str: value) {
-        auto bytes = reinterpret_cast<const char *>(&su);
-        buffer.insert(buffer.end(), bytes, bytes + sizeof(uint32_t));
-        su += str.size();
-    }
-    auto bytes = reinterpret_cast<const char *>(&su);
-    buffer.insert(buffer.end(), bytes, bytes + sizeof(uint32_t));
-
-    for (const auto &str : value) {
-        buffer.insert(buffer.end(), str.begin(), str.end());  // todo: поменять на memcpy
-    }
-
-    file.write(buffer.data(), buffer_size);
-}
-
 std::string ToString(const PhysTypeVariant &x) {
     using std::chrono::seconds, std::chrono::year, std::chrono::days;
     using std::chrono::sys_seconds, std::chrono::sys_days;

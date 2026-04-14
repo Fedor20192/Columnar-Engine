@@ -142,7 +142,8 @@ PhysicalType<type> Deserialize(const std::string &s) {
         }
         return PT(val);
     } else if constexpr (type == Type::String) {
-        return s; //todo: Опасное место, надо подумать, как запретить доступ к Deserilize без мгновенного использования
+        return s;  // todo: Опасное место, надо подумать, как запретить доступ к Deserilize без
+                   // мгновенного использования
     } else if constexpr (type == Type::MetaString) {
         return s;
     } else {
@@ -187,14 +188,18 @@ struct Reader {
             file.read(reinterpret_cast<char *>(offsets.data()), offsets.size() * sizeof(uint32_t));
 
             uint32_t size = offsets.back() - offsets[0];
+            std::vector<T> ans(rows_cnt); // todo: поменять на reserve и emplace_back
+
             buf_ptr = std::make_shared<std::vector<char>>(size);
             file.read(buf_ptr->data(), size);
 
-            std::vector<std::string_view> ans(rows_cnt);
-
             for (uint32_t i = 0; i < rows_cnt; i++) {
                 uint32_t sz = offsets[i + 1] - offsets[i];
-                ans[i] = std::string_view(buf_ptr->data() + offsets[i], sz);
+                ans[i] = T(buf_ptr->data() + (offsets[i] - offsets[0]), sz);
+            }
+
+            if constexpr (std::is_same_v<T, std::string>) {
+                buf_ptr = nullptr;
             }
 
             return ans;
@@ -216,7 +221,32 @@ void Write(const std::vector<T> &value, std::ofstream &file) {
     file.write(reinterpret_cast<const char *>(value.data()), sizeof(T) * value.size());
 }
 
-void Write(const std::vector<std::string_view> &value, std::ofstream &file);
+template <typename T>
+    requires std::is_convertible_v<T, std::string_view>
+void Write(const std::vector<T> &value, std::ofstream &file) {
+    size_t buffer_size = (value.size() + 1) * sizeof(uint32_t);
+    for (const auto &str : value) {
+        buffer_size += str.size() * sizeof(char);
+    }
+
+    std::vector<char> buffer;
+    buffer.reserve(buffer_size);
+
+    uint32_t su = 0;
+    for (const auto &str : value) {
+        auto bytes = reinterpret_cast<const char *>(&su);
+        buffer.insert(buffer.end(), bytes, bytes + sizeof(uint32_t));
+        su += str.size();
+    }
+    auto bytes = reinterpret_cast<const char *>(&su);
+    buffer.insert(buffer.end(), bytes, bytes + sizeof(uint32_t));
+
+    for (const auto &str : value) {
+        buffer.insert(buffer.end(), str.begin(), str.end());  // todo: поменять на memcpy
+    }
+
+    file.write(buffer.data(), buffer_size);
+}
 
 std::string ToString(const PhysTypeVariant &x);
 
@@ -237,6 +267,9 @@ auto DispatchOnType(Type type, Callable &&f, Args &&...args) {
                 std::forward<Args>(args)...);
         case Type::String:
             return std::forward<Callable>(f).template operator()<Type::String>(
+                std::forward<Args>(args)...);
+        case Type::MetaString:
+            return std::forward<Callable>(f).template operator()<Type::MetaString>(
                 std::forward<Args>(args)...);
         case Type::Timestamp:
             return std::forward<Callable>(f).template operator()<Type::Timestamp>(
@@ -271,6 +304,10 @@ auto DispatchOnPhysType(Type type, Callable &&f, Args &&...args) {
         case Type::String:
             return PhysTypeVariant(
                 std::forward<Callable>(f).template operator()<PhysicalType<Type::String>>(
+                    std::forward<Args>(args)...));
+        case Type::MetaString:
+            return PhysTypeVariant(
+                std::forward<Callable>(f).template operator()<PhysicalType<Type::MetaString>>(
                     std::forward<Args>(args)...));
         case Type::Timestamp:
             return PhysTypeVariant(

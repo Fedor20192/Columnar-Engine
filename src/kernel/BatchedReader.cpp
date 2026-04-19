@@ -4,16 +4,23 @@
 
 namespace cngn {
 BatchedReader::BatchedReader(const std::string &filename) : file_(filename, std::ios::binary) {
+    DLOG(INFO) << "Constructing BatchedReader....\n";
+
     if (!file_.is_open()) {
-        DLOG(FATAL) << "Batched reader cannot open file " << filename << '\n';
         throw std::runtime_error("Cannot open file " + filename + ".");
     }
+
+    DLOG(INFO) << "BatchedReader trying read metadata\n";
     metadata_ = Metadata(ReadMetadata(file_));
+    DLOG(INFO) << "BatchedReader read metadata!\n";
+
     uint64_t columns_cnt = metadata_.GetColumnsCnt();
     column_indices_.resize(columns_cnt);
     for (uint64_t i = 0; i < columns_cnt; i++) {
         column_indices_[i] = i;
     }
+
+    DLOG(INFO) << "Constructed BatchedReader!\n";
 }
 
 void BatchedReader::SetIndices(std::vector<uint64_t> &&column_indices) {
@@ -22,7 +29,10 @@ void BatchedReader::SetIndices(std::vector<uint64_t> &&column_indices) {
 }
 
 std::optional<Batch> BatchedReader::ReadBatch() {
+    DLOG(INFO) << "BatchedReader trying read batch number " << num_of_batch_ << "\n";
     if (num_of_batch_ >= metadata_.GetBatchCnt()) {
+        DLOG(ERROR) << "Num of batch is too much: " << num_of_batch_ << " > "
+                    << metadata_.GetBatchCnt() << "\n";
         return std::nullopt;
     }
     file_.seekg(metadata_.GetOffsets()[num_of_batch_], std::ios::beg);
@@ -51,10 +61,11 @@ std::optional<Batch> BatchedReader::ReadBatch() {
             } else {
                 auto offsets_start_pos = file_.tellg();
                 uint32_t first_offset, last_offset;
-                file_.read(reinterpret_cast<char*>(&first_offset), sizeof(uint32_t));
-                file_.seekg(offsets_start_pos + static_cast<std::streampos>(cnt * sizeof(uint32_t)));
+                file_.read(reinterpret_cast<char *>(&first_offset), sizeof(uint32_t));
+                file_.seekg(offsets_start_pos +
+                            static_cast<std::streampos>(cnt * sizeof(uint32_t)));
 
-                file_.read(reinterpret_cast<char*>(&last_offset), sizeof(uint32_t));
+                file_.read(reinterpret_cast<char *>(&last_offset), sizeof(uint32_t));
 
                 uint32_t strings_size = last_offset - first_offset;
 
@@ -68,6 +79,9 @@ std::optional<Batch> BatchedReader::ReadBatch() {
             DispatchOnType(column_type, skip_column, rows_cnt);
         }
     }
+
+    DLOG(INFO) << "BatchedReader read batch number " << num_of_batch_ << "!\n";
+
     num_of_batch_++;
     return batch;
 }

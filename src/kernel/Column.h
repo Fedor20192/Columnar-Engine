@@ -7,7 +7,7 @@
 namespace cngn {
 class Column {
 public:
-    using OwningPtr = std::shared_ptr<char[]>; //todo: поменять на просто указатель на char[]
+    using OwningPtr = std::shared_ptr<char[]>;
     explicit Column(ArrayType<Type::UInt64>&& array, const OwningPtr& ptr = nullptr) noexcept
         : array_(std::move(array)), buffer_ptr_(ptr) {
     }

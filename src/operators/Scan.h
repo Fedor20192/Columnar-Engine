@@ -6,8 +6,7 @@
 namespace cngn {
 class Scan : public Operator {
 public:
-    explicit Scan(const std::string &filename);
-    Scan(const std::string &filename, const std::vector<std::string> &columns_names);
+    explicit Scan(const std::string &filename, const std::shared_ptr<Context> &);
 
     void Open() override;
     std::optional<Batch> Next() override;

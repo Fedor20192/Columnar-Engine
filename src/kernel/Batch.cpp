@@ -71,9 +71,7 @@ const Column& Batch::operator[](size_t index) const {
 
 void Batch::AddColumn(Column&& column) {
     if (!Empty() && column.Size() != columns_[0].Size()) {
-        DLOG(ERROR) << "Bad column size: " << columns_[0].Size() << "!=" << column.Size()
-                    << '\n';
-        throw std::invalid_argument("Wrong number of batch columns");
+        throw std::invalid_argument("Wrong number of batch columns: " + std::to_string(columns_[0].Size()) + " != " + std::to_string(column.Size()));
     }
 
     columns_.emplace_back(std::move(column));

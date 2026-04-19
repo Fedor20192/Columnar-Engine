@@ -8,31 +8,18 @@
 #include "CsvWriter.h"
 #include "Scan.h"
 #include "catch2/catch_template_test_macros.hpp"
+#include "../utils/Prepare.h"
 
 using Row = cngn::CsvWriter::Row;
 
 TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
-    cngn::Schema schema({std::vector<cngn::Schema::ColumnData>{
-        {"a", cngn::Type::Int64},
-        {"b", cngn::Type::Int64},
-        {"name123", cngn::Type::String},
-        {"d", cngn::Type::Int64},
-    }});
+    const std::string filename = "test.chsv";
+    DefaultPrepare(filename);
 
-    cngn::Batch batch(schema);
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{2, 1, 17}));
-    batch.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{4, 2, 2}));
-
-    std::string filename("test.chsv");
-    cngn::BatchedWriter writer(filename, schema);
-    writer.WriteBatch(batch);
-    writer.WriteMetadata();
-    writer.Flush();
+    auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"a"});
 
     std::unique_ptr<cngn::Operator> count =
-        std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename));
+        std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename, context), context);
     count->Open();
     auto count_batch = count->Next();
 
@@ -73,8 +60,10 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
     writer.WriteMetadata();
     writer.Flush();
 
+    auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"d"});
+
     std::unique_ptr<cngn::Operator> count =
-        std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename));
+        std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename, context), context);
     count->Open();
 
     auto count_batch = count->Next();
@@ -89,27 +78,13 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
 }
 
 TEST_CASE_METHOD(GlogFixture, "Some columns Count", "[Count Operator]") {
-    cngn::Schema schema({std::vector<cngn::Schema::ColumnData>{
-        {"a", cngn::Type::Int64},
-        {"b", cngn::Type::Int64},
-        {"name123", cngn::Type::String},
-        {"d", cngn::Type::Int64},
-    }});
+    const std::string filename("test.chsv");
+    DefaultPrepare(filename);
 
-    cngn::Batch batch(schema);
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{2, 1, 17}));
-    batch.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{4, 2, 2}));
+    auto context = std::make_shared<cngn::Context>(std::vector<std::string>({"b"}));
 
-    std::string filename("test.chsv");
-    cngn::BatchedWriter writer(filename, schema);
-    writer.WriteBatch(batch);
-    writer.WriteMetadata();
-    writer.Flush();
-
-    std::unique_ptr<cngn::Operator> count = std::make_unique<cngn::Count>(
-        std::make_unique<cngn::Scan>(filename, std::vector<std::string>({"b"})));
+    std::unique_ptr<cngn::Operator> count =
+        std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename, context), context);
     count->Open();
     auto count_batch = count->Next();
 

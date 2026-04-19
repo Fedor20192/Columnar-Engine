@@ -29,12 +29,15 @@ TEST_CASE_METHOD(GlogFixture, "Simple Scan", "[ScanOperator]") {
     writer.WriteMetadata();
     writer.Flush();
 
-    std::unique_ptr<cngn::Operator> scan = std::make_unique<cngn::Scan>(filename);
+    auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"a", "b", "name123", "d"});
+
+    std::unique_ptr<cngn::Operator> scan = std::make_unique<cngn::Scan>(filename, context);
     scan->Open();
 
     auto file_batch = scan->Next();
 
     REQUIRE(file_batch.has_value());
+    REQUIRE(file_batch->ColumnCount() == batch.ColumnCount());
 
     for (size_t i = 0; i < batch.ColumnCount(); i++) {
         REQUIRE(batch[i] == file_batch.value()[i]);
@@ -65,8 +68,9 @@ TEST_CASE_METHOD(GlogFixture, "Scan columns", "[ScanOperator]") {
     writer.WriteMetadata();
     writer.Flush();
 
-    std::unique_ptr<cngn::Operator> scan =
-        std::make_unique<cngn::Scan>(filename, std::vector<std::string>{"name123", "b"});
+    auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"name123", "b"});
+
+    std::unique_ptr<cngn::Operator> scan = std::make_unique<cngn::Scan>(filename, context);
     scan->Open();
 
     auto file_batch = scan->Next();
@@ -98,5 +102,9 @@ TEST_CASE_METHOD(GlogFixture, "Scan bad names columns", "[ScanOperator]") {
     writer.WriteMetadata();
     writer.Flush();
 
-    REQUIRE_THROWS(std::make_unique<cngn::Scan>(filename, std::vector<std::string>{"name123", "b"}));
+    auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"name123", "b"});
+
+    auto scan = std::make_unique<cngn::Scan>(filename, context);
+
+    REQUIRE_THROWS(scan->Open());
 }

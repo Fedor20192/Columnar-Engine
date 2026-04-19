@@ -5,6 +5,7 @@
 class GlogFixture {
 public:
     GlogFixture() {
+        FLAGS_logtostderr = true;
         google::InitGoogleLogging("test");
     }
 

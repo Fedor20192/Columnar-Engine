@@ -60,7 +60,7 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
     writer.WriteMetadata();
     writer.Flush();
 
-    auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"d"});
+    auto context = std::make_shared<cngn::Context>();
 
     std::unique_ptr<cngn::Operator> count =
         std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename, context), context);

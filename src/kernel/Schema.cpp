@@ -21,10 +21,9 @@ Schema Schema::ReadFromCsv(const std::string& file_name) {
     for (size_t i = 0; i < rows.size(); i++) {
         const auto& row = rows[i];
         if (row.size() != 2) {
-            DLOG(FATAL) << "Wrong number of columns in file: " << file_name << '\n'
-                        << "Columns count: " << row.size() << '\n'
-                        << "Line number " << i << '\n';
-            throw std::runtime_error("Wrong number of columns in file: " + file_name);
+            throw std::runtime_error("Wrong number of columns in file: " + file_name + '\n' +
+                                     "Columns count: " + std::to_string(row.size()) + '\n' +
+                                     "Line number " + std::to_string(i));
         }
 
         data.emplace_back(std::move(row[0]), DeserializeType(row[1]));

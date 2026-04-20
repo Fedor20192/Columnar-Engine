@@ -6,8 +6,7 @@ namespace cngn {
 BatchedWriter::BatchedWriter(const std::string& filename, const Schema& schema)
     : file_(filename, std::ios::binary), metadata_(schema) {
     if (!file_.is_open()) {
-        DLOG(FATAL) << "Batched writer cannot open file " << filename << '\n';
-        throw std::runtime_error("Cannot open file " + filename + ".");
+        throw std::runtime_error("Batched writer cannot open file " + filename + ".");
     }
 }
 
@@ -17,9 +16,8 @@ void BatchedWriter::WriteBatch(const Batch& batch) {
         return;
     }
     if (batch.ColumnCount() != metadata_.GetColumnsCnt()) {
-        DLOG(ERROR) << "Bad columns count: " << batch.ColumnCount()
-                    << " != " << metadata_.GetColumnsCnt() << '\n';
-        throw std::runtime_error("Bad columns count");
+        throw std::runtime_error("Bad columns count: " + std::to_string(batch.ColumnCount()) +
+                                 " != " + std::to_string(metadata_.GetColumnsCnt()));
     }
 
     const size_t row_cnt = batch[0].Size();

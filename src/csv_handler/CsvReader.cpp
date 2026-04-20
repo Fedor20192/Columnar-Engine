@@ -5,8 +5,7 @@
 namespace cngn {
 CsvReader::Buffer::Buffer(const std::string& filename) : file_(filename) {
     if (!file_.is_open()) {
-        DLOG(FATAL) << "Error opening file " << filename << '\n';
-        throw std::runtime_error("Error opening file");
+        throw std::runtime_error("Error opening file " + filename);
     }
 
     Update();

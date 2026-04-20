@@ -4,11 +4,7 @@
 
 namespace cngn {
 
-Batch::Batch(const Schema& schema) : schema_(schema) {
-}
-
-Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
-    : columns_(columns), schema_(schema) {
+Batch::Batch(const std::vector<Column>& columns, const Schema& schema) : columns_(columns) {
     DLOG(INFO) << "Trying construct batch\n";
     if (columns.size() != schema.GetData().size()) {
         throw std::invalid_argument(
@@ -28,7 +24,7 @@ Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
     DLOG(INFO) << "Batch successfully constructed!\n";
 }
 
-Batch::Batch(const std::vector<Row>& rows, const Schema& schema) : schema_(schema) {
+Batch::Batch(const std::vector<Row>& rows, const Schema& schema) {
     if (rows.empty()) {
         return;
     }

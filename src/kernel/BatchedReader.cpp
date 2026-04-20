@@ -29,22 +29,24 @@ void BatchedReader::SetIndices(std::vector<uint64_t> &&column_indices) {
 }
 
 std::optional<Batch> BatchedReader::ReadBatch() {
-    DLOG(INFO) << "BatchedReader trying read batch number " << num_of_batch_ << "\n";
+    DLOG(INFO) << "[BatchedReader]: Trying read batch number " << num_of_batch_ << "\n";
     if (num_of_batch_ >= metadata_.GetBatchCnt()) {
-        DLOG(ERROR) << "Num of batch is too much: " << num_of_batch_ << " >= "
-                    << metadata_.GetBatchCnt() << "\n";
+        DLOG(ERROR) << "Num of batch is too much: " << num_of_batch_
+                    << " >= " << metadata_.GetBatchCnt() << "\n";
         return std::nullopt;
     }
-    file_.seekg(metadata_.GetOffsets()[num_of_batch_], std::ios::beg);
+    file_.seekg(metadata_.GetBatchesOffsets()[num_of_batch_], std::ios::beg);
     uint64_t rows_cnt = metadata_.GetRowsCnt()[num_of_batch_];
 
-    Batch batch(metadata_.GetSchema());
-    size_t i = 0;
-    uint64_t columns_cnt = metadata_.GetColumnsCnt();
-    for (uint64_t column_index = 0; column_index < columns_cnt; column_index++) {
-        while (i < column_indices_.size() && column_indices_[i] < column_index) {
-            i++;
-        }
+    DLOG(INFO) << "[BatchedReader]: Batch number " << num_of_batch_ << " has " << rows_cnt << " rows\n";
+
+    Batch batch;
+
+    if (!std::is_sorted(column_indices_.begin(), column_indices_.end())) {
+        DLOG(WARNING) << "Column indices is not sorted!\n";
+    }
+
+    for (uint64_t column_index : column_indices_) {
         Type column_type = metadata_.GetSchema()[column_index].column_type;
 
         auto read_column = [this]<Type type>(uint32_t cnt) {
@@ -53,32 +55,13 @@ std::optional<Batch> BatchedReader::ReadBatch() {
             return Column(std::move(read), ptr);
         };
 
-        auto skip_column = [this]<Type type>(uint32_t cnt) {
-            using PT = PhysicalType<type>;
-
-            if constexpr (Reader::IsIntegral<PT>()) {
-                file_.seekg(sizeof(PT) * cnt, std::ios::cur);
-            } else {
-                auto offsets_start_pos = file_.tellg();
-                uint32_t first_offset, last_offset;
-                file_.read(reinterpret_cast<char *>(&first_offset), sizeof(uint32_t));
-                file_.seekg(offsets_start_pos +
-                            static_cast<std::streampos>(cnt * sizeof(uint32_t)));
-
-                file_.read(reinterpret_cast<char *>(&last_offset), sizeof(uint32_t));
-
-                uint32_t strings_size = last_offset - first_offset;
-
-                file_.seekg(strings_size, std::ios::cur);
-            }
-        };
-
-        if (i < column_indices_.size() && column_indices_[i] == column_index) {
-            DLOG(INFO) << "Batched Reader trying read column number " << column_index << " from batch number " << num_of_batch_ << "\n";
-            batch.AddColumn(DispatchOnType(column_type, read_column, rows_cnt));
-        } else {
-            DispatchOnType(column_type, skip_column, rows_cnt);
-        }
+        DLOG(INFO) << "Batched Reader trying read column number " << column_index
+                   << " from batch number " << num_of_batch_
+                   << "\n"
+                      "Offset = "
+                   << metadata_.GetColumnOffset(num_of_batch_, column_index);
+        file_.seekg(metadata_.GetColumnOffset(num_of_batch_, column_index), std::ios::beg);
+        batch.AddColumn(DispatchOnType(column_type, read_column, rows_cnt));
     }
 
     DLOG(INFO) << "BatchedReader read batch number " << num_of_batch_ << "!\n";
@@ -103,15 +86,22 @@ Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
     Schema schema = ReadSchema(in);
 
     uint64_t batch_cnt = reader.operator()<uint64_t>(in);
+    uint64_t total_columns = reader.operator()<uint64_t>(in);
 
     std::vector<uint64_t> batch_offsets;
     std::vector<uint64_t> rows_cnt;
+    std::vector<uint64_t> column_offsets;
     batch_offsets.reserve(batch_cnt);
     rows_cnt.reserve(batch_cnt);
+    column_offsets.reserve(total_columns);
 
     for (uint64_t i = 0; i < batch_cnt; i++) {
         batch_offsets.push_back(reader.operator()<uint64_t>(in));
         rows_cnt.push_back(reader.operator()<uint64_t>(in));
+    }
+
+    for (uint64_t i = 0; i < total_columns; i++) {
+        column_offsets.push_back(reader.operator()<uint64_t>(in));
     }
 
     if (!batch_offsets.empty()) {
@@ -120,7 +110,8 @@ Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
         in.seekg(0, std::ios::beg);
     }
 
-    return Metadata(std::move(schema), std::move(batch_offsets), std::move(rows_cnt));
+    return Metadata(std::move(schema), std::move(batch_offsets), std::move(rows_cnt),
+                    std::move(column_offsets));
 }
 
 Schema BatchedReader::ReadSchema(std::ifstream &in) {

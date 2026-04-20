@@ -8,7 +8,7 @@
 #include "CsvWriter.h"
 
 namespace cngn {
-constexpr size_t kRowsInBatch = 4097;
+constexpr size_t kRowsInBatch = 65536;
 
 void FromCsvToFormat(const std::string &schema_name, const std::string &source_name,
                      const std::string &table_name) {

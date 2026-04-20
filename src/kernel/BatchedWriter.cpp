@@ -23,10 +23,13 @@ void BatchedWriter::WriteBatch(const Batch& batch) {
     const size_t row_cnt = batch[0].Size();
 
     size_t now_offset{};
+    std::vector<size_t> columns_offsets = {0};
+    columns_offsets.reserve(batch.ColumnCount() + 1);
     for (size_t column_index = 0; column_index < batch.ColumnCount(); ++column_index) {
         now_offset = WriteElem(batch[column_index].GetData());
+        columns_offsets.push_back(now_offset);
     }
-    metadata_.AddBatch(now_offset, row_cnt);
+    metadata_.AddBatch(now_offset, row_cnt, std::move(columns_offsets));
 }
 
 void BatchedWriter::WriteMetadata() {

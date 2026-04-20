@@ -24,12 +24,12 @@ const std::vector<uint64_t>& Metadata::GetBatchesOffsets() const {
 
 uint64_t Metadata::GetColumnOffset(uint64_t batch_index, uint64_t column_index) const {
     if (batch_index >= batch_offsets_.size()) {
-        throw std::out_of_range("batch_index out of range: " + std::to_string(batch_index) +
+        throw std::out_of_range("[Metadata]: batch_index out of range: " + std::to_string(batch_index) +
                                 ">=" + std::to_string(batch_offsets_.size()));
     }
     uint64_t columns_cnt = GetColumnsCnt();
     if (column_index >= columns_cnt) {
-        throw std::out_of_range("column index out of range: " + std::to_string(column_index) +
+        throw std::out_of_range("[Metadata]: column index out of range: " + std::to_string(column_index) +
                                 ">=" + std::to_string(column_index));
     }
     return columns_offsets_[batch_index * columns_cnt + column_index];
@@ -52,7 +52,7 @@ void Metadata::AddBatch(size_t offset, size_t rows, std::vector<uint64_t>&& colu
                             std::make_move_iterator(columns_offsets.begin()),
                             std::make_move_iterator(columns_offsets.end()));
 
-    DLOG(INFO) << "Added batch info:"
+    DLOG(INFO) << "[Metadata]: Added batch info:"
                   "Offset: "
                << now_offset_ << '\n'
                << "Rows count: " << rows << '\n';
@@ -71,6 +71,8 @@ void Metadata::SetNowOffset(uint64_t offset) {
 }
 
 std::vector<PhysTypeVariant> Metadata::Serialize() const {
+    DLOG(INFO) << "[Metadata]: Starting serialize...\n";
+
     uint64_t old_offset = now_offset_;
     uint64_t batches_cnt = rows_cnt_.size();
     std::vector<PhysTypeVariant> result = schema_.Serialize();
@@ -90,6 +92,8 @@ std::vector<PhysTypeVariant> Metadata::Serialize() const {
     }
 
     result.emplace_back(old_offset);
+
+    DLOG(INFO) << "[Metadata]: Serialized!\n";
 
     return result;
 }

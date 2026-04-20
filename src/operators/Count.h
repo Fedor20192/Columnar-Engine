@@ -18,30 +18,30 @@ public:
     }
 
     void Open() override {
-        DLOG(INFO) << "Count::Open\n";
+        DLOG(INFO) << "[Count]: Open\n";
         if (next_operator_) {
             next_operator_->Open();
         } else {
-            DLOG(WARNING) << "Count operator has no son. WTF?\n";
+            DLOG(WARNING) << "[Count]: Operator has no son. WTF?\n";
         }
-        DLOG(INFO) << "Count::Close\n";
+        DLOG(INFO) << "[Count]: Close\n";
     }
 
     std::optional<Batch> Next() override {
-        DLOG(INFO) << "Count::Next\n";
+        DLOG(INFO) << "[Count]: Next\n";
 
         if (finished_) {
             return std::nullopt;
         }
         while (auto batch = next_operator_->Next()) {
             if (batch.value().Empty()) {
-                throw std::runtime_error("Batch is empty");
+                throw std::runtime_error("[Count]: Batch is empty");
             }
             count_ += batch.value()[0].Size();
         }
         finished_ = true;
 
-        DLOG(INFO) << "Count::Close\n"
+        DLOG(INFO) << "[Count]: Close\n"
                       "Count = " << count_ << "\n";
         return Batch({Column(ArrayType<Type::UInt64>{count_})}, Schema({{"count", Type::UInt64}}));
     }

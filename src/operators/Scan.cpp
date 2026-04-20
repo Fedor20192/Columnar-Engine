@@ -11,11 +11,10 @@ Scan::Scan(const std::string& filename, const std::shared_ptr<Context>& context)
 }
 
 void Scan::Open() {
-    DLOG(INFO) << "Scan::Open\n";
+    DLOG(INFO) << "[Scan]: Starting opening\n";
 
     if (!context_) {
-        DLOG(ERROR) << "No context";
-        throw std::runtime_error("No context");
+        throw std::runtime_error("[Scan]: No context");
     }
 
     const auto& meta = reader_.GetMetadata().GetSchema().GetData();
@@ -26,10 +25,11 @@ void Scan::Open() {
     selected_columns.reserve(need_columns_names.size());
 
     if (need_columns_names.empty()) {
-        DLOG(WARNING) << "Empty context";
+        DLOG(WARNING) << "[Scan]: Empty context";
 
         if (!meta.empty()) {
-            DLOG(INFO) << "Selecting default column with name " << meta[0].column_name << '\n';
+            DLOG(INFO) << "[Scan]: Selecting default column with name " << meta[0].column_name
+                       << '\n';
             selected_columns.emplace_back(
                 0,
                 meta[0].column_name);  // todo: Допилить выбор дефолтной колонки наименьшего размера
@@ -47,8 +47,7 @@ void Scan::Open() {
         }
 
         if (!found) {
-            DLOG(ERROR) << "Unknown column  '" << column_name << "'\n";
-            throw std::runtime_error("Unknown column " + column_name);
+            throw std::runtime_error("[Scan]: Unknown column " + column_name);
         }
     }
 
@@ -68,7 +67,7 @@ void Scan::Open() {
     reader_.SetIndices(std::move(column_indices));
     context_->SetMapping(std::move(columns_mapping));
 
-    DLOG(INFO) << "Finalize Scan::Open\n";
+    DLOG(INFO) << "[Scan]: Successfully opened\n";
 }
 
 std::optional<Batch> Scan::Next() {

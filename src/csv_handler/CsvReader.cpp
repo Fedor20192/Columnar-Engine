@@ -101,7 +101,7 @@ std::optional<CsvReader::Row> CsvReader::ReadLine() {
             if ((!field_state.is_quote_open || field_state.is_quote_close) &&
                 buffer_.Peek() == Parameters::kQuote) {
                 state.is_valid = false;
-                DLOG(ERROR) << "Bad quote in the middle of field" << '\n';
+                DLOG(ERROR) << "[CSVReader]: Bad quote in the middle of field" << '\n';
             }
         }
 
@@ -135,7 +135,7 @@ void CsvReader::FieldHandler(int c, LineState& line_state) {
         } else if (field_state.is_quote_open) {
             field_state.is_quote_close = true;
         } else {
-            DLOG(ERROR) << "Bad quote in field" << '\n';
+            DLOG(ERROR) << "[CSVReader]: Bad quote in field" << '\n';
             line_state.is_valid = false;
         }
     } else if (field_state.is_quote_open && !field_state.is_quote_close) {
@@ -152,7 +152,7 @@ void CsvReader::FieldHandler(int c, LineState& line_state) {
     } else if (!field_state.is_quote_open) {
         field_state.data += c;
     } else {
-        DLOG(ERROR) << "Bad symbol" << '\n';
+        DLOG(ERROR) << "[CSVReader]: Bad symbol" << '\n';
         line_state.is_valid = false;
     }
 }

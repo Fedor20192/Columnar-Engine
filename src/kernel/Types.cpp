@@ -28,7 +28,7 @@ SysSeconds ParseDatetime(const std::string &s, bool need_time) {
     using std::chrono::year_month_day, std::chrono::sys_days;
 
     if (pos < 3) {
-        throw std::runtime_error("Too little date string: " + s);
+        throw std::runtime_error("[ParseDatetime]: Too little date string: " + s);
     }
 
     year_month_day ymd{year{static_cast<int>(numbers[0])}, month{numbers[1]}, day{numbers[2]}};
@@ -76,7 +76,7 @@ Type DeserializeType(const std::string &name) {
         return Type::Date;
     }
 
-    throw std::runtime_error("Deserialize type. Unknown type: " + name);
+    throw std::runtime_error("[Deserialize type]: Unknown type " + name);
 }
 
 void Write(std::string_view value, std::ofstream &file) {
@@ -106,7 +106,7 @@ std::string ToString(const PhysTypeVariant &x) {
                                  std::is_same_v<NowType, PhysicalType<Type::MetaString>>) {
                 return std::string(value);
             } else {
-                throw std::invalid_argument("ToString unknown type");
+                throw std::invalid_argument("[ToString]: Unknown type");
             }
         },
         x);

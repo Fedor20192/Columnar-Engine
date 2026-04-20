@@ -6,17 +6,17 @@ namespace cngn {
 BatchedWriter::BatchedWriter(const std::string& filename, const Schema& schema)
     : file_(filename, std::ios::binary), metadata_(schema) {
     if (!file_.is_open()) {
-        throw std::runtime_error("Batched writer cannot open file " + filename + ".");
+        throw std::runtime_error("[BatchedWriter]: Batched writer cannot open file " + filename + ".");
     }
 }
 
 void BatchedWriter::WriteBatch(const Batch& batch) {
     if (batch.Empty()) {
-        DLOG(ERROR) << "Trying to write empty batch" << '\n';
+        DLOG(ERROR) << "[BatchedWriter]: Trying to write empty batch" << '\n';
         return;
     }
     if (batch.ColumnCount() != metadata_.GetColumnsCnt()) {
-        throw std::runtime_error("Bad columns count: " + std::to_string(batch.ColumnCount()) +
+        throw std::runtime_error("[BatchedWriter]: Bad columns count: " + std::to_string(batch.ColumnCount()) +
                                  " != " + std::to_string(metadata_.GetColumnsCnt()));
     }
 
@@ -33,18 +33,22 @@ void BatchedWriter::WriteBatch(const Batch& batch) {
 }
 
 void BatchedWriter::WriteMetadata() {
-    DLOG(INFO) << "Start writing metadata" << '\n';
+    DLOG(INFO) << "[BatchedWriter]: Start writing metadata" << '\n';
 
     std::vector<PhysTypeVariant> serialized_metadata = metadata_.Serialize();
     for (size_t i = 0; i < serialized_metadata.size(); ++i) {
         WriteElem(serialized_metadata[i]);
     }
 
-    DLOG(INFO) << "Finished writing metadata" << '\n';
+    DLOG(INFO) << "[BatchedWriter]: Finished writing metadata" << '\n';
 }
 
 void BatchedWriter::Flush() {
+    DLOG(INFO) << "[BatchedWriter]: Flushing...\n";
+
     file_.flush();
+
+    DLOG(INFO) << "[BatchedWriter]: Flushing success!\n";
 }
 
 size_t BatchedWriter::WriteElem(const PhysTypeVariant& value) {

@@ -4,15 +4,15 @@
 
 namespace cngn {
 BatchedReader::BatchedReader(const std::string &filename) : file_(filename, std::ios::binary) {
-    DLOG(INFO) << "Constructing BatchedReader....\n";
+    DLOG(INFO) << "[BatchedReader]: Constructing BatchedReader....\n";
 
     if (!file_.is_open()) {
-        throw std::runtime_error("Cannot open file " + filename + ".");
+        throw std::runtime_error("[BatchedReader]: Cannot open file " + filename + ".");
     }
 
-    DLOG(INFO) << "BatchedReader trying read metadata\n";
+    DLOG(INFO) << "[BatchedReader]: BatchedReader trying read metadata\n";
     metadata_ = Metadata(ReadMetadata(file_));
-    DLOG(INFO) << "BatchedReader read metadata!\n";
+    DLOG(INFO) << "[BatchedReader]: BatchedReader read metadata!\n";
 
     uint64_t columns_cnt = metadata_.GetColumnsCnt();
     column_indices_.resize(columns_cnt);
@@ -20,7 +20,7 @@ BatchedReader::BatchedReader(const std::string &filename) : file_(filename, std:
         column_indices_[i] = i;
     }
 
-    DLOG(INFO) << "Constructed BatchedReader!\n";
+    DLOG(INFO) << "[BatchedReader]: Constructed BatchedReader!\n";
 }
 
 void BatchedReader::SetIndices(std::vector<uint64_t> &&column_indices) {
@@ -31,19 +31,20 @@ void BatchedReader::SetIndices(std::vector<uint64_t> &&column_indices) {
 std::optional<Batch> BatchedReader::ReadBatch() {
     DLOG(INFO) << "[BatchedReader]: Trying read batch number " << num_of_batch_ << "\n";
     if (num_of_batch_ >= metadata_.GetBatchCnt()) {
-        DLOG(ERROR) << "Num of batch is too much: " << num_of_batch_
+        DLOG(ERROR) << "[BatchedReader]: Num of batch is too much: " << num_of_batch_
                     << " >= " << metadata_.GetBatchCnt() << "\n";
         return std::nullopt;
     }
     file_.seekg(metadata_.GetBatchesOffsets()[num_of_batch_], std::ios::beg);
     uint64_t rows_cnt = metadata_.GetRowsCnt()[num_of_batch_];
 
-    DLOG(INFO) << "[BatchedReader]: Batch number " << num_of_batch_ << " has " << rows_cnt << " rows\n";
+    DLOG(INFO) << "[BatchedReader]: Batch number " << num_of_batch_ << " has " << rows_cnt
+               << " rows\n";
 
     Batch batch;
 
     if (!std::is_sorted(column_indices_.begin(), column_indices_.end())) {
-        DLOG(WARNING) << "Column indices is not sorted!\n";
+        DLOG(WARNING) << "[BatchedReader]: Column indices is not sorted!\n";
     }
 
     for (uint64_t column_index : column_indices_) {
@@ -55,7 +56,7 @@ std::optional<Batch> BatchedReader::ReadBatch() {
             return Column(std::move(read), ptr);
         };
 
-        DLOG(INFO) << "Batched Reader trying read column number " << column_index
+        DLOG(INFO) << "[BatchedReader]: Batched Reader trying read column number " << column_index
                    << " from batch number " << num_of_batch_
                    << "\n"
                       "Offset = "
@@ -64,7 +65,7 @@ std::optional<Batch> BatchedReader::ReadBatch() {
         batch.AddColumn(DispatchOnType(column_type, read_column, rows_cnt));
     }
 
-    DLOG(INFO) << "BatchedReader read batch number " << num_of_batch_ << "!\n";
+    DLOG(INFO) << "[BatchedReader]: BatchedReader read batch number " << num_of_batch_ << "!\n";
 
     num_of_batch_++;
     return batch;
@@ -75,11 +76,15 @@ const Metadata &BatchedReader::GetMetadata() const {
 }
 
 Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
+    DLOG(INFO) << "[BatchedReader]: Starting read metadata\n";
+
     in.seekg(-sizeof(uint64_t), std::ios::end);
 
     Reader reader;
 
     uint64_t meta_offset = reader.operator()<uint64_t>(in);
+
+    DLOG(INFO) << "[BatchedReader]: Meta offset = " << meta_offset << '\n';
 
     in.seekg(meta_offset);
 
@@ -87,6 +92,9 @@ Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
 
     uint64_t batch_cnt = reader.operator()<uint64_t>(in);
     uint64_t total_columns = reader.operator()<uint64_t>(in);
+
+    DLOG(INFO) << "[BatchedReader]: Batch count = " << batch_cnt << "\n"
+               << "Total columns count = " << total_columns << "\n";
 
     std::vector<uint64_t> batch_offsets;
     std::vector<uint64_t> rows_cnt;
@@ -110,13 +118,19 @@ Metadata BatchedReader::ReadMetadata(std::ifstream &in) {
         in.seekg(0, std::ios::beg);
     }
 
+    DLOG(INFO) << "[BatchedReader]: Metadata successfully read!\n";
+
     return Metadata(std::move(schema), std::move(batch_offsets), std::move(rows_cnt),
                     std::move(column_offsets));
 }
 
 Schema BatchedReader::ReadSchema(std::ifstream &in) {
+    DLOG(INFO) << "[BatchedReader]: Starting read schema\n";
+
     Reader reader;
     uint64_t size = reader.operator()<uint64_t>(in);
+
+    DLOG(INFO) << "[BatchedReader]: Schema size = " << size << "\n";
 
     std::vector<Schema::ColumnData> data;
     data.reserve(size);
@@ -126,6 +140,8 @@ Schema BatchedReader::ReadSchema(std::ifstream &in) {
         Type type = DeserializeType(reader.operator()<std::string>(in));
         data.emplace_back(std::move(name), type);
     }
+
+    DLOG(INFO) << "[BatchedReader]: Schema successfully read!\n";
 
     return Schema(std::move(data));
 }

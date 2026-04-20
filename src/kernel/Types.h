@@ -109,7 +109,7 @@ struct SerializeType {
         } else if constexpr (type == Type::Date) {
             return "date";
         } else {
-            throw std::runtime_error("Unknown type");
+            throw std::runtime_error("[SerializeType]: Unknown type");
         }
     }
 };
@@ -147,7 +147,7 @@ PhysicalType<type> Deserialize(const std::string &s) {
     } else if constexpr (type == Type::MetaString) {
         return s;
     } else {
-        throw std::runtime_error("Unknown type");
+        throw std::runtime_error("[Deserialize]: Unknown type " + s);
     }
 }
 
@@ -279,7 +279,7 @@ auto DispatchOnType(Type type, Callable &&f, Args &&...args) {
             return std::forward<Callable>(f).template operator()<Type::Date>(
                 std::forward<Args>(args)...);
         default:
-            throw std::runtime_error("Unknown Type");
+            throw std::runtime_error("[Dispatch on type]: unknown Type");
     }
 }
 

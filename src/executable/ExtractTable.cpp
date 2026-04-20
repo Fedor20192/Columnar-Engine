@@ -3,15 +3,15 @@
 
 int main(int argc, char* argv[]) {
     if (argc != 3) {
-        DLOG(ERROR) << "Wrong number of arguments";
+        DLOG(ERROR) << "[ExtractTable]: Wrong number of arguments";
         return 111;
     }
 
-    DLOG(INFO) << "Extracting table " << argv[1] << '\n';
+    DLOG(INFO) << "[ExtractTable]: Extracting table " << argv[1] << '\n';
 
     std::string table_name(argv[1]), target_name(argv[2]);
 
     cngn::FromFormatToCsv(table_name, target_name);
 
-    DLOG(INFO) << "Table extracted to " << target_name << '\n';
+    DLOG(INFO) << "[ExtractTable]: Table extracted to " << target_name << '\n';
 }

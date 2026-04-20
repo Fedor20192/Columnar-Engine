@@ -15,6 +15,8 @@ int main(int argc, char* argv[]) {
         return 11;
     }
 
+    DLOG(INFO) << "[QueriesExecute]: Starting execute query number " << num << '\n';
+
     const std::string filename = "aboba.chsv";
 
     auto query = kGenerators[num](filename);
@@ -33,6 +35,8 @@ int main(int argc, char* argv[]) {
     }
 
     query->Close();
+
+    DLOG(INFO) << "[QueriesExecute]: Query successfully executed\n";
 
     return 0;
 }

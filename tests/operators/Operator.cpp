@@ -8,12 +8,11 @@
 #include "catch2/catch_template_test_macros.hpp"
 
 TEST_CASE_METHOD(GlogFixture, "Require context", "[VirtualOperator]") {
-    const std::string filename = "test.chsv";
 
-    std::ofstream out(filename);
-    DefaultPrepare(filename);
+    std::ofstream out(DefaultTestConfig::kFilename);
+    DefaultTestConfig::DefaultPrepare();
 
-    auto scan = std::make_unique<cngn::Scan>(filename, nullptr);
+    auto scan = std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, nullptr);
     REQUIRE_THROWS(scan->Open());
 
     auto count_1 = std::make_unique<cngn::Count>(std::move(scan), nullptr);

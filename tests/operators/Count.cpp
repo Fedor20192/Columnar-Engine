@@ -4,22 +4,21 @@
 #include <memory>
 
 #include "../Fixtures.h"
+#include "../utils/Prepare.h"
 #include "BatchedWriter.h"
 #include "CsvWriter.h"
 #include "Scan.h"
 #include "catch2/catch_template_test_macros.hpp"
-#include "../utils/Prepare.h"
 
 using Row = cngn::CsvWriter::Row;
 
 TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
-    const std::string filename = "test.chsv";
-    DefaultPrepare(filename);
+    DefaultTestConfig::DefaultPrepare();
 
     auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"a"});
 
-    std::unique_ptr<cngn::Operator> count =
-        std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename, context), context);
+    std::unique_ptr<cngn::Operator> count = std::make_unique<cngn::Count>(
+        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context), context);
     count->Open();
     auto count_batch = count->Next();
 
@@ -33,28 +32,19 @@ TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
 }
 
 TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
-    cngn::Schema schema({std::vector<cngn::Schema::ColumnData>{
-        {"a", cngn::Type::Int64},
-        {"b", cngn::Type::Int64},
-        {"name123", cngn::Type::String},
-        {"d", cngn::Type::Int64},
-    }});
+    auto schema = DefaultTestConfig::kDefaultSchema;
 
-    cngn::Batch batch1(schema);
-    batch1.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
-    batch1.AddColumn(cngn::Column(std::vector<int64_t>{2, 1, 17}));
-    batch1.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
-    batch1.AddColumn(cngn::Column(std::vector<int64_t>{4, 2, 2}));
+    auto batch1 = DefaultTestConfig::k_default_batch;
 
-    cngn::Batch batch2(schema);
-    batch2.AddColumn(cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}));
-    batch2.AddColumn(cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}));
-    batch2.AddColumn(cngn::Column(
-        std::vector<std::string_view>{"first", "second", "third", "fourth", "fifth", "sixth"}));
-    batch2.AddColumn(cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}));
+    cngn::Batch batch2(std::vector{cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}),
+                                   cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}),
+                                   cngn::Column(std::vector<std::string_view>{
+                                       "first", "second", "third", "fourth", "fifth", "sixth"}),
+                                   cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6})},
 
-    std::string filename("test.chsv");
-    cngn::BatchedWriter writer(filename, schema);
+                       schema);
+
+    cngn::BatchedWriter writer(DefaultTestConfig::kFilename, schema);
     writer.WriteBatch(batch1);
     writer.WriteBatch(batch2);
     writer.WriteMetadata();
@@ -62,8 +52,8 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
 
     auto context = std::make_shared<cngn::Context>();
 
-    std::unique_ptr<cngn::Operator> count =
-        std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename, context), context);
+    std::unique_ptr<cngn::Operator> count = std::make_unique<cngn::Count>(
+        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context), context);
     count->Open();
 
     auto count_batch = count->Next();
@@ -78,13 +68,12 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
 }
 
 TEST_CASE_METHOD(GlogFixture, "Some columns Count", "[Count Operator]") {
-    const std::string filename("test.chsv");
-    DefaultPrepare(filename);
+    DefaultTestConfig::DefaultPrepare();
 
     auto context = std::make_shared<cngn::Context>(std::vector<std::string>({"b"}));
 
     std::unique_ptr<cngn::Operator> count =
-        std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename, context), context);
+        std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context), context);
     count->Open();
     auto count_batch = count->Next();
 

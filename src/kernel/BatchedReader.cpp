@@ -74,6 +74,7 @@ std::optional<Batch> BatchedReader::ReadBatch() {
         };
 
         if (i < column_indices_.size() && column_indices_[i] == column_index) {
+            DLOG(INFO) << "Batched Reader trying read column number " << column_index << " from batch number " << num_of_batch_ << "\n";
             batch.AddColumn(DispatchOnType(column_type, read_column, rows_cnt));
         } else {
             DispatchOnType(column_type, skip_column, rows_cnt);

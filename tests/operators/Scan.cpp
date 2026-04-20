@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "../Fixtures.h"
+#include "../utils/Prepare.h"
 #include "BatchedWriter.h"
 #include "CsvWriter.h"
 #include "catch2/catch_template_test_macros.hpp"
@@ -10,28 +11,13 @@
 using Row = cngn::CsvWriter::Row;
 
 TEST_CASE_METHOD(GlogFixture, "Simple Scan", "[ScanOperator]") {
-    cngn::Schema schema({std::vector<cngn::Schema::ColumnData>{
-        {"a", cngn::Type::Int64},
-        {"b", cngn::Type::Int64},
-        {"name123", cngn::Type::String},
-        {"d", cngn::Type::Int64},
-    }});
+    auto batch = DefaultTestConfig::DefaultPrepare();
 
-    cngn::Batch batch(schema);
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{2, 1, 17}));
-    batch.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{4, 2, 2}));
+    auto context =
+        std::make_shared<cngn::Context>(std::vector<std::string>{"a", "b", "name123", "d"});
 
-    std::string filename("test.chsv");
-    cngn::BatchedWriter writer(filename, schema);
-    writer.WriteBatch(batch);
-    writer.WriteMetadata();
-    writer.Flush();
-
-    auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"a", "b", "name123", "d"});
-
-    std::unique_ptr<cngn::Operator> scan = std::make_unique<cngn::Scan>(filename, context);
+    std::unique_ptr<cngn::Operator> scan =
+        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context);
     scan->Open();
 
     auto file_batch = scan->Next();
@@ -56,21 +42,24 @@ TEST_CASE_METHOD(GlogFixture, "Scan columns", "[ScanOperator]") {
         {"name123", cngn::Type::String},
     }});
 
-    cngn::Batch batch(schema);
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{2, 1, 17}));
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{4, 2, 2}));
-    batch.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
+    cngn::Batch batch(
+        std::vector{
+            cngn::Column(std::vector<int64_t>{1, 5, 8}),
+            cngn::Column(std::vector<int64_t>{2, 1, 17}),
+            cngn::Column(std::vector<int64_t>{4, 2, 2}),
+            cngn::Column(std::vector<std::string_view>{"first", "second", "third"}),
+        },
+        schema);
 
-    std::string filename("test.chsv");
-    cngn::BatchedWriter writer(filename, schema);
+    cngn::BatchedWriter writer(DefaultTestConfig::kFilename, schema);
     writer.WriteBatch(batch);
     writer.WriteMetadata();
     writer.Flush();
 
     auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"name123", "b"});
 
-    std::unique_ptr<cngn::Operator> scan = std::make_unique<cngn::Scan>(filename, context);
+    std::unique_ptr<cngn::Operator> scan =
+        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context);
     scan->Open();
 
     auto file_batch = scan->Next();
@@ -92,19 +81,21 @@ TEST_CASE_METHOD(GlogFixture, "Scan bad names columns", "[ScanOperator]") {
         {"name123", cngn::Type::String},
     }});
 
-    cngn::Batch batch(schema);
-    batch.AddColumn(cngn::Column(std::vector<int64_t>{1, 5, 8}));
-    batch.AddColumn(cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
+    cngn::Batch batch(
+        std::vector{
+            cngn::Column(std::vector<int64_t>{1, 5, 8}),
+            cngn::Column(std::vector<std::string_view>{"first", "second", "third"}),
+        },
+        schema);
 
-    std::string filename("test.chsv");
-    cngn::BatchedWriter writer(filename, schema);
+    cngn::BatchedWriter writer(DefaultTestConfig::kFilename, schema);
     writer.WriteBatch(batch);
     writer.WriteMetadata();
     writer.Flush();
 
     auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"name123", "b"});
 
-    auto scan = std::make_unique<cngn::Scan>(filename, context);
+    auto scan = std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context);
 
     REQUIRE_THROWS(scan->Open());
 }

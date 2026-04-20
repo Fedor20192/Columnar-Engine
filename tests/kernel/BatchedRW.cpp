@@ -11,10 +11,9 @@
 using Row = cngn::CsvWriter::Row;
 
 TEST_CASE_METHOD(GlogFixture, "Batched RW CrossValidation", "[BatchedRW]") {
-    const std::string filename = "test.chsv";
-    DefaultPrepare(filename);
+    DefaultTestConfig::DefaultPrepare();
 
-    cngn::BatchedReader reader(filename);
+    cngn::BatchedReader reader(DefaultTestConfig::kFilename);
     const cngn::Metadata& metadata = reader.GetMetadata();
     const int64_t batch_cnt = metadata.GetBatchCnt();
 

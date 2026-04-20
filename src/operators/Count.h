@@ -28,6 +28,8 @@ public:
     }
 
     std::optional<Batch> Next() override {
+        DLOG(INFO) << "Count::Next\n";
+
         if (finished_) {
             return std::nullopt;
         }
@@ -38,7 +40,10 @@ public:
             count_ += batch.value()[0].Size();
         }
         finished_ = true;
-        return Batch({Column(ArrayType<Type::Int64>(count_))}, Schema({{"count", Type::Int64}}));
+
+        DLOG(INFO) << "Count::Close\n"
+                      "Count = " << count_ << "\n";
+        return Batch({Column(ArrayType<Type::UInt64>{count_})}, Schema({{"count", Type::UInt64}}));
     }
 
 private:

@@ -52,6 +52,9 @@ SysSeconds ParseDatetime(const std::string &s, bool need_time) {
 }
 
 Type DeserializeType(const std::string &name) {
+    if (name == "uint64") {
+        return Type::UInt64;
+    }
     if (name == "int64") {
         return Type::Int64;
     }
@@ -63,6 +66,9 @@ Type DeserializeType(const std::string &name) {
     }
     if (name == "string") {
         return Type::String;
+    }
+    if (name == "metastring") {
+        return Type::MetaString;
     }
     if (name == "timestamp") {
         return Type::Timestamp;
@@ -86,7 +92,8 @@ std::string ToString(const PhysTypeVariant &x) {
     return std::visit(
         []<typename T>(const T &value) -> std::string {
             using NowType = std::decay_t<T>;
-            if constexpr (std::is_same_v<NowType, PhysicalType<Type::Int64>> ||
+            if constexpr (std::is_same_v<NowType, PhysicalType<Type::UInt64>> ||
+                          std::is_same_v<NowType, PhysicalType<Type::Int64>> ||
                           std::is_same_v<NowType, PhysicalType<Type::Int32>> ||
                           std::is_same_v<NowType, PhysicalType<Type::Int16>>) {
                 return std::to_string(value);
@@ -96,10 +103,11 @@ std::string ToString(const PhysTypeVariant &x) {
             } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::Timestamp>>) {
                 auto current_time = sys_seconds{} + seconds{value.seconds};
                 return std::format("{:%Y-%m-%d %H:%M:%S}", current_time);
-            } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::String>>) {
+            } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::String>> ||
+                                 std::is_same_v<NowType, PhysicalType<Type::MetaString>>) {
                 return std::string(value);
             } else {
-                throw std::invalid_argument("Unknown type");
+                throw std::invalid_argument("ToString unknown type");
             }
         },
         x);

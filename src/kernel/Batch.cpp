@@ -9,6 +9,7 @@ Batch::Batch(const Schema& schema) : schema_(schema) {
 
 Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
     : columns_(columns), schema_(schema) {
+    DLOG(INFO) << "Trying construct batch\n";
     if (columns.size() != schema.GetData().size()) {
         throw std::invalid_argument(
             "You are trying to make batch with wrong schema.\n"
@@ -23,6 +24,8 @@ Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
                 " != " + std::to_string(columns_[i].Size()));
         }
     }
+
+    DLOG(INFO) << "Batch successfully constructed!\n";
 }
 
 Batch::Batch(const std::vector<Row>& rows, const Schema& schema) : schema_(schema) {
@@ -81,9 +84,12 @@ void Batch::AddColumn(Column&& column) {
 }
 
 std::vector<Batch::Row> Batch::Serialize() const {
+    DLOG(INFO) << "Batch::Serialize()\n";
+
     std::vector<Row> result;
 
     if (Empty()) {
+        DLOG(INFO) << "Batch::Serialized! Its empty!\n";
         return result;
     }
 
@@ -98,6 +104,8 @@ std::vector<Batch::Row> Batch::Serialize() const {
             result[row_index].emplace_back(ToString(columns_[column_index][row_index]));
         }
     }
+
+    DLOG(INFO) << "Batch::Serialized!\n";
 
     return result;
 }

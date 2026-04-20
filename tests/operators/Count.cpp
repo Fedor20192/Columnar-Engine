@@ -25,7 +25,7 @@ TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
 
     REQUIRE(count_batch.has_value());
     REQUIRE(count_batch->ColumnCount() == 1);
-    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::Int64>(3)));
+    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3}));
 
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());
@@ -70,7 +70,7 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
 
     REQUIRE(count_batch.has_value());
     REQUIRE(count_batch->ColumnCount() == 1);
-    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::Int64>(3 + 6)));
+    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3 + 6}));
 
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());
@@ -90,7 +90,7 @@ TEST_CASE_METHOD(GlogFixture, "Some columns Count", "[Count Operator]") {
 
     REQUIRE(count_batch.has_value());
     REQUIRE(count_batch->ColumnCount() == 1);
-    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::Int64>(3)));
+    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3}));
 
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());

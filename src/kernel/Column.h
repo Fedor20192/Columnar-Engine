@@ -7,17 +7,12 @@
 namespace cngn {
 class Column {
 public:
-    explicit Column(ArrayType<Type::Int64>&& array) noexcept : array_(std::move(array)) {
-    }
-    explicit Column(ArrayType<Type::Int32>&& array) noexcept : array_(std::move(array)) {
-    }
-    explicit Column(ArrayType<Type::Int16>&& array) noexcept : array_(std::move(array)) {
-    }
-    explicit Column(ArrayType<Type::String>&& array) noexcept : array_(std::move(array)) {
-    }
-    explicit Column(ArrayType<Type::Date>&& array) noexcept : array_(std::move(array)) {
-    }
-    explicit Column(ArrayType<Type::Timestamp>&& array) noexcept : array_(std::move(array)) {
+    using OwningPtr = std::shared_ptr<char[]>;
+
+    template <typename T>
+        requires std::is_constructible_v<ArrayTypeVariant, T>
+    explicit Column(T&& array, const OwningPtr& ptr = nullptr) noexcept
+        : array_(std::forward<T>(array)), buffer_ptr_(ptr) {
     }
 
     size_t Size() const {
@@ -29,7 +24,9 @@ public:
                           array_);
     }
 
-    bool operator==(const Column&) const = default;
+    bool operator==(const Column& other) const {
+        return array_ == other.array_;
+    }
 
     const ArrayTypeVariant& GetData() const {
         return array_;
@@ -37,5 +34,6 @@ public:
 
 private:
     ArrayTypeVariant array_;
+    OwningPtr buffer_ptr_;
 };
 }  // namespace cngn

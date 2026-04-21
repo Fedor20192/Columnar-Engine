@@ -13,30 +13,33 @@ public:
     explicit Metadata(Metadata&& other) noexcept = default;
     Metadata& operator=(Metadata&& other) noexcept = default;
 
-    explicit Metadata(Schema schema, std::vector<int64_t> batch_offsets,
-                      std::vector<int64_t> columns_cnt, std::vector<int64_t> rows_cnt);
+    explicit Metadata(Schema schema, std::vector<uint64_t> batch_offsets,
+                      std::vector<uint64_t> rows_cnt, std::vector<uint64_t> columns_offsets);
 
     const Schema& GetSchema() const;
 
-    const std::vector<int64_t>& GetOffsets() const;
+    const std::vector<uint64_t>& GetBatchesOffsets() const;
 
-    const std::vector<int64_t>& GetColumnsCnt() const;
+    uint64_t GetColumnOffset(uint64_t batch_index, uint64_t column_index) const;
 
-    const std::vector<int64_t>& GetRowsCnt() const;
+    uint64_t GetColumnsCnt() const;
 
-    void AddBatch(size_t offset, size_t columns, size_t rows);
+    const std::vector<uint64_t>& GetRowsCnt() const;
 
-    int64_t GetNowOffset() const;
+    void AddBatch(size_t offset, size_t rows, std::vector<uint64_t> &&columns_offsets);
+
+    uint64_t GetNowOffset() const;
 
     size_t GetBatchCnt() const;
 
-    void SetNowOffset(int64_t offset);
+    void SetNowOffset(uint64_t offset);
 
     std::vector<PhysTypeVariant> Serialize() const;
 
 private:
     Schema schema_;
-    std::vector<int64_t> batch_offsets_, columns_cnt_, rows_cnt_;
-    int64_t now_offset_{0};
+    std::vector<uint64_t> batch_offsets_, rows_cnt_;
+    std::vector<uint64_t> columns_offsets_;
+    uint64_t now_offset_{0};
 };
 }  // namespace cngn

@@ -6,39 +6,49 @@ namespace cngn {
 BatchedWriter::BatchedWriter(const std::string& filename, const Schema& schema)
     : file_(filename, std::ios::binary), metadata_(schema) {
     if (!file_.is_open()) {
-        DLOG(FATAL) << "Batched writer cannot open file " << filename << '\n';
-        throw std::runtime_error("Cannot open file " + filename + ".");
+        throw std::runtime_error("[BatchedWriter]: Batched writer cannot open file " + filename + ".");
     }
 }
 
 void BatchedWriter::WriteBatch(const Batch& batch) {
     if (batch.Empty()) {
-        DLOG(ERROR) << "Trying to write empty batch" << '\n';
+        DLOG(ERROR) << "[BatchedWriter]: Trying to write empty batch" << '\n';
         return;
+    }
+    if (batch.ColumnCount() != metadata_.GetColumnsCnt()) {
+        throw std::runtime_error("[BatchedWriter]: Bad columns count: " + std::to_string(batch.ColumnCount()) +
+                                 " != " + std::to_string(metadata_.GetColumnsCnt()));
     }
 
     const size_t row_cnt = batch[0].Size();
 
     size_t now_offset{};
+    std::vector<size_t> columns_offsets = {0};
+    columns_offsets.reserve(batch.ColumnCount() + 1);
     for (size_t column_index = 0; column_index < batch.ColumnCount(); ++column_index) {
         now_offset = WriteElem(batch[column_index].GetData());
+        columns_offsets.push_back(now_offset);
     }
-    metadata_.AddBatch(now_offset, batch.ColumnCount(), row_cnt);
+    metadata_.AddBatch(now_offset, row_cnt, std::move(columns_offsets));
 }
 
 void BatchedWriter::WriteMetadata() {
-    DLOG(INFO) << "Start writing metadata" << '\n';
+    DLOG(INFO) << "[BatchedWriter]: Start writing metadata" << '\n';
 
     std::vector<PhysTypeVariant> serialized_metadata = metadata_.Serialize();
     for (size_t i = 0; i < serialized_metadata.size(); ++i) {
         WriteElem(serialized_metadata[i]);
     }
 
-    DLOG(INFO) << "Finished writing metadata" << '\n';
+    DLOG(INFO) << "[BatchedWriter]: Finished writing metadata" << '\n';
 }
 
 void BatchedWriter::Flush() {
+    DLOG(INFO) << "[BatchedWriter]: Flushing...\n";
+
     file_.flush();
+
+    DLOG(INFO) << "[BatchedWriter]: Flushing success!\n";
 }
 
 size_t BatchedWriter::WriteElem(const PhysTypeVariant& value) {

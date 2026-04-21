@@ -1,0 +1,14 @@
+include(Catch)
+
+add_executable(test_operator Operator.cpp)
+target_link_libraries(test_operator Catch2::Catch2WithMain columnar_operator)
+
+add_executable(test_operator_scan Scan.cpp)
+target_link_libraries(test_operator_scan Catch2::Catch2WithMain columnar_operator)
+
+add_executable(test_operator_count Count.cpp)
+target_link_libraries(test_operator_count Catch2::Catch2WithMain columnar_operator)
+
+catch_discover_tests(test_operator)
+catch_discover_tests(test_operator_scan)
+catch_discover_tests(test_operator_count)

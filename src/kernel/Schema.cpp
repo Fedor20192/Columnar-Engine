@@ -21,10 +21,9 @@ Schema Schema::ReadFromCsv(const std::string& file_name) {
     for (size_t i = 0; i < rows.size(); i++) {
         const auto& row = rows[i];
         if (row.size() != 2) {
-            DLOG(FATAL) << "Wrong number of columns in file: " << file_name << '\n'
-                        << "Columns count: " << row.size() << '\n'
-                        << "Line number " << i << '\n';
-            throw std::runtime_error("Wrong number of columns in file: " + file_name);
+            throw std::runtime_error("[Schema]: Wrong number of columns in file: " + file_name + '\n' +
+                                     "Columns count: " + std::to_string(row.size()) + '\n' +
+                                     "Line number " + std::to_string(i));
         }
 
         data.emplace_back(std::move(row[0]), DeserializeType(row[1]));
@@ -50,7 +49,7 @@ std::vector<PhysTypeVariant> Schema::Serialize() const {
     std::vector<PhysTypeVariant> result;
     result.reserve(schema_.size() * 2 + 1);
 
-    result.push_back(static_cast<int64_t>(schema_.size()));
+    result.push_back(schema_.size());
 
     for (size_t i = 0; i < schema_.size(); i++) {
         result.emplace_back(schema_[i].column_name);

@@ -6,21 +6,17 @@ namespace cngn {
 CsvWriter::CsvWriter(const std::string& filename, Parameters parameters)
     : file_(filename), parameters_(parameters) {
     if (!file_.is_open()) {
-        DLOG(FATAL) << "Error opening file " << filename << '\n';
-        throw std::runtime_error("Error opening file");
+        throw std::runtime_error("[CSVWriter]: Error opening file " + filename);
     }
 
     if (parameters_.delimiter == parameters_.quote) {
-        DLOG(FATAL) << "Delimiter and quote symbols are equal" << '\n';
-        throw std::runtime_error("Delimiter and quote symbols are equal");
+        throw std::runtime_error("[CSVWriter]: Delimiter and quote symbols are equal");
     }
     if (parameters_.delimiter == parameters_.linebreak) {
-        DLOG(FATAL) << "Delimiter and linebreak symbols are equal" << '\n';
-        throw std::runtime_error("Delimiter and linebreak symbols are equal");
+        throw std::runtime_error("[CSVWriter]: Delimiter and linebreak symbols are equal");
     }
     if (parameters_.quote == parameters_.linebreak) {
-        DLOG(FATAL) << "Quote and linebreak symbols are equal" << '\n';
-        throw std::runtime_error("Quote and linebreak symbols are equal");
+        throw std::runtime_error("[CSVWriter]: Quote and linebreak symbols are equal");
     }
 }
 

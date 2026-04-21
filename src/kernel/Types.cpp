@@ -28,8 +28,7 @@ SysSeconds ParseDatetime(const std::string &s, bool need_time) {
     using std::chrono::year_month_day, std::chrono::sys_days;
 
     if (pos < 3) {
-        DLOG(ERROR) << "Too little date string: " << s << std::endl;
-        throw std::runtime_error("Too little date string");
+        throw std::runtime_error("[ParseDatetime]: Too little date string: " + s);
     }
 
     year_month_day ymd{year{static_cast<int>(numbers[0])}, month{numbers[1]}, day{numbers[2]}};
@@ -52,6 +51,9 @@ SysSeconds ParseDatetime(const std::string &s, bool need_time) {
 }
 
 Type DeserializeType(const std::string &name) {
+    if (name == "uint64") {
+        return Type::UInt64;
+    }
     if (name == "int64") {
         return Type::Int64;
     }
@@ -64,6 +66,9 @@ Type DeserializeType(const std::string &name) {
     if (name == "string") {
         return Type::String;
     }
+    if (name == "metastring") {
+        return Type::MetaString;
+    }
     if (name == "timestamp") {
         return Type::Timestamp;
     }
@@ -71,31 +76,12 @@ Type DeserializeType(const std::string &name) {
         return Type::Date;
     }
 
-    throw std::runtime_error("Unknown type: " + name);
+    throw std::runtime_error("[Deserialize type]: Unknown type " + name);
 }
 
-void Write(const std::string &value, std::ofstream &file) {
-    Write(value.size(), file);
+void Write(std::string_view value, std::ofstream &file) {
+    Write(static_cast<uint32_t>(value.size()), file);
     file.write(value.data(), value.size());
-}
-
-void Write(const std::vector<std::string> &value, std::ofstream &file) {
-    size_t buffer_size = value.size() * sizeof(size_t);
-    for (const auto &str : value) {
-        buffer_size += str.size() * sizeof(char);
-    }
-
-    std::vector<char> buffer;
-    buffer.reserve(buffer_size);
-
-    for (const auto &str : value) {
-        size_t str_size = str.size();
-        auto bytes = reinterpret_cast<const char *>(&str_size);
-        buffer.insert(buffer.end(), bytes, bytes + sizeof(size_t));
-        buffer.insert(buffer.end(), str.begin(), str.end());  // todo: поменять на memcpy
-    }
-
-    file.write(buffer.data(), buffer_size);
 }
 
 std::string ToString(const PhysTypeVariant &x) {
@@ -105,7 +91,8 @@ std::string ToString(const PhysTypeVariant &x) {
     return std::visit(
         []<typename T>(const T &value) -> std::string {
             using NowType = std::decay_t<T>;
-            if constexpr (std::is_same_v<NowType, PhysicalType<Type::Int64>> ||
+            if constexpr (std::is_same_v<NowType, PhysicalType<Type::UInt64>> ||
+                          std::is_same_v<NowType, PhysicalType<Type::Int64>> ||
                           std::is_same_v<NowType, PhysicalType<Type::Int32>> ||
                           std::is_same_v<NowType, PhysicalType<Type::Int16>>) {
                 return std::to_string(value);
@@ -115,10 +102,11 @@ std::string ToString(const PhysTypeVariant &x) {
             } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::Timestamp>>) {
                 auto current_time = sys_seconds{} + seconds{value.seconds};
                 return std::format("{:%Y-%m-%d %H:%M:%S}", current_time);
-            } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::String>>) {
-                return value;
+            } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::String>> ||
+                                 std::is_same_v<NowType, PhysicalType<Type::MetaString>>) {
+                return std::string(value);
             } else {
-                throw std::invalid_argument("Unknown type");
+                throw std::invalid_argument("[ToString]: Unknown type");
             }
         },
         x);

@@ -7,7 +7,7 @@ CsvReader::Buffer::Buffer(const std::string& filename) : file_(filename) {
     if (!file_.is_open()) {
         throw std::runtime_error("Error opening file " + filename);
     }
-
+    buffer_ = std::make_unique<char[]>(kBufCp);
     Update();
 }
 
@@ -32,23 +32,23 @@ int CsvReader::Buffer::Peek() {
     return buffer_[buffer_pos_];
 }
 
-std::string_view CsvReader::Buffer::FindSymb(char symb) {
-    auto pos = memchr(buffer_.data() + buffer_pos_, symb, buffer_sz_ - buffer_pos_);
+std::string_view CsvReader::Buffer::FindSymb(char symb) const {
+    auto pos = memchr(buffer_.get() + buffer_pos_, symb, buffer_sz_ - buffer_pos_);
     if (!pos) {
-        return std::string_view(buffer_.data() + buffer_pos_, buffer_sz_ - buffer_pos_);
+        return std::string_view(buffer_.get() + buffer_pos_, buffer_sz_ - buffer_pos_);
     }
-    return std::string_view(buffer_.data() + buffer_pos_, static_cast<const char*>(pos));
+    return std::string_view(buffer_.get() + buffer_pos_, static_cast<const char*>(pos));
 }
 
 std::string_view CsvReader::Buffer::FindDels() const {
-    std::string_view current_view(buffer_.data() + buffer_pos_, buffer_sz_ - buffer_pos_);
+    std::string_view current_view(buffer_.get() + buffer_pos_, buffer_sz_ - buffer_pos_);
     static constexpr char kDels[] = {Parameters::kDelimiter, Parameters::kLinebreak,
                                      Parameters::kQuote};
 
     size_t found = current_view.find_first_of(std::string_view(kDels, 3));
 
     if (found == std::string_view::npos) {
-        return std::string_view(buffer_.data() + buffer_pos_, buffer_sz_ - buffer_pos_);
+        return std::string_view(buffer_.get() + buffer_pos_, buffer_sz_ - buffer_pos_);
     }
     return current_view.substr(0, found);
 }
@@ -63,9 +63,9 @@ void CsvReader::Buffer::UpdatePos(size_t plus) {
 void CsvReader::Buffer::Update() {
     size_t offset = buffer_sz_ - buffer_pos_;
 
-    std::memmove(buffer_.data(), buffer_.data() + buffer_pos_, offset);
+    std::memmove(buffer_.get(), buffer_.get() + buffer_pos_, offset);
 
-    file_.read(buffer_.data() + offset, buffer_.size() - offset);
+    file_.read(buffer_.get() + offset, kBufCp - offset);
     buffer_sz_ = file_.gcount() + offset;
     buffer_pos_ = 0;
 }

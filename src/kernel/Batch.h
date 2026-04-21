@@ -11,6 +11,10 @@ namespace cngn {
 class Batch {
 public:
     Batch() = default;
+    Batch(const Batch&) = delete;
+    Batch& operator=(const Batch&) = delete;
+    Batch(Batch&&) noexcept = default;
+    Batch& operator=(Batch&&) noexcept = default;
 
     explicit Batch(const std::vector<Column>& columns, const Schema& schema);
 

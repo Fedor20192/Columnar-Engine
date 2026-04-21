@@ -34,7 +34,12 @@ TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
 TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
     auto schema = DefaultTestConfig::kDefaultSchema;
 
-    auto batch1 = DefaultTestConfig::k_default_batch;
+    auto batch1 = cngn::Batch(
+        std::vector{cngn::Column(std::vector<int64_t>{1, 5, 8}),
+                    cngn::Column(std::vector<int64_t>{2, 1, 17}),
+                    cngn::Column(std::vector<std::string_view>{"first", "second", "third"}),
+                    cngn::Column(std::vector<int64_t>{4, 2, 2})},
+        DefaultTestConfig::kDefaultSchema);
 
     cngn::Batch batch2(std::vector{cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}),
                                    cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6}),

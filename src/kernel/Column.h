@@ -8,29 +8,11 @@ namespace cngn {
 class Column {
 public:
     using OwningPtr = std::shared_ptr<char[]>;
-    explicit Column(ArrayType<Type::UInt64>&& array, const OwningPtr& ptr = nullptr) noexcept
-        : array_(std::move(array)), buffer_ptr_(ptr) {
-    }
-    explicit Column(ArrayType<Type::Int64>&& array, const OwningPtr &ptr = nullptr) noexcept
-        : array_(std::move(array)), buffer_ptr_(ptr) {
-    }
-    explicit Column(ArrayType<Type::Int32>&& array, const OwningPtr& ptr = nullptr) noexcept
-        : array_(std::move(array)), buffer_ptr_(ptr) {
-    }
-    explicit Column(ArrayType<Type::Int16>&& array, const OwningPtr& ptr = nullptr) noexcept
-        : array_(std::move(array)), buffer_ptr_(ptr) {
-    }
-    explicit Column(ArrayType<Type::String>&& array, const OwningPtr& ptr = nullptr) noexcept
-        : array_(std::move(array)), buffer_ptr_(ptr) {
-    }
-    explicit Column(ArrayType<Type::MetaString>&& array, const OwningPtr& ptr = nullptr) noexcept
-        : array_(std::move(array)), buffer_ptr_(ptr) {
-    }
-    explicit Column(ArrayType<Type::Date>&& array, const OwningPtr& ptr = nullptr) noexcept
-        : array_(std::move(array)), buffer_ptr_(ptr) {
-    }
-    explicit Column(ArrayType<Type::Timestamp>&& array, const OwningPtr& ptr = nullptr) noexcept
-        : array_(std::move(array)), buffer_ptr_(ptr) {
+
+    template <typename T>
+        requires std::is_constructible_v<ArrayTypeVariant, T>
+    explicit Column(T&& array, const OwningPtr& ptr = nullptr) noexcept
+        : array_(std::forward<T>(array)), buffer_ptr_(ptr) {
     }
 
     size_t Size() const {

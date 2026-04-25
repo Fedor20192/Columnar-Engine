@@ -8,7 +8,7 @@ namespace cngn {
 
 using SysSeconds = std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>;
 
-SysSeconds ParseDatetime(const std::string &s, bool need_time) {
+SysSeconds ParseDatetime(std::string_view s, bool need_time) {
     unsigned numbers[6];
 
     unsigned now = 0;
@@ -28,7 +28,7 @@ SysSeconds ParseDatetime(const std::string &s, bool need_time) {
     using std::chrono::year_month_day, std::chrono::sys_days;
 
     if (pos < 3) {
-        throw std::runtime_error("[ParseDatetime]: Too little date string: " + s);
+        throw std::runtime_error("[ParseDatetime]: Too little date string: " + std::string(s));
     }
 
     year_month_day ymd{year{static_cast<int>(numbers[0])}, month{numbers[1]}, day{numbers[2]}};

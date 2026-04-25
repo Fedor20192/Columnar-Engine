@@ -7,11 +7,9 @@
 namespace cngn {
 class Column {
 public:
-    using OwningPtr = std::shared_ptr<char[]>;
-
     template <typename T>
         requires std::is_constructible_v<ArrayTypeVariant, T>
-    explicit Column(T&& array, const OwningPtr& ptr = nullptr) noexcept
+    explicit Column(T&& array, const std::shared_ptr<char[]>& ptr = nullptr) noexcept
         : array_(std::forward<T>(array)), buffer_ptr_(ptr) {
     }
 
@@ -34,6 +32,6 @@ public:
 
 private:
     ArrayTypeVariant array_;
-    OwningPtr buffer_ptr_;
+    std::shared_ptr<char[]> buffer_ptr_;
 };
 }  // namespace cngn

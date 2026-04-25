@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "Column.h"
+#include "CsvReader.h"
 #include "Schema.h"
 
 namespace cngn {
@@ -18,8 +19,7 @@ public:
 
     explicit Batch(const std::vector<Column>& columns, const Schema& schema);
 
-    using Row = std::vector<std::string>;
-    explicit Batch(const std::vector<Row>& rows, const Schema& schema);
+    explicit Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count);
 
     size_t ColumnCount() const;
 
@@ -29,10 +29,11 @@ public:
 
     void AddColumn(Column&& column);
 
-    std::vector<Row> Serialize() const;
+    std::vector<std::vector<std::string>> Serialize() const;
 
 private:
     std::vector<Column> columns_;
+    std::shared_ptr<std::vector<char>> buffer_;
 };
 
 }  // namespace cngn

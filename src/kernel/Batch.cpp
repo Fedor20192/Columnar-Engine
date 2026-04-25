@@ -24,12 +24,12 @@ Batch::Batch(const std::vector<Column>& columns, const Schema& schema) : columns
     DLOG(INFO) << "[Batch]: Batch successfully constructed!\n";
 }
 
-Batch::Batch(const std::vector<Row>& rows, const Schema& schema) {
-    if (rows.empty()) {
+Batch::Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count) {
+    if (chunk.Empty()) {
         return;
     }
 
-    const size_t rows_count = rows.size(), columns_count = rows[0].size();
+    const size_t columns_count = chunk.GetColsCount(rows_count);
 
     if (columns_count > schema.GetColumnsCount()) {
         throw std::invalid_argument("[Batch]: Columns count mismatch " +
@@ -38,6 +38,7 @@ Batch::Batch(const std::vector<Row>& rows, const Schema& schema) {
     }
 
     columns_.reserve(columns_count);
+    buffer_ = chunk.GetBuffer();
 
     for (size_t column_index = 0; column_index < columns_count; ++column_index) {
         auto get_column = [&]<Type type>() {
@@ -45,34 +46,16 @@ Batch::Batch(const std::vector<Row>& rows, const Schema& schema) {
             arr.reserve(rows_count);
 
             if constexpr (type == Type::String) {
-                size_t total_size = 0;
-                for (const auto& row : rows) {
-                    total_size += row[column_index].size();
-                }
-
-                auto buffer = std::make_shared<char[]>(total_size);
-                char* current_ptr = buffer.get();
-
                 for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-                    const std::string& s = rows[row_index][column_index];
-
-                    std::memcpy(current_ptr, s.data(), s.size());
-
-                    arr.emplace_back(current_ptr, s.size());
-
-                    current_ptr += s.size();
+                    const auto s = chunk.GetField(row_index, column_index, rows_count);
+                    arr.emplace_back(s);
                 }
-                return Column(std::move(arr), buffer);
+                return Column(std::move(arr));
             } else {
                 for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-                    if (column_index >= rows[row_index].size()) {
-                        throw std::invalid_argument("[Batch]: Batch column index mismatch: " +
-                                                    std::to_string(column_index) + " != " +
-                                                    std::to_string(rows[row_index].size()));
-                    }
-                    arr.emplace_back(Deserialize<type>(rows[row_index][column_index]));
+                    arr.emplace_back(Deserialize<type>(chunk.GetField(row_index, column_index, rows_count)));
                 }
-                return Column(std::move(arr), nullptr);
+                return Column(std::move(arr));
             }
         };
 
@@ -102,10 +85,10 @@ void Batch::AddColumn(Column&& column) {
     columns_.emplace_back(std::move(column));
 }
 
-std::vector<Batch::Row> Batch::Serialize() const {
+std::vector<std::vector<std::string>> Batch::Serialize() const {
     DLOG(INFO) << "[Batch]: Batch::Serialize()\n";
 
-    std::vector<Row> result;
+    std::vector<std::vector<std::string>> result;
 
     if (Empty()) {
         DLOG(INFO) << "[Batch]: Batch::Serialized! Its empty!\n";

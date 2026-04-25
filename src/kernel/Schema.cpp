@@ -15,18 +15,19 @@ Schema::Schema(std::vector<ColumnData>&& other_data) noexcept : schema_(std::mov
 Schema Schema::ReadFromCsv(const std::string& file_name) {
     CsvReader reader(file_name);
 
-    auto rows = reader.ReadAllLines();
-    std::vector<ColumnData> data;
-    data.reserve(rows.size());
-    for (size_t i = 0; i < rows.size(); i++) {
-        const auto& row = rows[i];
-        if (row.size() != 2) {
-            throw std::runtime_error("[Schema]: Wrong number of columns in file: " + file_name + '\n' +
-                                     "Columns count: " + std::to_string(row.size()) + '\n' +
-                                     "Line number " + std::to_string(i));
-        }
+    size_t rows_cnt = 0;
+    while (reader.ReadLine()) {
+        ++rows_cnt;
+    }
 
-        data.emplace_back(std::move(row[0]), DeserializeType(row[1]));
+    auto chunk = reader.GetChunk();
+
+    std::vector<ColumnData> data;
+    for (size_t i = 0; i < rows_cnt; i++) {
+        data.emplace_back(
+            std::string(chunk.GetField(i, 0, rows_cnt)),
+            DeserializeType(std::string(chunk.GetField(i, 1, rows_cnt)))
+        );
     }
 
     return Schema(data);

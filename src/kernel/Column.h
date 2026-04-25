@@ -13,6 +13,15 @@ public:
         : array_(std::forward<T>(array)), buffer_ptr_(ptr) {
     }
 
+    explicit Column(Type type, size_t capacity) {
+        auto init_array = [this, capacity]<Type type>() {
+            std::vector<PhysicalType<type>> vec;
+            vec.reserve(capacity);
+            array_ = std::move(vec);
+        };
+        DispatchOnType(type, init_array);
+    }
+
     size_t Size() const {
         return std::visit([](const auto& arr) { return arr.size(); }, array_);
     }
@@ -28,6 +37,21 @@ public:
 
     const ArrayTypeVariant& GetData() const {
         return array_;
+    }
+
+    template <Type type>
+    void PushBack(const PhysicalType<type>& value) {
+        std::visit(
+            [&](auto& arr) {
+                using Vec = std::decay_t<decltype(arr)>;
+                using Elem = Vec::value_type;
+                using Expected = PhysicalType<type>;
+
+                if constexpr (std::is_same_v<Elem, Expected>) {
+                    arr.push_back(value);
+                }
+            },
+            array_);
     }
 
 private:

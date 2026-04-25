@@ -1,5 +1,7 @@
 #include "Batch.h"
 
+#include <functional>
+
 #include "glog/logging.h"
 
 namespace cngn {
@@ -38,28 +40,28 @@ Batch::Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count) 
     }
 
     columns_.reserve(columns_count);
+
+    using FieldParser = std::function<void(size_t row_index, size_t col_index)>;
+    std::vector<FieldParser> parsers;
+    parsers.reserve(columns_count);
+
+    for (size_t i = 0; i < columns_count; i++) {
+        columns_.emplace_back(schema[i].column_type, rows_count);
+        auto prepare_parser = [this, &chunk, rows_count]<Type type>() -> FieldParser {
+            return [this, &chunk, rows_count](size_t row_ind, size_t col_ind) {
+                auto field = chunk.GetField(row_ind, col_ind, rows_count);
+                columns_[col_ind].PushBack<type>(Deserialize<type>(field));
+            };
+        };
+        parsers.push_back(DispatchOnType(schema[i].column_type, prepare_parser));
+    }
+
     buffer_ = chunk.GetBuffer();
 
-    for (size_t column_index = 0; column_index < columns_count; ++column_index) {
-        auto get_column = [&]<Type type>() {
-            std::vector<PhysicalType<type>> arr;
-            arr.reserve(rows_count);
-
-            if constexpr (type == Type::String) {
-                for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-                    const auto s = chunk.GetField(row_index, column_index, rows_count);
-                    arr.emplace_back(s);
-                }
-                return Column(std::move(arr));
-            } else {
-                for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-                    arr.emplace_back(Deserialize<type>(chunk.GetField(row_index, column_index, rows_count)));
-                }
-                return Column(std::move(arr));
-            }
-        };
-
-        columns_.emplace_back(DispatchOnType(schema[column_index].column_type, get_column));
+    for (size_t row_index = 0; row_index < rows_count; ++row_index) {
+        for (size_t column_index = 0; column_index < columns_.size(); ++column_index) {
+            parsers[column_index](row_index, column_index);
+        }
     }
 }
 

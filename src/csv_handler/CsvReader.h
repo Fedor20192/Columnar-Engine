@@ -29,7 +29,8 @@ public:
         void Add(const std::string&);
         void Prepare();
         void Reset();
-        std::string_view GetField(size_t row_ind, size_t col_ind, size_t rows_cnt) const;
+        void InitColumnsCnt(size_t rows_cnt);
+        std::string_view GetField(size_t row_ind, size_t col_ind) const;
         size_t GetColsCount(size_t rows_cnt) const;
         bool Empty() const;
         std::shared_ptr<std::vector<char>> GetBuffer();
@@ -85,7 +86,7 @@ private:
         size_t GetPos() const;
 
     private:
-        static constexpr size_t kBufCp = 1024 * 1024 + 64;
+        static constexpr size_t kBufCp = 11 * 1024 * 1024 + 64;
         std::ifstream file_;
 
         std::unique_ptr<char[]> buffer_;

@@ -14,6 +14,7 @@ void CsvReader::Chunk::Add(const std::string& s) {
 
 void CsvReader::Chunk::Prepare() {
     char* buffer_ptr = buffer_->data();
+    fields_.reserve(fields_sizes_.size());
     for (size_t i = 0; i < fields_sizes_.size(); ++i) {
         fields_.emplace_back(buffer_ptr, buffer_ptr + fields_sizes_[i]);
         buffer_ptr += fields_sizes_[i];
@@ -29,18 +30,12 @@ void CsvReader::Chunk::Reset() {
     buffer_ = std::make_unique<std::vector<char>>();
 }
 
-std::string_view CsvReader::Chunk::GetField(size_t row_ind, size_t col_ind, size_t rows_cnt) const {
-    if (!is_prepared_) {
-        throw std::logic_error("CsvReader::Chunk::GetField(): not prepared");
-    }
+void CsvReader::Chunk::InitColumnsCnt(size_t rows_cnt) {
+    cols_cnt_ = GetColsCount(rows_cnt);
+}
 
-    size_t columns_cnt = GetColsCount(rows_cnt);
-
-    if (columns_cnt == 0) {
-        DLOG(ERROR) << "[CsvReader]: columns count is 0\n";
-    }
-
-    return fields_[row_ind * columns_cnt + col_ind];
+std::string_view CsvReader::Chunk::GetField(size_t row_ind, size_t col_ind) const {
+    return fields_[row_ind * cols_cnt_ + col_ind];
 }
 
 size_t CsvReader::Chunk::GetColsCount(size_t rows_cnt) const {

@@ -31,6 +31,8 @@ Batch::Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count) 
         return;
     }
 
+    chunk.InitColumnsCnt(rows_count);
+
     const size_t columns_count = chunk.GetColsCount(rows_count);
 
     if (columns_count > schema.GetColumnsCount()) {
@@ -47,9 +49,9 @@ Batch::Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count) 
 
     for (size_t i = 0; i < columns_count; i++) {
         columns_.emplace_back(schema[i].column_type, rows_count);
-        auto prepare_parser = [this, &chunk, rows_count]<Type type>() -> FieldParser {
-            return [this, &chunk, rows_count](size_t row_ind, size_t col_ind) {
-                auto field = chunk.GetField(row_ind, col_ind, rows_count);
+        auto prepare_parser = [this, &chunk]<Type type>() -> FieldParser {
+            return [this, &chunk](size_t row_ind, size_t col_ind) {
+                auto field = chunk.GetField(row_ind, col_ind);
                 columns_[col_ind].PushBack<type>(Deserialize<type>(field));
             };
         };

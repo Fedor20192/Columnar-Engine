@@ -21,12 +21,13 @@ Schema Schema::ReadFromCsv(const std::string& file_name) {
     }
 
     auto chunk = reader.GetChunk();
+    chunk.InitColumnsCnt(rows_cnt);
 
     std::vector<ColumnData> data;
     for (size_t i = 0; i < rows_cnt; i++) {
         data.emplace_back(
-            std::string(chunk.GetField(i, 0, rows_cnt)),
-            DeserializeType(std::string(chunk.GetField(i, 1, rows_cnt)))
+            std::string(chunk.GetField(i, 0)),
+            DeserializeType(std::string(chunk.GetField(i, 1)))
         );
     }
 

@@ -34,12 +34,13 @@ inline std::vector<Row> ReadAllLines(cngn::CsvReader& reader) {
     }
 
     static auto chunk = reader.GetChunk();
+    chunk.InitColumnsCnt(rows_cnt);
 
     rows.resize(rows_cnt);
 
     for (size_t i = 0; i < rows_cnt; ++i) {
         for (size_t j = 0; j < chunk.GetColsCount(rows_cnt); ++j) {
-            auto field = chunk.GetField(i, j, rows_cnt);
+            auto field = chunk.GetField(i, j);
             rows[i].emplace_back(std::string(field));
         }
     }

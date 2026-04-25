@@ -42,6 +42,9 @@ size_t CsvReader::Chunk::GetColsCount(size_t rows_cnt) const {
     if (!is_prepared_) {
         throw std::logic_error("CsvReader::Chunk::GetCols(): not prepared");
     }
+    if (fields_.empty()) {
+        return 0;
+    }
     if (rows_cnt == 0) {
         throw std::runtime_error("CsvReader::Chunk::GetCols(): rows_cnt is 0");
     }

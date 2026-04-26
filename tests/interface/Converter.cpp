@@ -29,11 +29,11 @@ TEST_CASE_METHOD(GlogFixture, "Converter Cross Validation", "[Converter]") {
     cngn::FromFormatToCsv(target_filename, new_csv_filename);
 
     cngn::CsvReader reader(new_csv_filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == data.size());
-    REQUIRE(result[0] == cngn::CsvReader::Row{"1", "2", "first", "4"});
-    REQUIRE(result[1] == cngn::CsvReader::Row{"5", "1", "second", "2"});
-    REQUIRE(result[2] == cngn::CsvReader::Row{"8", "17", "third", "2"});
+    REQUIRE(result[0] == Row{"1", "2", "first", "4"});
+    REQUIRE(result[1] == Row{"5", "1", "second", "2"});
+    REQUIRE(result[2] == Row{"8", "17", "third", "2"});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Converter Empty CSV", "[Converter]") {
@@ -55,7 +55,7 @@ TEST_CASE_METHOD(GlogFixture, "Converter Empty CSV", "[Converter]") {
     cngn::FromFormatToCsv(target_filename, new_csv_filename);
 
     cngn::CsvReader reader(new_csv_filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.empty());
 }
 
@@ -79,13 +79,13 @@ TEST_CASE_METHOD(GlogFixture, "Converter Single Column Int64", "[Converter]") {
     cngn::FromFormatToCsv(target_filename, new_csv_filename);
 
     cngn::CsvReader reader(new_csv_filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == data.size());
-    REQUIRE(result[0] == cngn::CsvReader::Row{"1"});
-    REQUIRE(result[1] == cngn::CsvReader::Row{"2"});
-    REQUIRE(result[2] == cngn::CsvReader::Row{"3"});
-    REQUIRE(result[3] == cngn::CsvReader::Row{"100"});
-    REQUIRE(result[4] == cngn::CsvReader::Row{"-50"});
+    REQUIRE(result[0] == Row{"1"});
+    REQUIRE(result[1] == Row{"2"});
+    REQUIRE(result[2] == Row{"3"});
+    REQUIRE(result[3] == Row{"100"});
+    REQUIRE(result[4] == Row{"-50"});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Converter Single Column String", "[Converter]") {
@@ -112,13 +112,13 @@ TEST_CASE_METHOD(GlogFixture, "Converter Single Column String", "[Converter]") {
     cngn::FromFormatToCsv(target_filename, new_csv_filename);
 
     cngn::CsvReader reader(new_csv_filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == data.size());
-    REQUIRE(result[0] == cngn::CsvReader::Row{"hello"});
-    REQUIRE(result[1] == cngn::CsvReader::Row{"world"});
-    REQUIRE(result[2] == cngn::CsvReader::Row{"test with spaces"});
-    REQUIRE(result[3] == cngn::CsvReader::Row{"\"quoted, string\""});
-    REQUIRE(result[4] == cngn::CsvReader::Row{"very long string that should be handled correctly"});
+    REQUIRE(result[0] == Row{"hello"});
+    REQUIRE(result[1] == Row{"world"});
+    REQUIRE(result[2] == Row{"test with spaces"});
+    REQUIRE(result[3] == Row{"\"quoted, string\""});
+    REQUIRE(result[4] == Row{"very long string that should be handled correctly"});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Converter Mixed Types", "[Converter]") {
@@ -145,14 +145,15 @@ TEST_CASE_METHOD(GlogFixture, "Converter Mixed Types", "[Converter]") {
     cngn::FromFormatToCsv(target_filename, new_csv_filename);
 
     cngn::CsvReader reader(new_csv_filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == data.size());
-    REQUIRE(result[0] == cngn::CsvReader::Row{"1", "John", "25", "New York", "50000", "1972-01-01 18:46:17"});
-    REQUIRE(result[1] == cngn::CsvReader::Row{"2", "Jane", "30", "London", "60000", "1971-02-01 18:46:18"});
-    REQUIRE(result[2] == cngn::CsvReader::Row{"3", "Bob", "35", "\"Paris, France\"", "70000", "1979-01-01 18:46:17"});
-    REQUIRE(result[3] == cngn::CsvReader::Row{"4", "Alice", "28", "Tokyo", "55000", "2971-01-01 18:46:17"});
+    REQUIRE(result[0] == Row{"1", "John", "25", "New York", "50000", "1972-01-01 18:46:17"});
+    REQUIRE(result[1] == Row{"2", "Jane", "30", "London", "60000", "1971-02-01 18:46:18"});
+    REQUIRE(result[2] ==
+            Row{"3", "Bob", "35", "\"Paris, France\"", "70000", "1979-01-01 18:46:17"});
+    REQUIRE(result[3] == Row{"4", "Alice", "28", "Tokyo", "55000", "2971-01-01 18:46:17"});
     REQUIRE(result[4] ==
-            cngn::CsvReader::Row{"5", "Charlie", "40", "\"San Francisco, CA\"", "80000", "3971-01-01 18:47:17"});
+            Row{"5", "Charlie", "40", "\"San Francisco, CA\"", "80000", "3971-01-01 18:47:17"});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Converter All String Columns", "[Converter]") {
@@ -181,15 +182,13 @@ TEST_CASE_METHOD(GlogFixture, "Converter All String Columns", "[Converter]") {
     cngn::FromFormatToCsv(target_filename, new_csv_filename);
 
     cngn::CsvReader reader(new_csv_filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == data.size());
-    REQUIRE(result[0] == cngn::CsvReader::Row{"John", "Doe", "john@example.com", "123-456-7890"});
-    REQUIRE(result[1] ==
-            cngn::CsvReader::Row{"Jane", "Smith", "jane.smith@test.com", "987-654-3210"});
-    REQUIRE(result[2] ==
-            cngn::CsvReader::Row{"Bob", "Johnson", "bob123@gmail.com", "555-123-4567"});
-    REQUIRE(result[3] == cngn::CsvReader::Row{"\"Alex, Jr\"", "O'Brien", "alex.obrien@company.com",
-                                              "(444) 888-9999"});
+    REQUIRE(result[0] == Row{"John", "Doe", "john@example.com", "123-456-7890"});
+    REQUIRE(result[1] == Row{"Jane", "Smith", "jane.smith@test.com", "987-654-3210"});
+    REQUIRE(result[2] == Row{"Bob", "Johnson", "bob123@gmail.com", "555-123-4567"});
+    REQUIRE(result[3] ==
+            Row{"\"Alex, Jr\"", "O'Brien", "alex.obrien@company.com", "(444) 888-9999"});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Converter Large Int64 Values", "[Converter]") {
@@ -218,13 +217,12 @@ TEST_CASE_METHOD(GlogFixture, "Converter Large Int64 Values", "[Converter]") {
     cngn::FromFormatToCsv(target_filename, new_csv_filename);
 
     cngn::CsvReader reader(new_csv_filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == data.size());
-    REQUIRE(result[0] == cngn::CsvReader::Row{"0", "1000", "1000000000", "-1"});
-    REQUIRE(result[1] == cngn::CsvReader::Row{"1", "9999", "2147483647", "-1000"});
-    REQUIRE(result[2] ==
-            cngn::CsvReader::Row{"255", "65535", "9223372036854775807", "-9223372036854775808"});
-    REQUIRE(result[3] == cngn::CsvReader::Row{"-128", "-32768", "-1000000000000", "0"});
+    REQUIRE(result[0] == Row{"0", "1000", "1000000000", "-1"});
+    REQUIRE(result[1] == Row{"1", "9999", "2147483647", "-1000"});
+    REQUIRE(result[2] == Row{"255", "65535", "9223372036854775807", "-9223372036854775808"});
+    REQUIRE(result[3] == Row{"-128", "-32768", "-1000000000000", "0"});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Converter Special Characters in Strings", "[Converter]") {
@@ -250,13 +248,13 @@ TEST_CASE_METHOD(GlogFixture, "Converter Special Characters in Strings", "[Conve
     cngn::FromFormatToCsv(target_filename, new_csv_filename);
 
     cngn::CsvReader reader(new_csv_filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == data.size());
-    REQUIRE(result[0] == cngn::CsvReader::Row{"line1", "simple"});
-    REQUIRE(result[1] == cngn::CsvReader::Row{"\"quoted\"", "normal"});
-    REQUIRE(result[2] == cngn::CsvReader::Row{"with,comma,inside", "a"});
-    REQUIRE(result[4] == cngn::CsvReader::Row{"unicode®©™", "emoji😀🎉"});
-    REQUIRE(result[5] == cngn::CsvReader::Row{"\"escaped quotes\"", "back\\\\slash"});
+    REQUIRE(result[0] == Row{"line1", "simple"});
+    REQUIRE(result[1] == Row{"\"quoted\"", "normal"});
+    REQUIRE(result[2] == Row{"with,comma,inside", "a"});
+    REQUIRE(result[4] == Row{"unicode®©™", "emoji😀🎉"});
+    REQUIRE(result[5] == Row{"\"escaped quotes\"", "back\\\\slash"});
 }
 
 TEST_CASE_METHOD(GlogFixture, "Converter Many Rows", "[Converter]") {
@@ -281,10 +279,10 @@ TEST_CASE_METHOD(GlogFixture, "Converter Many Rows", "[Converter]") {
     cngn::FromFormatToCsv(target_filename, new_csv_filename);
 
     cngn::CsvReader reader(new_csv_filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == data.size());
 
-    REQUIRE(result[0] == cngn::CsvReader::Row{"0", "Row 0"});
-    REQUIRE(result[499] == cngn::CsvReader::Row{"499", "Row 499"});
-    REQUIRE(result[999] == cngn::CsvReader::Row{"999", "Row 999"});
+    REQUIRE(result[0] == Row{"0", "Row 0"});
+    REQUIRE(result[499] == Row{"499", "Row 499"});
+    REQUIRE(result[999] == Row{"999", "Row 999"});
 }

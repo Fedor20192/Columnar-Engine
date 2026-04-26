@@ -117,10 +117,10 @@ struct SerializeType {
 Type DeserializeType(const std::string &name);
 
 std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> ParseDatetime(
-    const std::string &s, bool need_time);
+    std::string_view s, bool need_time);
 
 template <Type type>
-PhysicalType<type> Deserialize(const std::string &s) {
+PhysicalType<type> Deserialize(std::string_view s) {
     using SysSeconds = std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>;
     constexpr SysSeconds kSinceEpoch{};
     using PT = PhysicalType<type>;
@@ -145,9 +145,9 @@ PhysicalType<type> Deserialize(const std::string &s) {
         return s;  // todo: Опасное место, надо подумать, как запретить доступ к Deserilize без
                    // мгновенного использования
     } else if constexpr (type == Type::MetaString) {
-        return s;
+        return std::string(s);
     } else {
-        throw std::runtime_error("[Deserialize]: Unknown type " + s);
+        throw std::runtime_error("[Deserialize]: Unknown type " + std::string(s));
     }
 }
 

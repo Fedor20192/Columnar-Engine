@@ -11,7 +11,7 @@
 #include "glog/logging.h"
 
 namespace cngn {
-constexpr size_t kRowsInBatch = 65536, kBatchInQueue = 100, kRowsInQueue = kRowsInBatch * 10;
+constexpr size_t kRowsInBatch = 65536, kBatchInQueue = 100, kChunksInQueue = 10;
 
 void FromCsvToFormat(const std::string &schema_name, const std::string &source_name,
                      const std::string &table_name) {
@@ -21,17 +21,29 @@ void FromCsvToFormat(const std::string &schema_name, const std::string &source_n
                << "Source name: " << source_name << '\n'
                << "Table name: " << table_name << '\n';
 
-    Queue<CsvReader::Row> rows_queue(kRowsInQueue);
+    Queue<std::pair<CsvReader::Chunk, size_t>> chunks_queue(kChunksInQueue);
     Queue<Batch> batch_queue(kBatchInQueue);
 
     Schema schema = Schema::ReadFromCsv(schema_name);
 
     std::jthread reader([&] {
         CsvReader csv_reader(source_name);
-        while (auto row = csv_reader.ReadLine()) {
-            rows_queue.Push(std::move(row.value()));
+        while (true) {
+            bool is_empty = true;
+            size_t rows_count = 0;
+            for (size_t num_of_row = 0; num_of_row < kRowsInBatch; num_of_row++) {
+                if (!csv_reader.ReadLine()) {
+                    break;
+                }
+                is_empty = false;
+                rows_count++;
+            }
+            if (is_empty) {
+                break;
+            }
+            chunks_queue.Push(std::make_pair(csv_reader.GetChunk(), rows_count));
         }
-        rows_queue.Close();
+        chunks_queue.Close();
     });
 
     std::jthread writer([&] {
@@ -45,24 +57,12 @@ void FromCsvToFormat(const std::string &schema_name, const std::string &source_n
     });
 
     while (true) {
-        bool is_empty = true;
-
-        std::vector<CsvReader::Row> rows;
-        rows.reserve(kRowsInBatch);
-        for (size_t num_of_row = 0; num_of_row < kRowsInBatch; num_of_row++) {
-            std::optional<CsvReader::Row> row = rows_queue.Pop();
-            if (!row.has_value()) {
-                break;
-            }
-            is_empty = false;
-            rows.emplace_back(std::move(row.value()));
-        }
-
-        if (is_empty) {
+        if (auto chunk_op = chunks_queue.Pop(); chunk_op.has_value()) {
+            auto &[chunk, rows_count] = chunk_op.value();
+            batch_queue.Push(Batch(std::move(chunk), schema, rows_count));
+        } else {
             break;
         }
-
-        batch_queue.Push(Batch(rows, schema));
     }
 
     batch_queue.Close();

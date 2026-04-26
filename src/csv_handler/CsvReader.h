@@ -55,15 +55,15 @@ public:
 
 private:
     struct LineState {
-        LineState() {
-        }
+        LineState() = default;
+
+        void Reset();
 
         bool need_break = false;
         bool has_read = false;
         bool is_valid = true;
         struct FieldState {
-            FieldState() {
-            }
+            FieldState() = default;
 
             bool is_quote_open = false;
             bool is_quote_close = false;
@@ -73,6 +73,8 @@ private:
         };
         FieldState field{};
     };
+
+    LineState state_;
 
     class InputBuffer {
     public:

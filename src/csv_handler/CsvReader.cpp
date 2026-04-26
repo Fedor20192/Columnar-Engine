@@ -142,6 +142,12 @@ void CsvReader::LineState::FieldState::Reset() {
     is_quote_open = is_quote_close = false;
 }
 
+void CsvReader::LineState::Reset() {
+    need_break = has_read = false;
+    is_valid = true;
+    field.Reset();
+}
+
 CsvReader::CsvReader(const std::string& filename) : buffer_(filename) {
 }
 
@@ -157,37 +163,37 @@ bool CsvReader::ReadLine() {
         return false;
     }
 
-    LineState state;
+    state_.Reset();
 
-    LineState::FieldState& field_state = state.field;
-    while (!state.need_break && state.is_valid) {
+    LineState::FieldState& field_state = state_.field;
+    while (!state_.need_break && state_.is_valid) {
         if (int next = buffer_.Peek(); next != Parameters::kQuote &&
                                        next != Parameters::kDelimiter &&
                                        next != Parameters::kLinebreak && next != EOF) {
             auto str = buffer_.FindDels();
-            state.field.data += str;
+            state_.field.data += str;
             buffer_.UpdatePos(str.size());
 
             if ((!field_state.is_quote_open || field_state.is_quote_close) &&
                 buffer_.Peek() == Parameters::kQuote) {
-                state.is_valid = false;
+                state_.is_valid = false;
                 DLOG(ERROR) << "[CSVReader]: Bad quote in the middle of field" << '\n';
             }
         }
 
         int c = buffer_.GetChar();
-        FieldHandler(c, state);
+        FieldHandler(c, state_);
         if (c == EOF) {
             break;
         }
-        state.has_read = true;
+        state_.has_read = true;
     }
 
-    if (!state.has_read) {
-        state.is_valid = false;
+    if (!state_.has_read) {
+        state_.is_valid = false;
     }
 
-    if (!state.is_valid) {
+    if (!state_.is_valid) {
         return false;
     }
 

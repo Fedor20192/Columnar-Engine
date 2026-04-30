@@ -1,0 +1,5 @@
+add_subdirectory(csv_handler)
+add_subdirectory(kernel)
+add_subdirectory(interface)
+add_subdirectory(executable)
+add_subdirectory(operators)

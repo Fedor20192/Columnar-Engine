@@ -1,0 +1,15 @@
+set(CMAKE_CXX_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wpedantic")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -ffast-math -funroll-loops -flto -DGOOGLE_STRIP_LOG=2")
+add_compile_options(-fprofile-arcs -ftest-coverage)
+add_link_options(-fprofile-arcs -ftest-coverage)
+
+find_program(CLANG_TIDY_EXE clang-tidy)
+set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXE};)
+if(CMAKE_CXX_CLANG_TIDY)
+    set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
+endif()

@@ -37,7 +37,8 @@ public:
         }
         while (auto batch = next_operator_->Next()) {
             if (batch.value()->Empty()) {
-                throw std::runtime_error("[Count]: Batch is empty");
+                DLOG(WARNING) << "[Count]: Batch is empty\n";
+                continue;
             }
             count_ += (*batch.value())[0].Size();
         }

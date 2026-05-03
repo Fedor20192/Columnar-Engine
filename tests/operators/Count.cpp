@@ -6,9 +6,9 @@
 #include "../Fixtures.h"
 #include "../utils/Prepare.h"
 #include "BatchedWriter.h"
+#include "Filter.h"
 #include "Scan.h"
 #include "catch2/catch_template_test_macros.hpp"
-
 
 TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
     DefaultTestConfig::DefaultPrepare();
@@ -81,4 +81,56 @@ TEST_CASE_METHOD(GlogFixture, "Some columns Count", "[Count Operator]") {
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());
     count->Close();
+}
+
+TEST_CASE_METHOD(GlogFixture, "Strict Filter", "[Count Operator]") {
+
+    cngn::Schema schema({
+        {"a", cngn::Type::Int64},
+        {"b", cngn::Type::Int16},
+        {"c", cngn::Type::String},
+        {"d", cngn::Type::Int32},
+    });
+
+    cngn::Batch batch(
+        std::vector{
+            cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6, 7, 8}),
+            cngn::Column(std::vector<int16_t>{0, 0, 0, 0, 0, 0, 0, 0}),
+            cngn::Column(std::vector<std::string>{"a", "b", "c", "d", "e", "f", "g", "h"}),
+            cngn::Column(std::vector<int32_t>{14, 22, 8, 88, 69, 67, 0, 1}),
+        },
+        schema);
+
+    const std::string filename = "filter.chsv";
+    cngn::BatchedWriter writer(filename, schema);
+    writer.WriteBatch(batch);
+    writer.WriteMetadata();
+    writer.Flush();
+
+    auto filter =
+        std::make_unique<cngn::operators::Count>(std::make_unique<cngn::operators::Filter>(
+            std::make_unique<cngn::operators::Scan>(filename, cngn::Schema({
+                                                                  {"b", cngn::Type::Int16},
+                                                                  {"c", cngn::Type::String},
+                                                                  {"d", cngn::Type::Int32},
+                                                              })),
+            std::make_shared<cngn::operators::BinaryExpression>(
+                cngn::operators::BinaryExpressionType::Neq,
+                std::make_shared<cngn::operators::SelectExpression>("b"),
+                std::make_shared<cngn::operators::ConstantExpression>(static_cast<int16_t>(0)))));
+
+    filter->Open();
+
+    auto ans_op = filter->Next();
+
+    filter->Close();
+
+    REQUIRE(ans_op.has_value());
+
+    auto ans = ans_op.value();
+    const auto& count_batch = *ans;
+
+    REQUIRE(ans->RowCount() == 1);
+    REQUIRE(ans->ColumnCount() == 1);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::UInt64>>(count_batch[0][0]) == 0);
 }

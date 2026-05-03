@@ -30,8 +30,7 @@ Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
     DLOG(INFO) << "[Batch]: Batch successfully constructed!\n";
 }
 
-
-Batch::Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count) {
+Batch::Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count) : schema_(schema) {
     if (chunk.Empty()) {
         return;
     }

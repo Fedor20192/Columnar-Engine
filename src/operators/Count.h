@@ -8,9 +8,8 @@
 namespace cngn {
 class Count : public Operator {
 public:
-    explicit Count(std::unique_ptr<Operator>&& next_operator,
-                   const std::shared_ptr<Context>& context)
-        : Operator(context), next_operator_(std::move(next_operator)) {
+    explicit Count(std::unique_ptr<Operator>&& next_operator)
+        : next_operator_(std::move(next_operator)) {
     }
 
     void Close() override {

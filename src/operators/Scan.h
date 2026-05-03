@@ -6,7 +6,7 @@
 namespace cngn {
 class Scan : public Operator {
 public:
-    explicit Scan(const std::string &filename, const std::shared_ptr<Context> &);
+    explicit Scan(const std::string &filename, Schema need_columns_schema);
 
     void Open() override;
     std::optional<Batch> Next() override;
@@ -14,5 +14,6 @@ public:
 
 private:
     BatchedReader reader_;
+    Schema schema_;
 };
 }  // namespace cngn

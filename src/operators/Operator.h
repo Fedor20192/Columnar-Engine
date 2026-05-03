@@ -49,13 +49,10 @@ public:
     virtual ~Operator() = default;
 
 protected:
-    Operator() = delete;
+    Operator() = default;
     Operator(const Operator&) = delete;
     Operator(Operator&&) = delete;
     Operator& operator=(const Operator&) = delete;
     Operator& operator=(Operator&&) = delete;
-    explicit Operator(const std::shared_ptr<Context>& context) : context_(context) {
-    }
-    std::shared_ptr<Context> context_;
 };
 }  // namespace cngn

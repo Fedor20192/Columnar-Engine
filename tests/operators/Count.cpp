@@ -17,8 +17,8 @@ TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
 
     auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"a"});
 
-    std::unique_ptr<cngn::Operator> count = std::make_unique<cngn::Count>(
-        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context), context);
+    auto count = std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(
+        DefaultTestConfig::kFilename, cngn::Schema({{"a", cngn::Type::Int64}})));
     count->Open();
     auto count_batch = count->Next();
 
@@ -57,8 +57,8 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
 
     auto context = std::make_shared<cngn::Context>();
 
-    std::unique_ptr<cngn::Operator> count = std::make_unique<cngn::Count>(
-        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context), context);
+    auto count = std::make_unique<cngn::Count>(
+        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, cngn::Schema()));
     count->Open();
 
     auto count_batch = count->Next();
@@ -77,8 +77,8 @@ TEST_CASE_METHOD(GlogFixture, "Some columns Count", "[Count Operator]") {
 
     auto context = std::make_shared<cngn::Context>(std::vector<std::string>({"b"}));
 
-    std::unique_ptr<cngn::Operator> count =
-        std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context), context);
+    auto count = std::make_unique<cngn::Count>(
+        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, cngn::Schema()));
     count->Open();
     auto count_batch = count->Next();
 

@@ -6,6 +6,7 @@
 #include "glog/logging.h"
 
 namespace cngn {
+namespace operators {
 class Count : public Operator {
 public:
     explicit Count(std::unique_ptr<Operator>&& next_operator,
@@ -55,4 +56,5 @@ private:
     size_t count_{0};
     bool finished_{false};
 };
+}  // namespace operators
 }  // namespace cngn

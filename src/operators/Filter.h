@@ -7,7 +7,7 @@ namespace cngn {
 namespace operators {
 class Filter : public Operator {
 public:
-    Filter(std::shared_ptr<Operator> child, std::shared_ptr<Expression> predicate)
+    Filter(std::unique_ptr<Operator> child, std::shared_ptr<Expression> predicate)
         : next_operator_(std::move(child)), predicate_(std::move(predicate)) {
         if (next_operator_ == nullptr) {
             throw std::invalid_argument("[Filter]: Child cannot be nullptr");
@@ -71,7 +71,7 @@ public:
     }
 
 private:
-    std::shared_ptr<Operator> next_operator_;
+    std::unique_ptr<Operator> next_operator_;
     std::shared_ptr<Expression> predicate_;
 };
 }  // namespace operators

@@ -32,8 +32,8 @@ TEST_CASE_METHOD(GlogFixture, "Simple Filter", "[Filter Operator]") {
     writer.WriteMetadata();
     writer.Flush();
 
-    auto filter = std::make_shared<cngn::operators::Filter>(
-        std::make_shared<cngn::operators::Scan>(filename, cngn::Schema({
+    auto filter = std::make_unique<cngn::operators::Filter>(
+        std::make_unique<cngn::operators::Scan>(filename, cngn::Schema({
                                                               {"b", cngn::Type::Int16},
                                                               {"c", cngn::Type::String},
                                                               {"d", cngn::Type::Int32},

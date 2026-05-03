@@ -13,7 +13,7 @@
 TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
     DefaultTestConfig::DefaultPrepare();
 
-    auto count = std::make_unique<cngn::Count>(std::make_unique<cngn::operators::Scan>(
+    auto count = std::make_unique<cngn::operators::Count>(std::make_unique<cngn::operators::Scan>(
         DefaultTestConfig::kFilename, cngn::Schema({{"a", cngn::Type::Int64}})));
     count->Open();
     auto count_batch = count->Next();
@@ -51,7 +51,7 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
     writer.WriteMetadata();
     writer.Flush();
 
-    auto count = std::make_unique<cngn::Count>(
+    auto count = std::make_unique<cngn::operators::Count>(
         std::make_unique<cngn::operators::Scan>(DefaultTestConfig::kFilename, cngn::Schema()));
     count->Open();
 
@@ -69,7 +69,7 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
 TEST_CASE_METHOD(GlogFixture, "Some columns Count", "[Count Operator]") {
     DefaultTestConfig::DefaultPrepare();
 
-    auto count = std::make_unique<cngn::Count>(
+    auto count = std::make_unique<cngn::operators::Count>(
         std::make_unique<cngn::operators::Scan>(DefaultTestConfig::kFilename, cngn::Schema()));
     count->Open();
     auto count_batch = count->Next();

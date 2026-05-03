@@ -12,6 +12,7 @@ BatchedReader::BatchedReader(const std::string &filename) : file_(filename, std:
 
     DLOG(INFO) << "[BatchedReader]: BatchedReader trying read metadata\n";
     metadata_ = Metadata(ReadMetadata(file_));
+    new_schema_ = metadata_.GetSchema();
     DLOG(INFO) << "[BatchedReader]: BatchedReader read metadata!\n";
 
     uint64_t columns_cnt = metadata_.GetColumnsCnt();
@@ -26,6 +27,16 @@ BatchedReader::BatchedReader(const std::string &filename) : file_(filename, std:
 void BatchedReader::SetIndices(std::vector<uint64_t> &&column_indices) {
     num_of_batch_ = 0;
     column_indices_ = std::move(column_indices);
+
+    const auto &schema = metadata_.GetSchema();
+
+    std::vector<Schema::ColumnData> new_schema_data(column_indices_.size());
+    for (size_t i = 0; i < column_indices_.size(); i++) {
+        const auto &[col_name, col_type] = schema[column_indices_[i]];
+        new_schema_data[i] = {col_name, col_type};
+    }
+
+    new_schema_ = Schema(new_schema_data);
 }
 
 std::optional<Batch> BatchedReader::ReadBatch() {
@@ -41,7 +52,7 @@ std::optional<Batch> BatchedReader::ReadBatch() {
     DLOG(INFO) << "[BatchedReader]: Batch number " << num_of_batch_ << " has " << rows_cnt
                << " rows\n";
 
-    Batch batch;
+    Batch batch(new_schema_);
 
     if (!std::is_sorted(column_indices_.begin(), column_indices_.end())) {
         DLOG(WARNING) << "[BatchedReader]: Column indices is not sorted!\n";

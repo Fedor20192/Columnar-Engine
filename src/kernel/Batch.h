@@ -10,12 +10,13 @@ namespace cngn {
 
 class Batch {
 public:
-    Batch() = default;
+    Batch() = delete;
     Batch(const Batch&) = delete;
     Batch& operator=(const Batch&) = delete;
     Batch(Batch&&) noexcept = default;
     Batch& operator=(Batch&&) noexcept = default;
 
+    explicit Batch(const Schema& schema);
     explicit Batch(const std::vector<Column>& columns, const Schema& schema);
 
     using Row = std::vector<std::string>;
@@ -32,6 +33,8 @@ public:
     void AddColumn(Column&& column);
 
     std::vector<Row> Serialize() const;
+
+    const Schema& GetSchema() const;
 
 private:
     std::vector<Column> columns_;

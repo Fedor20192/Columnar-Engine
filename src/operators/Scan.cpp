@@ -1,9 +1,11 @@
 #include "Scan.h"
 
+#include <unordered_map>
+
 #include "glog/logging.h"
 
 namespace cngn {
-
+namespace operators {
 Scan::Scan(const std::string& filename, Schema need_columns_schema)
     : reader_(filename), schema_(std::move(need_columns_schema)) {
 }
@@ -50,7 +52,7 @@ void Scan::Open() {
     std::vector<uint64_t> column_indices;
     column_indices.reserve(need_columns_names.size());
 
-    Context::Mapping columns_mapping;
+    std::unordered_map<std::string, size_t> columns_mapping;
     columns_mapping.reserve(need_columns_names.size());
 
     for (size_t i = 0; i < selected_columns.size(); i++) {
@@ -63,11 +65,15 @@ void Scan::Open() {
     DLOG(INFO) << "[Scan]: Successfully opened\n";
 }
 
-std::optional<Batch> Scan::Next() {
-    return reader_.ReadBatch();
+std::optional<std::shared_ptr<Batch>> Scan::Next() {
+    auto batch = reader_.ReadBatch();
+    if (batch.has_value()) {
+        return std::make_shared<Batch>(std::move(batch.value()));
+    }
+    return std::nullopt;
 }
 
 void Scan::Close() {
 }
-
+}  // namespace operators
 }  // namespace cngn

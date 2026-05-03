@@ -63,6 +63,10 @@ public:
             array_); //todo: убрать это блядство
     }
 
+    OwningPtr GetOwningBuffer() const {
+        return buffer_ptr_;
+    }
+
 private:
     ArrayTypeVariant array_;
     OwningPtr buffer_ptr_;

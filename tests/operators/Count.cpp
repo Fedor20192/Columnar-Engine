@@ -6,25 +6,21 @@
 #include "../Fixtures.h"
 #include "../utils/Prepare.h"
 #include "BatchedWriter.h"
-#include "CsvWriter.h"
 #include "Scan.h"
 #include "catch2/catch_template_test_macros.hpp"
 
-using Row = cngn::CsvWriter::Row;
 
 TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
     DefaultTestConfig::DefaultPrepare();
 
-    auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"a"});
-
-    auto count = std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(
+    auto count = std::make_unique<cngn::Count>(std::make_unique<cngn::operators::Scan>(
         DefaultTestConfig::kFilename, cngn::Schema({{"a", cngn::Type::Int64}})));
     count->Open();
     auto count_batch = count->Next();
 
     REQUIRE(count_batch.has_value());
-    REQUIRE(count_batch->ColumnCount() == 1);
-    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3}));
+    REQUIRE(count_batch.value()->ColumnCount() == 1);
+    REQUIRE((*count_batch.value())[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3}));
 
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());
@@ -55,17 +51,15 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
     writer.WriteMetadata();
     writer.Flush();
 
-    auto context = std::make_shared<cngn::Context>();
-
     auto count = std::make_unique<cngn::Count>(
-        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, cngn::Schema()));
+        std::make_unique<cngn::operators::Scan>(DefaultTestConfig::kFilename, cngn::Schema()));
     count->Open();
 
     auto count_batch = count->Next();
 
     REQUIRE(count_batch.has_value());
-    REQUIRE(count_batch->ColumnCount() == 1);
-    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3 + 6}));
+    REQUIRE(count_batch.value()->ColumnCount() == 1);
+    REQUIRE((*count_batch.value())[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3 + 6}));
 
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());
@@ -75,16 +69,14 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
 TEST_CASE_METHOD(GlogFixture, "Some columns Count", "[Count Operator]") {
     DefaultTestConfig::DefaultPrepare();
 
-    auto context = std::make_shared<cngn::Context>(std::vector<std::string>({"b"}));
-
     auto count = std::make_unique<cngn::Count>(
-        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, cngn::Schema()));
+        std::make_unique<cngn::operators::Scan>(DefaultTestConfig::kFilename, cngn::Schema()));
     count->Open();
     auto count_batch = count->Next();
 
     REQUIRE(count_batch.has_value());
-    REQUIRE(count_batch->ColumnCount() == 1);
-    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3}));
+    REQUIRE(count_batch.value()->ColumnCount() == 1);
+    REQUIRE((*count_batch.value())[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3}));
 
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());

@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     query->Open();
 
     while (auto ans = query->Next()) {
-        const auto& serialized = ans.value().Serialize();
+        const auto& serialized = ans.value()->Serialize();
         for (const auto& row : serialized) {
             for (const auto& column : row) {
                 std::cout << column << ' ';

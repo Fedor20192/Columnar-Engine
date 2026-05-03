@@ -12,7 +12,11 @@ target_link_libraries(test_expressions_core Catch2::Catch2WithMain columnar_oper
 add_executable(test_expression Expression.cpp)
 target_link_libraries(test_expression Catch2::Catch2WithMain columnar_operator)
 
+add_executable(test_filter Filter.cpp)
+target_link_libraries(test_filter Catch2::Catch2WithMain columnar_operator)
+
 catch_discover_tests(test_operator_scan)
 catch_discover_tests(test_operator_count)
 catch_discover_tests(test_expressions_core)
 catch_discover_tests(test_expression)
+catch_discover_tests(test_filter)

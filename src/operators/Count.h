@@ -28,25 +28,25 @@ public:
         DLOG(INFO) << "[Count]: Close\n";
     }
 
-    std::optional<Batch> Next() override {
+    std::optional<std::shared_ptr<Batch>> Next() override {
         DLOG(INFO) << "[Count]: Next\n";
 
         if (finished_) {
             return std::nullopt;
         }
         while (auto batch = next_operator_->Next()) {
-            if (batch.value().Empty()) {
+            if (batch.value()->Empty()) {
                 throw std::runtime_error("[Count]: Batch is empty");
             }
-            count_ += batch.value()[0].Size();
+            count_ += (*batch.value())[0].Size();
         }
         finished_ = true;
 
         DLOG(INFO) << "[Count]: Close\n"
                       "Count = "
                    << count_ << "\n";
-        return Batch({Column(ArrayType<Type::UInt64>{count_})},
-                     Schema({{result_column_name_, Type::UInt64}}));
+        return std::make_shared<Batch>(Batch({Column(ArrayType<Type::UInt64>{count_})},
+                                             Schema({{result_column_name_, Type::UInt64}})));
     }
 
 private:

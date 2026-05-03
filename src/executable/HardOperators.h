@@ -11,6 +11,6 @@ constexpr int kQueriesCount = 1;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
-        return std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(filename, cngn::Schema()));
+        return std::make_unique<cngn::Count>(std::make_unique<cngn::operators::Scan>(filename, cngn::Schema()));
     },
 };

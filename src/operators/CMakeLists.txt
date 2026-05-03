@@ -1,6 +1,6 @@
 project(columnar_operator)
 
-set(SOURCES Scan.cpp)
+set(SOURCES Scan.cpp Expression.cpp ExpressionCore.cpp)
 set(HEADERS Operator.h Scan.h Count.h)
 
 add_library(columnar_operator STATIC ${SOURCES} ${HEADERS})

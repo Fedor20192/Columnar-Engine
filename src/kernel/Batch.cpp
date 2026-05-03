@@ -4,7 +4,8 @@
 
 namespace cngn {
 
-Batch::Batch(const std::vector<Column>& columns, const Schema& schema) : columns_(columns) {
+Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
+    : columns_(columns), schema_(schema) {
     DLOG(INFO) << "[Batch]: Trying construct batch\n";
     if (columns.size() != schema.GetData().size()) {
         throw std::invalid_argument(
@@ -24,7 +25,7 @@ Batch::Batch(const std::vector<Column>& columns, const Schema& schema) : columns
     DLOG(INFO) << "[Batch]: Batch successfully constructed!\n";
 }
 
-Batch::Batch(const std::vector<Row>& rows, const Schema& schema) {
+Batch::Batch(const std::vector<Row>& rows, const Schema& schema) : schema_(schema) {
     if (rows.empty()) {
         return;
     }
@@ -84,12 +85,34 @@ size_t Batch::ColumnCount() const {
     return columns_.size();
 }
 
+size_t Batch::RowCount() const {
+    if (columns_.empty()) {
+        return 0;
+    }
+    return columns_[0].Size();
+}
+
 bool Batch::Empty() const {
     return columns_.empty();
 }
 
 const Column& Batch::operator[](size_t index) const {
     return columns_[index];
+}
+
+const Column& Batch::GetColumnByName(const std::string& column_name) const {
+    const auto& fields = schema_.GetData();
+
+    auto it = std::find_if(fields.begin(), fields.end(),
+                           [&column_name](const Schema::ColumnData& column_data) {
+                               return column_name == column_data.column_name;
+                           });
+
+    if (it != fields.end()) {
+        return columns_[it - fields.begin()];
+    }
+
+    throw std::invalid_argument("[Batch]: Column " + column_name + " not found!");
 }
 
 void Batch::AddColumn(Column&& column) {

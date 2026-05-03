@@ -22,10 +22,12 @@ public:
     explicit Batch(const std::vector<Row>& rows, const Schema& schema);
 
     size_t ColumnCount() const;
+    size_t RowCount() const;
 
     bool Empty() const;
 
     const Column& operator[](size_t index) const;
+    const Column& GetColumnByName(const std::string& column_name) const;
 
     void AddColumn(Column&& column);
 
@@ -33,6 +35,7 @@ public:
 
 private:
     std::vector<Column> columns_;
+    Schema schema_;
 };
 
 }  // namespace cngn

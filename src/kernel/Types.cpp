@@ -96,6 +96,8 @@ std::string ToString(const PhysTypeVariant &x) {
                           std::is_same_v<NowType, PhysicalType<Type::Int32>> ||
                           std::is_same_v<NowType, PhysicalType<Type::Int16>>) {
                 return std::to_string(value);
+            } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::Bool>>) {
+                return std::to_string(static_cast<unsigned char>(value));
             } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::Date>>) {
                 auto current_date = sys_days{} + days{value.days};
                 return std::format("{:%Y-%m-%d}", current_date);
@@ -106,7 +108,8 @@ std::string ToString(const PhysTypeVariant &x) {
                                  std::is_same_v<NowType, PhysicalType<Type::MetaString>>) {
                 return std::string(value);
             } else {
-                throw std::invalid_argument("[ToString]: Unknown type");
+                static_assert(false, "[ToString]: Unknown type");
+                return "";
             }
         },
         x);

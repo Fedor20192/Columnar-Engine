@@ -8,8 +8,10 @@
 namespace cngn {
 class Count : public Operator {
 public:
-    explicit Count(std::unique_ptr<Operator>&& next_operator)
-        : next_operator_(std::move(next_operator)) {
+    explicit Count(std::unique_ptr<Operator>&& next_operator,
+                   std::string result_column_name = "count")
+        : result_column_name_(std::move(result_column_name)),
+          next_operator_(std::move(next_operator)) {
     }
 
     void Close() override {
@@ -41,13 +43,16 @@ public:
         finished_ = true;
 
         DLOG(INFO) << "[Count]: Close\n"
-                      "Count = " << count_ << "\n";
-        return Batch({Column(ArrayType<Type::UInt64>{count_})}, Schema({{"count", Type::UInt64}}));
+                      "Count = "
+                   << count_ << "\n";
+        return Batch({Column(ArrayType<Type::UInt64>{count_})},
+                     Schema({{result_column_name_, Type::UInt64}}));
     }
 
 private:
-    bool finished_{false};
-    size_t count_{0};
+    std::string result_column_name_;
     std::unique_ptr<Operator> next_operator_;
+    size_t count_{0};
+    bool finished_{false};
 };
 }  // namespace cngn

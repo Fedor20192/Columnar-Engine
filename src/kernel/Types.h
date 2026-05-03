@@ -14,6 +14,7 @@ enum class Type {
     Int64,
     Int32,
     Int16,
+    Bool,
     String,
     MetaString,
     Timestamp,
@@ -54,6 +55,11 @@ struct PhysTypeWrapper<Type::Int16> {
 };
 
 template <>
+struct PhysTypeWrapper<Type::Bool> {
+    using PhysicalType = char;
+};
+
+template <>
 struct PhysTypeWrapper<Type::String> {
     using PhysicalType = std::string_view;
 };
@@ -76,18 +82,19 @@ struct PhysTypeWrapper<Type::Date> {
 template <Type type>
 using PhysicalType = PhysTypeWrapper<type>::PhysicalType;
 
-using PhysTypeVariant = std::variant<PhysicalType<Type::UInt64>, PhysicalType<Type::Int64>,
-                                     PhysicalType<Type::Int32>, PhysicalType<Type::Int16>,
-                                     PhysicalType<Type::String>, PhysicalType<Type::MetaString>,
-                                     PhysicalType<Type::Timestamp>, PhysicalType<Type::Date>>;
+using PhysTypeVariant =
+    std::variant<PhysicalType<Type::UInt64>, PhysicalType<Type::Int64>, PhysicalType<Type::Int32>,
+                 PhysicalType<Type::Int16>, PhysicalType<Type::Bool>, PhysicalType<Type::String>,
+                 PhysicalType<Type::MetaString>, PhysicalType<Type::Timestamp>,
+                 PhysicalType<Type::Date>>;
 
 template <Type type>
 using ArrayType = std::vector<PhysicalType<type>>;
 
 using ArrayTypeVariant =
     std::variant<ArrayType<Type::UInt64>, ArrayType<Type::Int64>, ArrayType<Type::Int32>,
-                 ArrayType<Type::Int16>, ArrayType<Type::String>, ArrayType<Type::MetaString>,
-                 ArrayType<Type::Timestamp>, ArrayType<Type::Date>>;
+                 ArrayType<Type::Int16>, ArrayType<Type::Bool>, ArrayType<Type::String>,
+                 ArrayType<Type::MetaString>, ArrayType<Type::Timestamp>, ArrayType<Type::Date>>;
 
 struct SerializeType {
     template <Type type>
@@ -100,6 +107,8 @@ struct SerializeType {
             return "int32";
         } else if constexpr (type == Type::Int16) {
             return "int16";
+        } else if constexpr (type == Type::Bool) {
+            return "bool";
         } else if constexpr (type == Type::String) {
             return "string";
         } else if constexpr (type == Type::MetaString) {
@@ -109,7 +118,8 @@ struct SerializeType {
         } else if constexpr (type == Type::Date) {
             return "date";
         } else {
-            throw std::runtime_error("[SerializeType]: Unknown type");
+            static_assert(0, "[SerializeType]: Unknown type");
+            return "";
         }
     }
 };

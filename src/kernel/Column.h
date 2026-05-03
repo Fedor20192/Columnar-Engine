@@ -7,12 +7,19 @@
 namespace cngn {
 class Column {
 public:
-    using OwningPtr = std::shared_ptr<char[]>;
-
     template <typename T>
         requires std::is_constructible_v<ArrayTypeVariant, T>
-    explicit Column(T&& array, const OwningPtr& ptr = nullptr) noexcept
+    explicit Column(T&& array, const std::shared_ptr<char[]>& ptr = nullptr) noexcept
         : array_(std::forward<T>(array)), buffer_ptr_(ptr) {
+    }
+
+    explicit Column(Type type, size_t capacity) {
+        auto init_array = [this, capacity]<Type type>() {
+            std::vector<PhysicalType<type>> vec;
+            vec.reserve(capacity);
+            array_ = std::move(vec);
+        };
+        DispatchOnType(type, init_array);
     }
 
     size_t Size() const {
@@ -63,12 +70,26 @@ public:
             array_); //todo: убрать это блядство
     }
 
-    OwningPtr GetOwningBuffer() const {
+    std::shared_ptr<char[]> GetOwningBuffer() const {
         return buffer_ptr_;
+    }
+    template <Type type>
+    void PushBack(const PhysicalType<type>& value) {
+        std::visit(
+            [&]<typename T0>(T0&& arr) {
+                using Vec = std::decay_t<T0>;
+                using Elem = Vec::value_type;
+                using Expected = PhysicalType<type>;
+
+                if constexpr (std::is_same_v<Elem, Expected>) {
+                    arr.push_back(value);
+                }
+            },
+            array_);
     }
 
 private:
     ArrayTypeVariant array_;
-    OwningPtr buffer_ptr_;
+    std::shared_ptr<char[]> buffer_ptr_;
 };
 }  // namespace cngn

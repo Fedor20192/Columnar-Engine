@@ -1,5 +1,7 @@
 #include "Batch.h"
 
+#include <functional>
+
 #include "glog/logging.h"
 
 namespace cngn {
@@ -28,12 +30,15 @@ Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
     DLOG(INFO) << "[Batch]: Batch successfully constructed!\n";
 }
 
-Batch::Batch(const std::vector<Row>& rows, const Schema& schema) : schema_(schema) {
-    if (rows.empty()) {
+
+Batch::Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count) {
+    if (chunk.Empty()) {
         return;
     }
 
-    const size_t rows_count = rows.size(), columns_count = rows[0].size();
+    chunk.InitColumnsCnt(rows_count);
+
+    const size_t columns_count = chunk.GetColsCount(rows_count);
 
     if (columns_count > schema.GetColumnsCount()) {
         throw std::invalid_argument("[Batch]: Columns count mismatch " +
@@ -43,44 +48,27 @@ Batch::Batch(const std::vector<Row>& rows, const Schema& schema) : schema_(schem
 
     columns_.reserve(columns_count);
 
-    for (size_t column_index = 0; column_index < columns_count; ++column_index) {
-        auto get_column = [&]<Type type>() {
-            std::vector<PhysicalType<type>> arr;
-            arr.reserve(rows_count);
+    using FieldParser = std::function<void(size_t row_index, size_t col_index)>;
+    std::vector<FieldParser> parsers;
+    parsers.reserve(columns_count);
 
-            if constexpr (type == Type::String) {
-                size_t total_size = 0;
-                for (const auto& row : rows) {
-                    total_size += row[column_index].size();
-                }
-
-                auto buffer = std::make_shared<char[]>(total_size);
-                char* current_ptr = buffer.get();
-
-                for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-                    const std::string& s = rows[row_index][column_index];
-
-                    std::memcpy(current_ptr, s.data(), s.size());
-
-                    arr.emplace_back(current_ptr, s.size());
-
-                    current_ptr += s.size();
-                }
-                return Column(std::move(arr), buffer);
-            } else {
-                for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-                    if (column_index >= rows[row_index].size()) {
-                        throw std::invalid_argument("[Batch]: Batch column index mismatch: " +
-                                                    std::to_string(column_index) + " != " +
-                                                    std::to_string(rows[row_index].size()));
-                    }
-                    arr.emplace_back(Deserialize<type>(rows[row_index][column_index]));
-                }
-                return Column(std::move(arr), nullptr);
-            }
+    for (size_t i = 0; i < columns_count; i++) {
+        columns_.emplace_back(schema[i].column_type, rows_count);
+        auto prepare_parser = [this, &chunk]<Type type>() -> FieldParser {
+            return [this, &chunk](size_t row_ind, size_t col_ind) {
+                auto field = chunk.GetField(row_ind, col_ind);
+                columns_[col_ind].PushBack<type>(Deserialize<type>(field));
+            };
         };
+        parsers.push_back(DispatchOnType(schema[i].column_type, prepare_parser));
+    }
 
-        columns_.emplace_back(DispatchOnType(schema[column_index].column_type, get_column));
+    buffer_ = chunk.GetBuffer();
+
+    for (size_t row_index = 0; row_index < rows_count; ++row_index) {
+        for (size_t column_index = 0; column_index < columns_.size(); ++column_index) {
+            parsers[column_index](row_index, column_index);
+        }
     }
 }
 
@@ -128,10 +116,10 @@ void Batch::AddColumn(Column&& column) {
     columns_.emplace_back(std::move(column));
 }
 
-std::vector<Batch::Row> Batch::Serialize() const {
+std::vector<std::vector<std::string>> Batch::Serialize() const {
     DLOG(INFO) << "[Batch]: Batch::Serialize()\n";
 
-    std::vector<Row> result;
+    std::vector<std::vector<std::string>> result;
 
     if (Empty()) {
         DLOG(INFO) << "[Batch]: Batch::Serialized! Its empty!\n";

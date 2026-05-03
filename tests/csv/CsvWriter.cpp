@@ -18,7 +18,7 @@ TEST_CASE_METHOD(GlogFixture, "Empty", "[CSVWriter]") {
     writer.WriteAllRows(rows);
 
     cngn::CsvReader reader(filename);
-    auto ans = reader.ReadAllLines();
+    auto ans = ReadAllLines(reader);
     REQUIRE(ans.empty());
 }
 
@@ -32,7 +32,7 @@ TEST_CASE_METHOD(GlogFixture, "Single row with one field", "[CSVWriter]") {
     writer.Flush();
 
     cngn::CsvReader reader(filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == 1);
     REQUIRE(result[0] == Row{"Hello"});
 }
@@ -47,7 +47,7 @@ TEST_CASE_METHOD(GlogFixture, "Many fields one row", "[CSVWriter]") {
     writer.Flush();
 
     cngn::CsvReader reader(filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == 1);
     REQUIRE(result[0] == Row{"Name", "Age", "City"});
 }
@@ -65,7 +65,7 @@ TEST_CASE_METHOD(GlogFixture, "Multiple rows", "[CSVWriter]") {
     writer.Flush();
 
     cngn::CsvReader reader(filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == 4);
 
     REQUIRE(result[0] == Row{"Name", "Age", "City"});
@@ -84,7 +84,7 @@ TEST_CASE_METHOD(GlogFixture, "Empty fields", "[CSVWriter]") {
     writer.Flush();
 
     cngn::CsvReader reader(filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == 3);
     REQUIRE(result[0] == Row{"Field1", "", "Field3"});
     REQUIRE(result[1] == Row{"", "Value2", ""});
@@ -102,7 +102,7 @@ TEST_CASE_METHOD(GlogFixture, "Special characters in fields", "[CSVWriter]") {
     writer.Flush();
 
     cngn::CsvReader reader(filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == 2);
 }
 
@@ -123,7 +123,7 @@ TEST_CASE_METHOD(GlogFixture, "Large", "[CSVWriter]") {
     writer.Flush();
 
     cngn::CsvReader reader(filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == kRowCount);
     REQUIRE(result[0][0] == "Row_0");
     REQUIRE(result[499][1] == "Value_998");
@@ -141,7 +141,7 @@ TEST_CASE_METHOD(GlogFixture, "Whitespace handling", "[CSVWriter]") {
     writer.Flush();
 
     cngn::CsvReader reader(filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == 2);
     REQUIRE(result[0] == Row{"  Leading", "Trailing  ", "  Both  "});
     REQUIRE(result[1] == Row{"Tab\tHere", "New\nLine", "Spaces   Here"});
@@ -160,7 +160,7 @@ TEST_CASE_METHOD(GlogFixture, "Append rows", "[CSVWriter]") {
     writer1.Flush();
 
     cngn::CsvReader reader(filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == 2);
     REQUIRE(result[0][0] == "First");
 }
@@ -177,7 +177,7 @@ TEST_CASE_METHOD(GlogFixture, "Append to existing file", "[CSVWriter]") {
     writer.Flush();
 
     cngn::CsvReader reader(filename);
-    auto result = reader.ReadAllLines();
+    auto result = ReadAllLines(reader);
     REQUIRE(result.size() == 1);
     REQUIRE(result[0][0] == "Second");
 }

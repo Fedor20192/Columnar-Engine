@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
     for (int i = start_query; i < finish_query; i++) {
         DLOG(INFO) << "[QueriesExecute]: Starting execute query number " << num << '\n';
 
-        auto query = kGenerators[num](filename);
+        auto query = kGenerators[i](filename);
 
         query->Open();
 

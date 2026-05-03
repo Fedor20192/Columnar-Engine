@@ -1,3 +1,7 @@
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+
 #include "CsvReader.h"
 
 #include "glog/logging.h"
@@ -62,71 +66,68 @@ std::shared_ptr<std::vector<char>> CsvReader::Chunk::GetBuffer() {
     return buffer_;
 }
 
-CsvReader::InputBuffer::InputBuffer(const std::string& filename) : file_(filename) {
-    if (!file_.is_open()) {
-        throw std::runtime_error("Error opening file " + filename);
+CsvReader::InputBuffer::InputBuffer(const std::string& filename) {
+    fd_ = open(filename.c_str(), O_RDONLY);
+    if (fd_ == -1) {
+        throw std::runtime_error("[CsvReader::InputBuffer]: Error opening file " + filename);
     }
-    buffer_ = std::make_unique<char[]>(kBufCp);
-    Update();
+
+    struct stat st;
+    fstat(fd_, &st);
+    buffer_sz_ = st.st_size;
+
+    if (buffer_sz_ == 0) {
+        return;
+    }
+
+    void* map_res = mmap(nullptr, buffer_sz_, PROT_READ, MAP_PRIVATE, fd_, 0);
+
+    if (map_res == MAP_FAILED) {
+        throw std::runtime_error("[CsvReader::InputBuffer]: Error mapping file " + filename);
+    }
+
+    buffer_ = static_cast<char*>(map_res);
+    madvise(buffer_, buffer_sz_, MADV_SEQUENTIAL);
 }
 
 int CsvReader::InputBuffer::GetChar() {
-    if (buffer_sz_ == buffer_pos_) {
-        Update();
-    }
-    if (buffer_sz_ == 0) {
+    if (buffer_pos_ >= buffer_sz_) {
         return EOF;
     }
 
-    return buffer_[buffer_pos_++];
+    return static_cast<unsigned char>(buffer_[buffer_pos_++]);
 }
 
-int CsvReader::InputBuffer::Peek() {
-    if (buffer_sz_ == buffer_pos_) {
-        Update();
-    }
-    if (buffer_sz_ == 0) {
+int CsvReader::InputBuffer::Peek() const {
+    if (buffer_pos_ >= buffer_sz_) {
         return EOF;
     }
-    return buffer_[buffer_pos_];
+    return static_cast<unsigned char>(buffer_[buffer_pos_]);
 }
 
 std::string_view CsvReader::InputBuffer::FindSymb(char symb) const {
-    auto pos = memchr(buffer_.get() + buffer_pos_, symb, buffer_sz_ - buffer_pos_);
+    auto pos = memchr(buffer_ + buffer_pos_, symb, buffer_sz_ - buffer_pos_);
     if (!pos) {
-        return std::string_view(buffer_.get() + buffer_pos_, buffer_sz_ - buffer_pos_);
+        return std::string_view(buffer_ + buffer_pos_, buffer_sz_ - buffer_pos_);
     }
-    return std::string_view(buffer_.get() + buffer_pos_, static_cast<const char*>(pos));
+    return std::string_view(buffer_ + buffer_pos_, static_cast<const char*>(pos));
 }
 
 std::string_view CsvReader::InputBuffer::FindDels() const {
-    std::string_view current_view(buffer_.get() + buffer_pos_, buffer_sz_ - buffer_pos_);
+    std::string_view current_view(buffer_ + buffer_pos_, buffer_sz_ - buffer_pos_);
     static constexpr char kDels[] = {Parameters::kDelimiter, Parameters::kLinebreak,
                                      Parameters::kQuote};
 
     size_t found = current_view.find_first_of(std::string_view(kDels, 3));
 
     if (found == std::string_view::npos) {
-        return std::string_view(buffer_.get() + buffer_pos_, buffer_sz_ - buffer_pos_);
+        return std::string_view(buffer_ + buffer_pos_, buffer_sz_ - buffer_pos_);
     }
     return current_view.substr(0, found);
 }
 
 void CsvReader::InputBuffer::UpdatePos(size_t plus) {
     buffer_pos_ += plus;
-    if (buffer_pos_ >= buffer_sz_) {
-        Update();
-    }
-}
-
-void CsvReader::InputBuffer::Update() {
-    size_t offset = buffer_sz_ - buffer_pos_;
-
-    std::memmove(buffer_.get(), buffer_.get() + buffer_pos_, offset);
-
-    file_.read(buffer_.get() + offset, kBufCp - offset);
-    buffer_sz_ = file_.gcount() + offset;
-    buffer_pos_ = 0;
 }
 
 size_t CsvReader::InputBuffer::GetPos() const {
@@ -135,6 +136,11 @@ size_t CsvReader::InputBuffer::GetPos() const {
 
 size_t CsvReader::InputBuffer::GetSize() const {
     return buffer_sz_;
+}
+
+CsvReader::InputBuffer::~InputBuffer() {
+    munmap(buffer_, buffer_sz_);
+    close(fd_);
 }
 
 void CsvReader::LineState::FieldState::Reset() {
@@ -183,10 +189,10 @@ bool CsvReader::ReadLine() {
 
         int c = buffer_.GetChar();
         FieldHandler(c, state_);
+        state_.has_read = true;
         if (c == EOF) {
             break;
         }
-        state_.has_read = true;
     }
 
     if (!state_.has_read) {

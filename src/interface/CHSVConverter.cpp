@@ -26,13 +26,14 @@ void FromCsvToFormat(const std::string &schema_name, const std::string &source_n
 
     Schema schema = Schema::ReadFromCsv(schema_name);
 
+    auto csv_reader = std::make_shared<CsvReader>(source_name);
+
     std::jthread reader([&] {
-        CsvReader csv_reader(source_name);
         while (true) {
             bool is_empty = true;
             size_t rows_count = 0;
             for (size_t num_of_row = 0; num_of_row < kRowsInBatch; num_of_row++) {
-                if (!csv_reader.ReadLine()) {
+                if (!csv_reader->ReadLine()) {
                     break;
                 }
                 is_empty = false;
@@ -41,7 +42,7 @@ void FromCsvToFormat(const std::string &schema_name, const std::string &source_n
             if (is_empty) {
                 break;
             }
-            chunks_queue.Push(std::make_pair(csv_reader.GetChunk(), rows_count));
+            chunks_queue.Push(std::make_pair(csv_reader->GetChunk(), rows_count));
         }
         chunks_queue.Close();
     });

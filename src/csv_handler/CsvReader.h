@@ -80,21 +80,19 @@ private:
     public:
         explicit InputBuffer(const std::string& filename);
         int GetChar();
-        int Peek();
+        int Peek() const;
         std::string_view FindSymb(char symb) const;
         std::string_view FindDels() const;
         void UpdatePos(size_t plus);
         size_t GetSize() const;
         size_t GetPos() const;
 
+        ~InputBuffer();
+
     private:
-        static constexpr size_t kBufCp = 11 * 1024 * 1024 + 64;
-        std::ifstream file_;
-
-        std::unique_ptr<char[]> buffer_;
-        size_t buffer_pos_ = 0, buffer_sz_ = 0;
-
-        void Update();
+        char* buffer_;
+        size_t buffer_pos_ = 0, buffer_sz_;
+        int fd_;
     };
 
     void FieldHandler(int c, LineState& line_state);

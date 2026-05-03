@@ -30,6 +30,11 @@ Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
     DLOG(INFO) << "[Batch]: Batch successfully constructed!\n";
 }
 
+template <Type type>
+static void FillField(void* ptr, std::string_view raw_field) {
+    static_cast<std::vector<PhysicalType<type>>*>(ptr)->push_back(Deserialize<type>(raw_field));
+}
+
 Batch::Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count) : schema_(schema) {
     if (chunk.Empty()) {
         return;
@@ -47,27 +52,37 @@ Batch::Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count) 
 
     columns_.reserve(columns_count);
 
-    using FieldParser = std::function<void(size_t row_index, size_t col_index)>;
-    std::vector<FieldParser> parsers;
+    buffer_ = chunk.GetBuffer();
+
+    std::vector<ArrayTypeVariant> arrays;
+    arrays.reserve(columns_count);
+    for (size_t i = 0; i < columns_count; i++) {
+        DispatchOnType(schema[i].column_type, [&]<Type type>() {
+            arrays.emplace_back(ArrayType<type>{});
+            std::get<ArrayType<type>>(arrays.back()).reserve(rows_count);
+        });
+    }
+
+    using FieldParser = void (*)(void*, std::string_view);
+    std::vector<std::pair<void*, FieldParser>> parsers;
     parsers.reserve(columns_count);
 
     for (size_t i = 0; i < columns_count; i++) {
-        columns_.emplace_back(schema[i].column_type, rows_count);
-        auto prepare_parser = [this, &chunk]<Type type>() -> FieldParser {
-            return [this, &chunk](size_t row_ind, size_t col_ind) {
-                auto field = chunk.GetField(row_ind, col_ind);
-                columns_[col_ind].PushBack<type>(Deserialize<type>(field));
-            };
-        };
-        parsers.push_back(DispatchOnType(schema[i].column_type, prepare_parser));
+        DispatchOnType(schema[i].column_type, [&]<Type type>() {
+            auto& arr = std::get<ArrayType<type>>(arrays[i]);
+            parsers.emplace_back(&arr, FillField<type>);
+        });
     }
 
-    buffer_ = chunk.GetBuffer();
-
     for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-        for (size_t column_index = 0; column_index < columns_.size(); ++column_index) {
-            parsers[column_index](row_index, column_index);
+        for (size_t col_index = 0; col_index < columns_count; ++col_index) {
+            parsers[col_index].second(parsers[col_index].first,
+                                      chunk.GetField(row_index, col_index));
         }
+    }
+
+    for (size_t i = 0; i < columns_count; i++) {
+        columns_.emplace_back(std::move(arrays[i]));
     }
 }
 

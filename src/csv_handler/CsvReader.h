@@ -41,8 +41,7 @@ public:
 
     private:
         struct FieldMeta {
-            size_t offset, size;
-            bool is_from_mmap;
+            size_t idx, offset, size;
         };
 
         std::vector<FieldMeta> fields_meta_;
@@ -102,7 +101,6 @@ private:
 
     private:
         std::shared_ptr<MmapRegion> region_;
-
         size_t buffer_pos_ = 0;
     };
 

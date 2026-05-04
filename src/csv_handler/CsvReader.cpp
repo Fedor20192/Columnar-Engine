@@ -48,22 +48,20 @@ CsvReader::Chunk::Chunk() {
 }
 
 void CsvReader::Chunk::Add(std::string_view s) {
-    size_t offset = buffer_->size();
+    fields_meta_.push_back({fields_.size(), buffer_->size(), s.size()});
+    fields_.emplace_back();
     buffer_->insert(buffer_->end(), s.begin(), s.end());
-    fields_meta_.push_back({offset, s.size(), false});
 }
 
 void CsvReader::Chunk::AddSimple(std::string_view s) {
-    size_t offset = s.data() - region_->buffer_;
-    fields_meta_.push_back({offset, s.size(), true});
+    fields_.push_back(s);
 }
 
 void CsvReader::Chunk::Prepare() {
     fields_.reserve(fields_meta_.size());
 
-    for (const auto& [offset, size, is_from_mmap] : fields_meta_) {
-        const char* start = is_from_mmap ? (region_->buffer_ + offset) : (buffer_->data() + offset);
-        fields_.emplace_back(start, size);
+    for (const auto& [idx, offset, size] : fields_meta_) {
+        fields_[idx] = std::string_view(buffer_->data() + offset, size);
     }
 
     is_prepared_ = true;

@@ -41,7 +41,7 @@ TEST_CASE_METHOD(GlogFixture, "Simple Read", "[CSV Reader]") {
 TEST_CASE_METHOD(GlogFixture, "Some empty fields", "[CSVReader][empty fields]") {
     std::string filename("example.csv");
     StringCSVConverter::StringsToCsv(filename, {"a,"
-                                       ",c,"});
+                                                ",c,"});
 
     cngn::CsvReader reader(filename);
     auto ans = ReadAllLines(reader);
@@ -113,4 +113,48 @@ TEST_CASE_METHOD(GlogFixture, "Wikipedia test", "[CSVReader]") {
     REQUIRE(ans[1] == Row{"1999", "Chevy", "Venture \"Extended Edition\"", " ", "4900.00"});
     REQUIRE(ans[2] ==
             Row{"1996", "Jeep", "Grand Cherokee", "MUST SELL! air, moon roof, loaded", "4799.00"});
+}
+
+TEST_CASE_METHOD(GlogFixture, "Single line without trailing newline", "[CSVReader][EOF]") {
+    std::string filename("single_eof.csv");
+    {
+        std::ofstream out(filename, std::ios::binary);
+        out << "value1,value2";
+    }
+
+    cngn::CsvReader reader(filename);
+    auto ans = ReadAllLines(reader);
+
+    REQUIRE(ans.size() == 1);
+    REQUIRE(ans[0] == Row{"value1", "value2"});
+}
+
+TEST_CASE_METHOD(GlogFixture, "Last row missing newline", "[CSVReader][EOF]") {
+    std::string filename("last_row_eof.csv");
+    {
+        std::ofstream out(filename, std::ios::binary);
+        out << "row1_c1,row1_c2\n";
+        out << "row2_c1,row2_c2";
+    }
+
+    cngn::CsvReader reader(filename);
+    auto ans = ReadAllLines(reader);
+
+    REQUIRE(ans.size() == 2);
+    REQUIRE(ans[0] == Row{"row1_c1", "row1_c2"});
+    REQUIRE(ans[1] == Row{"row2_c1", "row2_c2"});
+}
+
+TEST_CASE_METHOD(GlogFixture, "The real EOF bug", "[CSVReader][killer]") {
+    std::string filename("killer.csv");
+    {
+        std::ofstream out(filename, std::ios::binary);
+        out << "only_one_value";
+    }
+
+    cngn::CsvReader reader(filename);
+    auto ans = ReadAllLines(reader);
+
+    REQUIRE(ans.size() == 1);
+    REQUIRE(ans[0] == Row{"only_one_value"});
 }

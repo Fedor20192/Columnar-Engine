@@ -25,7 +25,8 @@ private:
 
     std::ifstream file_;
     Metadata metadata_;
-    uint64_t num_of_batch_{0};
     std::vector<uint64_t> column_indices_;
+    Schema new_schema_;
+    uint64_t num_of_batch_{0};
 };
 }  // namespace cngn

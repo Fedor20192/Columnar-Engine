@@ -14,7 +14,7 @@ struct DefaultTestConfig {
 
         return cngn::Batch(
             std::vector{cngn::Column(std::vector<int64_t>{1, 5, 8}),
-                        cngn::Column(std::vector<int64_t>{2, 1, 17}),
+                        cngn::Column(std::vector<int64_t>{-2, 1, 17}),
                         cngn::Column(std::vector<std::string_view>{"first", "second", "third"}),
                         cngn::Column(std::vector<int64_t>{4, 2, 2})},
             kDefaultSchema);
@@ -31,7 +31,7 @@ struct DefaultTestConfig {
 
     inline static auto k_default_batch = cngn::Batch(
         std::vector{cngn::Column(std::vector<int64_t>{1, 5, 8}),
-                    cngn::Column(std::vector<int64_t>{2, 1, 17}),
+                    cngn::Column(std::vector<int64_t>{-2, 1, 17}),
                     cngn::Column(std::vector<std::string_view>{"first", "second", "third"}),
                     cngn::Column(std::vector<int64_t>{4, 2, 2})},
         kDefaultSchema);

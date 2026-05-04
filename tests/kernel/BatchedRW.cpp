@@ -28,7 +28,7 @@ TEST_CASE_METHOD(GlogFixture, "Batched RW CrossValidation", "[BatchedRW]") {
 
         REQUIRE(real_batch.ColumnCount() == 4);
         REQUIRE(real_batch[0] == cngn::Column(std::vector<int64_t>{1, 5, 8}));
-        REQUIRE(real_batch[1] == cngn::Column(std::vector<int64_t>{2, 1, 17}));
+        REQUIRE(real_batch[1] == cngn::Column(std::vector<int64_t>{-2, 1, 17}));
         REQUIRE(real_batch[2] == cngn::Column(std::vector<std::string_view>{"first", "second", "third"}));
         REQUIRE(real_batch[3] == cngn::Column(std::vector<int64_t>{4, 2, 2}));
     }

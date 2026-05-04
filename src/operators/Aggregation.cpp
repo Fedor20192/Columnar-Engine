@@ -2,6 +2,8 @@
 
 #include "ExpressionsCore.h"
 
+#include "glog/logging.h"
+
 namespace cngn {
 namespace operators {
 
@@ -25,11 +27,14 @@ void Aggregation::Close() {
 }
 
 std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
+    DLOG(INFO) << "[Aggregation]: Next\n";
     if (finished_) {
         return std::nullopt;
     }
 
     const size_t aggregations_count = aggregation_meta_.size();
+
+    DLOG(INFO) << "[Aggregation]: Aggregations count: " << aggregations_count << "\n";
 
     std::vector<__int128_t> sum(aggregations_count, 0);
 
@@ -78,6 +83,8 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
     }
 
     finished_ = true;
+
+    DLOG(INFO) << "[Aggregation]: Finished\n";
 
     return result;
 }

@@ -6,7 +6,7 @@
 #include "../kernel/Batch.h"
 
 namespace cngn {
-
+namespace operators {
 class Operator {
 public:
     virtual void Open() = 0;
@@ -22,4 +22,5 @@ protected:
     Operator& operator=(const Operator&) = delete;
     Operator& operator=(Operator&&) = delete;
 };
+}  // namespace operators
 }  // namespace cngn

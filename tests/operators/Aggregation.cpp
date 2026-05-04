@@ -40,6 +40,8 @@ TEST_CASE_METHOD(GlogFixture, "Simple sum aggregation", "[Aggregation operator]"
     REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int128>>((*ans)[1][0]) == static_cast<__int128_t>(16));
     REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int128>>((*ans)[2][0]) == static_cast<__int128_t>(8));
 
+    REQUIRE_FALSE(sum->Next());
+
     sum->Close();
 }
 

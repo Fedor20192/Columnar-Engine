@@ -17,6 +17,7 @@ public:
 
     void Close() override {
         next_operator_->Close();
+        finished_ = true;
     }
 
     void Open() override {

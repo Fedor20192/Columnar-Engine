@@ -16,7 +16,7 @@ struct AggregationMeta {
     std::string result_column_name;
 };
 
-class Aggregation : Operator {
+class Aggregation : public Operator {
 public:
     explicit Aggregation(std::unique_ptr<Operator> next_operator,
                          std::vector<AggregationMeta> aggregation_meta);

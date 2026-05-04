@@ -13,7 +13,7 @@ using Row = cngn::CsvWriter::Row;
 TEST_CASE_METHOD(GlogFixture, "Simple Scan", "[ScanOperator]") {
     auto batch = DefaultTestConfig::DefaultPrepare();
 
-    std::unique_ptr<cngn::Operator> scan =
+    std::unique_ptr<cngn::operators::Operator> scan =
         std::make_unique<cngn::operators::Scan>(DefaultTestConfig::kFilename, cngn::Schema({
             {"a", cngn::Type::Int64},
             {"b", cngn::Type::Int64},
@@ -58,7 +58,7 @@ TEST_CASE_METHOD(GlogFixture, "Scan columns", "[ScanOperator]") {
     writer.WriteMetadata();
     writer.Flush();
 
-    std::unique_ptr<cngn::Operator> scan =
+    std::unique_ptr<cngn::operators::Operator> scan =
         std::make_unique<cngn::operators::Scan>(DefaultTestConfig::kFilename, cngn::Schema({
             {"name123", cngn::Type::String},
             {"b", cngn::Type::Int64},

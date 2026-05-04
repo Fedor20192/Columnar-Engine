@@ -2,14 +2,17 @@
 
 #include <functional>
 
-#include "../operators/Count.h"
-#include "../operators/Expression.h"
-#include "../operators/Filter.h"
-#include "../operators/Scan.h"
+#include "Aggregation.h"
+#include "Count.h"
+#include "Expression.h"
+#include "Filter.h"
+#include "Gluing.h"
+#include "Scan.h"
 
-using QueryGenerator = std::function<std::unique_ptr<cngn::Operator>(const std::string&)>;
+using QueryGenerator =
+    std::function<std::unique_ptr<cngn::operators::Operator>(const std::string&)>;
 
-constexpr int kQueriesCount = 2;
+constexpr int kQueriesCount = 3;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -28,6 +31,30 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
                         static_cast<int16_t>(0)))));
 
         return filter;
-    }
+    },
+    [](const std::string& filename) {
+        auto scan_1 = std::make_unique<cngn::operators::Scan>(
+            filename, cngn::Schema({{"AdvEngineID", cngn::Type::Int16},
+                                    {"ResolutionWidth", cngn::Type::Int16}}));
+
+        auto agg = std::make_unique<cngn::operators::Aggregation>(
+            std::move(scan_1),
+            std::vector<cngn::operators::AggregationMeta>{
+                {cngn::operators::AggregationType::Sum,
+                 std::make_shared<cngn::operators::SelectExpression>("AdvEngineID"), "sum_id"},
+                {cngn::operators::AggregationType::Sum,
+                 std::make_shared<cngn::operators::SelectExpression>("ResolutionWidth"),
+                 "sum_width"},
+            });
+
+        auto count = std::make_unique<cngn::operators::Count>(
+            std::make_unique<cngn::operators::Scan>(filename, cngn::Schema()));
+
+        std::vector<std::unique_ptr<cngn::operators::Operator>> aggs;
+        aggs.push_back(std::move(agg));
+        aggs.push_back(std::move(count));
+
+        return std::make_unique<cngn::operators::Gluing>(std::move(aggs));
+    },
 
 };

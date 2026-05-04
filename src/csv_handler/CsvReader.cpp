@@ -206,21 +206,19 @@ bool CsvReader::ReadLine() {
 
     LineState::FieldState& field_state = state_.field;
     while (!state_.need_break && state_.is_valid) {
-        if (int next = buffer_.Peek(); next != Parameters::kQuote &&
-                                       next != Parameters::kDelimiter &&
-                                       next != Parameters::kLinebreak && next != EOF) {
-            auto str = buffer_.FindDels();
-            buffer_.UpdatePos(str.size());
-            if (!field_state.is_quote_open) {
+        if (!field_state.is_quote_open) {
+            if (int next = buffer_.Peek(); next != Parameters::kQuote &&
+                                           next != Parameters::kDelimiter &&
+                                           next != Parameters::kLinebreak && next != EOF) {
+                auto str = buffer_.FindDels();
+                buffer_.UpdatePos(str.size());
                 field_state.direct = str;
-            } else {
-                field_state.data += str;
-            }
 
-            if ((!field_state.is_quote_open || field_state.is_quote_close) &&
-                buffer_.Peek() == Parameters::kQuote) {
-                state_.is_valid = false;
-                DLOG(ERROR) << "[CSVReader]: Bad quote in the middle of field" << '\n';
+                if ((!field_state.is_quote_open || field_state.is_quote_close) &&
+                    buffer_.Peek() == Parameters::kQuote) {
+                    state_.is_valid = false;
+                    DLOG(ERROR) << "[CSVReader]: Bad quote in the middle of field" << '\n';
+                }
             }
         }
 

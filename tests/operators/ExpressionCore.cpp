@@ -37,3 +37,31 @@ TEST_CASE_METHOD(GlogFixture, "Different types", "[Neq Expression]") {
 
     REQUIRE_THROWS(cngn::operators::NotEqual(l, r).GetData());
 }
+
+TEST_CASE_METHOD(GlogFixture, "Simple div", "[Div expression]") {
+    cngn::Column l(std::vector{14, 00, 88, -6, 32, -69, -8, -19});
+    cngn::Column r(std::vector{2, 111, 88, 3, 17, -23, -3, 4});
+
+    auto ans = cngn::operators::Div(l, r);
+
+    REQUIRE(ans.Size() == l.Size());
+    REQUIRE(ans.GetData() == cngn::ArrayTypeVariant(std::vector{7, 0, 1, -2, 1, 3, 2, -4}));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Dividing by zero", "[Div expression]") {
+    cngn::Column l(std::vector<int16_t>{14, 00, 88, -6, 32, -69, -8, -19});
+    cngn::Column r(std::vector<int16_t>{0, 111, 88, 3, 17, -23, -3, 4});
+
+    REQUIRE_THROWS(cngn::operators::Div(l, r));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Dividing different types", "[Div expression]") {
+    cngn::Column l(std::vector<__int128_t>{1000000000000000003ll, 00, 88, -6, 32, -69, -8, -19});
+    cngn::Column r(std::vector{2, 111, 88, 3, 17, -23, -3, 4});
+
+    auto ans = cngn::operators::Div(l, r);
+
+    REQUIRE(ans.Size() == l.Size());
+    REQUIRE(ans.GetData() == cngn::ArrayTypeVariant(std::vector<__int128_t>{500000000000000001ll, 0,
+                                                                            1, -2, 1, 3, 2, -4}));
+}

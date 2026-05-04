@@ -52,7 +52,9 @@ Batch::Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count) 
 
     columns_.reserve(columns_count);
 
-    buffer_ = chunk.GetBuffer();
+    auto [buf, reg] = chunk.GetBuffer();
+    buffer_ = buf;
+    region_ = reg;
 
     std::vector<ArrayTypeVariant> arrays;
     arrays.reserve(columns_count);

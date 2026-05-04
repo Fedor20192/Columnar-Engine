@@ -7,6 +7,8 @@ namespace operators {
 
 Column NotEqual(const Column &a, const Column &b);
 
+Column Div(const Column &a, const Column &b);
+
 __int128_t Sum(const Column &a);
 
 }

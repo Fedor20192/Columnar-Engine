@@ -20,6 +20,8 @@ Column BinaryExpression::Calculate(std::shared_ptr<Batch> batch) const {
     switch (type) {
         case BinaryExpressionType::Neq:
             return NotEqual(left_res, right_res);
+        case BinaryExpressionType::Div:
+            return Div(left_res, right_res);
         default:
             throw std::logic_error("[BinaryExpression:Calculate]: Unknown expression type");
     }

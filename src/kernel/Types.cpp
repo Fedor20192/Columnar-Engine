@@ -102,7 +102,7 @@ std::string ToString(const PhysTypeVariant &x) {
                 do {
                     ans += '0' + tmp % 10;
                     tmp /= 10;
-                } while (value > 0);
+                } while (tmp > 0);
 
                 return ans;
 

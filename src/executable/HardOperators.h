@@ -7,6 +7,7 @@
 #include "Expression.h"
 #include "Filter.h"
 #include "Gluing.h"
+#include "Projector.h"
 #include "Scan.h"
 
 using QueryGenerator =
@@ -48,13 +49,23 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
             });
 
         auto count = std::make_unique<cngn::operators::Count>(
-            std::make_unique<cngn::operators::Scan>(filename, cngn::Schema()));
+            std::make_unique<cngn::operators::Scan>(filename, cngn::Schema()), "count");
 
         std::vector<std::unique_ptr<cngn::operators::Operator>> aggs;
         aggs.push_back(std::move(agg));
         aggs.push_back(std::move(count));
 
-        return std::make_unique<cngn::operators::Gluing>(std::move(aggs));
+        return std::make_unique<cngn::operators::Projector>(
+            std::make_unique<cngn::operators::Gluing>(std::move(aggs)),
+            std::vector<cngn::operators::ProjectionMeta>{
+                {std::make_shared<cngn::operators::SelectExpression>("sum_id"), "sum"},
+                {std::make_shared<cngn::operators::SelectExpression>("count"), "count"},
+                {std::make_shared<cngn::operators::BinaryExpression>(
+                     cngn::operators::BinaryExpressionType::Div,
+                     std::make_shared<cngn::operators::SelectExpression>("sum_width"),
+                     std::make_shared<cngn::operators::SelectExpression>("count")),
+                 "avg"},
+            });
     },
 
 };

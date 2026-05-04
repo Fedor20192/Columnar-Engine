@@ -7,6 +7,7 @@ namespace operators {
 
 enum class BinaryExpressionType {
     Neq,
+    Div,
 };
 
 struct Expression {

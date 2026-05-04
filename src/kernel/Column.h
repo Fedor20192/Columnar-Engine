@@ -44,7 +44,9 @@ public:
             []<typename T0>(T0&&) -> Type {
                 using T = std::decay_t<T0>;
 
-                if constexpr (std::is_same_v<T, ArrayType<Type::UInt64>>) {
+                if constexpr (std::is_same_v<T, ArrayType<Type::Int128>>) {
+                    return Type::Int128;
+                } else if constexpr (std::is_same_v<T, ArrayType<Type::UInt64>>) {
                     return Type::UInt64;
                 } else if constexpr (std::is_same_v<T, ArrayType<Type::Int64>>) {
                     return Type::Int64;
@@ -67,7 +69,7 @@ public:
                 }
                 return Type::Bool;
             },
-            array_); //todo: убрать это блядство
+            array_);  // todo: убрать это блядство
     }
 
     std::shared_ptr<char[]> GetOwningBuffer() const {

@@ -6,6 +6,8 @@
 #include "catch2/catch_template_test_macros.hpp"
 
 TEST_CASE_METHOD(GlogFixture, "Simple sum aggregation", "[Aggregation operator]") {
+    auto batch = DefaultTestConfig::DefaultPrepare();
+
     auto scan = std::make_unique<cngn::operators::Scan>(
             DefaultTestConfig::kFilename,
             cngn::Schema({
@@ -14,8 +16,6 @@ TEST_CASE_METHOD(GlogFixture, "Simple sum aggregation", "[Aggregation operator]"
                 {"name123", cngn::Type::String},
                 {"d", cngn::Type::Int64},
             }));
-
-    auto batch = DefaultTestConfig::DefaultPrepare();
 
     auto sum = std::make_unique<cngn::operators::Aggregation>(
         std::move(scan),
@@ -44,6 +44,8 @@ TEST_CASE_METHOD(GlogFixture, "Simple sum aggregation", "[Aggregation operator]"
 }
 
 TEST_CASE_METHOD(GlogFixture, "Strings sum", "[Aggregation operator]") {
+    auto batch = DefaultTestConfig::DefaultPrepare();
+
     auto scan = std::make_unique<cngn::operators::Scan>(
             DefaultTestConfig::kFilename,
             cngn::Schema({

@@ -1,2 +1,6 @@
 cmake-build-*
 .idea
+.vscode
+build*
+tests/bench/hits.csv
+tests/bench/aboba.chsv

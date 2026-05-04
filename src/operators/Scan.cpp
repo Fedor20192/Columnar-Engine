@@ -1,25 +1,21 @@
 #include "Scan.h"
 
-#include <unordered_set>
+#include <unordered_map>
 
 #include "glog/logging.h"
 
 namespace cngn {
-
-Scan::Scan(const std::string& filename, const std::shared_ptr<Context>& context)
-    : Operator(context), reader_(filename) {
+namespace operators {
+Scan::Scan(const std::string& filename, Schema need_columns_schema)
+    : reader_(filename), schema_(std::move(need_columns_schema)) {
 }
 
 void Scan::Open() {
     DLOG(INFO) << "[Scan]: Starting opening\n";
 
-    if (!context_) {
-        throw std::runtime_error("[Scan]: No context");
-    }
-
     const auto& meta = reader_.GetMetadata().GetSchema().GetData();
 
-    const auto& need_columns_names = context_->GetNames();
+    const auto& need_columns_names = schema_.GetData();
 
     std::vector<std::pair<size_t, std::string>> selected_columns;
     selected_columns.reserve(need_columns_names.size());
@@ -36,7 +32,7 @@ void Scan::Open() {
         }
     }
 
-    for (const auto& column_name : need_columns_names) {
+    for (const auto& [column_name, type] : need_columns_names) {
         bool found = false;
         for (size_t i = 0; i < meta.size() && !found; i++) {
             const auto& column = meta[i];
@@ -56,7 +52,7 @@ void Scan::Open() {
     std::vector<uint64_t> column_indices;
     column_indices.reserve(need_columns_names.size());
 
-    Context::Mapping columns_mapping;
+    std::unordered_map<std::string, size_t> columns_mapping;
     columns_mapping.reserve(need_columns_names.size());
 
     for (size_t i = 0; i < selected_columns.size(); i++) {
@@ -65,16 +61,19 @@ void Scan::Open() {
     }
 
     reader_.SetIndices(std::move(column_indices));
-    context_->SetMapping(std::move(columns_mapping));
 
     DLOG(INFO) << "[Scan]: Successfully opened\n";
 }
 
-std::optional<Batch> Scan::Next() {
-    return reader_.ReadBatch();
+std::optional<std::shared_ptr<Batch>> Scan::Next() {
+    auto batch = reader_.ReadBatch();
+    if (batch.has_value()) {
+        return std::make_shared<Batch>(std::move(batch.value()));
+    }
+    return std::nullopt;
 }
 
 void Scan::Close() {
 }
-
+}  // namespace operators
 }  // namespace cngn

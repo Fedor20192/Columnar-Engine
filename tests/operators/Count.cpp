@@ -6,25 +6,21 @@
 #include "../Fixtures.h"
 #include "../utils/Prepare.h"
 #include "BatchedWriter.h"
-#include "CsvWriter.h"
+#include "Filter.h"
 #include "Scan.h"
 #include "catch2/catch_template_test_macros.hpp"
-
-using Row = cngn::CsvWriter::Row;
 
 TEST_CASE_METHOD(GlogFixture, "Simple Count", "[Count Operator]") {
     DefaultTestConfig::DefaultPrepare();
 
-    auto context = std::make_shared<cngn::Context>(std::vector<std::string>{"a"});
-
-    std::unique_ptr<cngn::Operator> count = std::make_unique<cngn::Count>(
-        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context), context);
+    auto count = std::make_unique<cngn::operators::Count>(std::make_unique<cngn::operators::Scan>(
+        DefaultTestConfig::kFilename, cngn::Schema({{"a", cngn::Type::Int64}})));
     count->Open();
     auto count_batch = count->Next();
 
     REQUIRE(count_batch.has_value());
-    REQUIRE(count_batch->ColumnCount() == 1);
-    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3}));
+    REQUIRE(count_batch.value()->ColumnCount() == 1);
+    REQUIRE((*count_batch.value())[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3}));
 
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());
@@ -55,17 +51,15 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
     writer.WriteMetadata();
     writer.Flush();
 
-    auto context = std::make_shared<cngn::Context>();
-
-    std::unique_ptr<cngn::Operator> count = std::make_unique<cngn::Count>(
-        std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context), context);
+    auto count = std::make_unique<cngn::operators::Count>(
+        std::make_unique<cngn::operators::Scan>(DefaultTestConfig::kFilename, cngn::Schema()));
     count->Open();
 
     auto count_batch = count->Next();
 
     REQUIRE(count_batch.has_value());
-    REQUIRE(count_batch->ColumnCount() == 1);
-    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3 + 6}));
+    REQUIRE(count_batch.value()->ColumnCount() == 1);
+    REQUIRE((*count_batch.value())[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3 + 6}));
 
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());
@@ -75,18 +69,68 @@ TEST_CASE_METHOD(GlogFixture, "Two batches Count", "[Count Operator]") {
 TEST_CASE_METHOD(GlogFixture, "Some columns Count", "[Count Operator]") {
     DefaultTestConfig::DefaultPrepare();
 
-    auto context = std::make_shared<cngn::Context>(std::vector<std::string>({"b"}));
-
-    std::unique_ptr<cngn::Operator> count =
-        std::make_unique<cngn::Count>(std::make_unique<cngn::Scan>(DefaultTestConfig::kFilename, context), context);
+    auto count = std::make_unique<cngn::operators::Count>(
+        std::make_unique<cngn::operators::Scan>(DefaultTestConfig::kFilename, cngn::Schema()));
     count->Open();
     auto count_batch = count->Next();
 
     REQUIRE(count_batch.has_value());
-    REQUIRE(count_batch->ColumnCount() == 1);
-    REQUIRE(count_batch.value()[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3}));
+    REQUIRE(count_batch.value()->ColumnCount() == 1);
+    REQUIRE((*count_batch.value())[0] == cngn::Column(cngn::ArrayType<cngn::Type::UInt64>{3}));
 
     count_batch = count->Next();
     REQUIRE(!count_batch.has_value());
     count->Close();
+}
+
+TEST_CASE_METHOD(GlogFixture, "Strict Filter", "[Count Operator]") {
+
+    cngn::Schema schema({
+        {"a", cngn::Type::Int64},
+        {"b", cngn::Type::Int16},
+        {"c", cngn::Type::String},
+        {"d", cngn::Type::Int32},
+    });
+
+    cngn::Batch batch(
+        std::vector{
+            cngn::Column(std::vector<int64_t>{1, 2, 3, 4, 5, 6, 7, 8}),
+            cngn::Column(std::vector<int16_t>{0, 0, 0, 0, 0, 0, 0, 0}),
+            cngn::Column(std::vector<std::string>{"a", "b", "c", "d", "e", "f", "g", "h"}),
+            cngn::Column(std::vector<int32_t>{14, 22, 8, 88, 69, 67, 0, 1}),
+        },
+        schema);
+
+    const std::string filename = "filter.chsv";
+    cngn::BatchedWriter writer(filename, schema);
+    writer.WriteBatch(batch);
+    writer.WriteMetadata();
+    writer.Flush();
+
+    auto filter =
+        std::make_unique<cngn::operators::Count>(std::make_unique<cngn::operators::Filter>(
+            std::make_unique<cngn::operators::Scan>(filename, cngn::Schema({
+                                                                  {"b", cngn::Type::Int16},
+                                                                  {"c", cngn::Type::String},
+                                                                  {"d", cngn::Type::Int32},
+                                                              })),
+            std::make_shared<cngn::operators::BinaryExpression>(
+                cngn::operators::BinaryExpressionType::Neq,
+                std::make_shared<cngn::operators::SelectExpression>("b"),
+                std::make_shared<cngn::operators::ConstantExpression>(static_cast<int16_t>(0)))));
+
+    filter->Open();
+
+    auto ans_op = filter->Next();
+
+    filter->Close();
+
+    REQUIRE(ans_op.has_value());
+
+    auto ans = ans_op.value();
+    const auto& count_batch = *ans;
+
+    REQUIRE(ans->RowCount() == 1);
+    REQUIRE(ans->ColumnCount() == 1);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::UInt64>>(count_batch[0][0]) == 0);
 }

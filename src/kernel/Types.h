@@ -10,10 +10,12 @@
 
 namespace cngn {
 enum class Type {
+    Int128,
     UInt64,
     Int64,
     Int32,
     Int16,
+    Bool,
     String,
     MetaString,
     Timestamp,
@@ -34,6 +36,11 @@ template <Type>
 struct PhysTypeWrapper {};
 
 template <>
+struct PhysTypeWrapper<Type::Int128> {
+    using PhysicalType = __int128_t;
+};
+
+template <>
 struct PhysTypeWrapper<Type::UInt64> {
     using PhysicalType = uint64_t;
 };
@@ -51,6 +58,11 @@ struct PhysTypeWrapper<Type::Int32> {
 template <>
 struct PhysTypeWrapper<Type::Int16> {
     using PhysicalType = int16_t;
+};
+
+template <>
+struct PhysTypeWrapper<Type::Bool> {
+    using PhysicalType = char;
 };
 
 template <>
@@ -76,23 +88,27 @@ struct PhysTypeWrapper<Type::Date> {
 template <Type type>
 using PhysicalType = PhysTypeWrapper<type>::PhysicalType;
 
-using PhysTypeVariant = std::variant<PhysicalType<Type::UInt64>, PhysicalType<Type::Int64>,
-                                     PhysicalType<Type::Int32>, PhysicalType<Type::Int16>,
-                                     PhysicalType<Type::String>, PhysicalType<Type::MetaString>,
-                                     PhysicalType<Type::Timestamp>, PhysicalType<Type::Date>>;
+using PhysTypeVariant =
+    std::variant<PhysicalType<Type::Int128>, PhysicalType<Type::UInt64>, PhysicalType<Type::Int64>,
+                 PhysicalType<Type::Int32>, PhysicalType<Type::Int16>, PhysicalType<Type::Bool>,
+                 PhysicalType<Type::String>, PhysicalType<Type::MetaString>,
+                 PhysicalType<Type::Timestamp>, PhysicalType<Type::Date>>;
 
 template <Type type>
 using ArrayType = std::vector<PhysicalType<type>>;
 
 using ArrayTypeVariant =
-    std::variant<ArrayType<Type::UInt64>, ArrayType<Type::Int64>, ArrayType<Type::Int32>,
-                 ArrayType<Type::Int16>, ArrayType<Type::String>, ArrayType<Type::MetaString>,
-                 ArrayType<Type::Timestamp>, ArrayType<Type::Date>>;
+    std::variant<ArrayType<Type::Int128>, ArrayType<Type::UInt64>, ArrayType<Type::Int64>,
+                 ArrayType<Type::Int32>, ArrayType<Type::Int16>, ArrayType<Type::Bool>,
+                 ArrayType<Type::String>, ArrayType<Type::MetaString>, ArrayType<Type::Timestamp>,
+                 ArrayType<Type::Date>>;
 
 struct SerializeType {
     template <Type type>
     constexpr std::string operator()() const {
-        if constexpr (type == Type::UInt64) {
+        if constexpr (type == Type::Int128) {
+            return "int128";
+        } else if constexpr (type == Type::UInt64) {
             return "uint64";
         } else if constexpr (type == Type::Int64) {
             return "int64";
@@ -100,6 +116,8 @@ struct SerializeType {
             return "int32";
         } else if constexpr (type == Type::Int16) {
             return "int16";
+        } else if constexpr (type == Type::Bool) {
+            return "bool";
         } else if constexpr (type == Type::String) {
             return "string";
         } else if constexpr (type == Type::MetaString) {
@@ -109,7 +127,8 @@ struct SerializeType {
         } else if constexpr (type == Type::Date) {
             return "date";
         } else {
-            throw std::runtime_error("[SerializeType]: Unknown type");
+            static_assert(0, "[SerializeType]: Unknown type");
+            return "";
         }
     }
 };
@@ -117,10 +136,10 @@ struct SerializeType {
 Type DeserializeType(const std::string &name);
 
 std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> ParseDatetime(
-    const std::string &s, bool need_time);
+    std::string_view s, bool need_time);
 
 template <Type type>
-PhysicalType<type> Deserialize(const std::string &s) {
+PhysicalType<type> Deserialize(std::string_view s) {
     using SysSeconds = std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>;
     constexpr SysSeconds kSinceEpoch{};
     using PT = PhysicalType<type>;
@@ -133,7 +152,7 @@ PhysicalType<type> Deserialize(const std::string &s) {
         auto days = std::chrono::duration_cast<std::chrono::days>(tp - kSinceEpoch).count();
         return PT(days);
     } else if constexpr (std::is_integral_v<PT>) {
-        int64_t val = 0;
+        __int128_t val = 0;
         for (size_t pos = s[0] == '-'; pos < s.size(); ++pos) {
             val = val * 10 + s[pos] - '0';
         }
@@ -145,9 +164,9 @@ PhysicalType<type> Deserialize(const std::string &s) {
         return s;  // todo: Опасное место, надо подумать, как запретить доступ к Deserilize без
                    // мгновенного использования
     } else if constexpr (type == Type::MetaString) {
-        return s;
+        return std::string(s);
     } else {
-        throw std::runtime_error("[Deserialize]: Unknown type " + s);
+        static_assert(false, "[Deserialize]: Unknown type");
     }
 }
 
@@ -254,6 +273,9 @@ std::string ToString(const PhysTypeVariant &x);
 template <typename Callable, typename... Args>
 auto DispatchOnType(Type type, Callable &&f, Args &&...args) {
     switch (type) {
+        case Type::Int128:
+            return std::forward<Callable>(f).template operator()<Type::Int128>(
+                std::forward<Args>(args)...);
         case Type::UInt64:
             return std::forward<Callable>(f).template operator()<Type::UInt64>(
                 std::forward<Args>(args)...);

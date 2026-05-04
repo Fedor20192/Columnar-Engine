@@ -1,10 +1,16 @@
 #include "Batch.h"
 
+#include <functional>
+
 #include "glog/logging.h"
 
 namespace cngn {
 
-Batch::Batch(const std::vector<Column>& columns, const Schema& schema) : columns_(columns) {
+Batch::Batch(const Schema& schema) : schema_(schema) {
+}
+
+Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
+    : columns_(columns), schema_(schema) {
     DLOG(INFO) << "[Batch]: Trying construct batch\n";
     if (columns.size() != schema.GetData().size()) {
         throw std::invalid_argument(
@@ -24,12 +30,19 @@ Batch::Batch(const std::vector<Column>& columns, const Schema& schema) : columns
     DLOG(INFO) << "[Batch]: Batch successfully constructed!\n";
 }
 
-Batch::Batch(const std::vector<Row>& rows, const Schema& schema) {
-    if (rows.empty()) {
+template <Type type>
+static void FillField(void* ptr, std::string_view raw_field) {
+    static_cast<std::vector<PhysicalType<type>>*>(ptr)->push_back(Deserialize<type>(raw_field));
+}
+
+Batch::Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count) : schema_(schema) {
+    if (chunk.Empty()) {
         return;
     }
 
-    const size_t rows_count = rows.size(), columns_count = rows[0].size();
+    chunk.InitColumnsCnt(rows_count);
+
+    const size_t columns_count = chunk.GetColsCount(rows_count);
 
     if (columns_count > schema.GetColumnsCount()) {
         throw std::invalid_argument("[Batch]: Columns count mismatch " +
@@ -39,49 +52,51 @@ Batch::Batch(const std::vector<Row>& rows, const Schema& schema) {
 
     columns_.reserve(columns_count);
 
-    for (size_t column_index = 0; column_index < columns_count; ++column_index) {
-        auto get_column = [&]<Type type>() {
-            std::vector<PhysicalType<type>> arr;
-            arr.reserve(rows_count);
+    auto [buf, reg] = chunk.GetBuffer();
+    buffer_ = buf;
+    region_ = reg;
 
-            if constexpr (type == Type::String) {
-                size_t total_size = 0;
-                for (const auto& row : rows) {
-                    total_size += row[column_index].size();
-                }
+    std::vector<ArrayTypeVariant> arrays;
+    arrays.reserve(columns_count);
+    for (size_t i = 0; i < columns_count; i++) {
+        DispatchOnType(schema[i].column_type, [&]<Type type>() {
+            arrays.emplace_back(ArrayType<type>{});
+            std::get<ArrayType<type>>(arrays.back()).reserve(rows_count);
+        });
+    }
 
-                auto buffer = std::make_shared<char[]>(total_size);
-                char* current_ptr = buffer.get();
+    using FieldParser = void (*)(void*, std::string_view);
+    std::vector<std::pair<void*, FieldParser>> parsers;
+    parsers.reserve(columns_count);
 
-                for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-                    const std::string& s = rows[row_index][column_index];
+    for (size_t i = 0; i < columns_count; i++) {
+        DispatchOnType(schema[i].column_type, [&]<Type type>() {
+            auto& arr = std::get<ArrayType<type>>(arrays[i]);
+            parsers.emplace_back(&arr, FillField<type>);
+        });
+    }
 
-                    std::memcpy(current_ptr, s.data(), s.size());
+    for (size_t row_index = 0; row_index < rows_count; ++row_index) {
+        for (size_t col_index = 0; col_index < columns_count; ++col_index) {
+            parsers[col_index].second(parsers[col_index].first,
+                                      chunk.GetField(row_index, col_index));
+        }
+    }
 
-                    arr.emplace_back(current_ptr, s.size());
-
-                    current_ptr += s.size();
-                }
-                return Column(std::move(arr), buffer);
-            } else {
-                for (size_t row_index = 0; row_index < rows_count; ++row_index) {
-                    if (column_index >= rows[row_index].size()) {
-                        throw std::invalid_argument("[Batch]: Batch column index mismatch: " +
-                                                    std::to_string(column_index) + " != " +
-                                                    std::to_string(rows[row_index].size()));
-                    }
-                    arr.emplace_back(Deserialize<type>(rows[row_index][column_index]));
-                }
-                return Column(std::move(arr), nullptr);
-            }
-        };
-
-        columns_.emplace_back(DispatchOnType(schema[column_index].column_type, get_column));
+    for (size_t i = 0; i < columns_count; i++) {
+        columns_.emplace_back(std::move(arrays[i]));
     }
 }
 
 size_t Batch::ColumnCount() const {
     return columns_.size();
+}
+
+size_t Batch::RowCount() const {
+    if (columns_.empty()) {
+        return 0;
+    }
+    return columns_[0].Size();
 }
 
 bool Batch::Empty() const {
@@ -90,6 +105,21 @@ bool Batch::Empty() const {
 
 const Column& Batch::operator[](size_t index) const {
     return columns_[index];
+}
+
+const Column& Batch::GetColumnByName(const std::string& column_name) const {
+    const auto& fields = schema_.GetData();
+
+    auto it = std::find_if(fields.begin(), fields.end(),
+                           [&column_name](const Schema::ColumnData& column_data) {
+                               return column_name == column_data.column_name;
+                           });
+
+    if (it != fields.end()) {
+        return columns_[it - fields.begin()];
+    }
+
+    throw std::invalid_argument("[Batch]: Column " + column_name + " not found!");
 }
 
 void Batch::AddColumn(Column&& column) {
@@ -102,10 +132,10 @@ void Batch::AddColumn(Column&& column) {
     columns_.emplace_back(std::move(column));
 }
 
-std::vector<Batch::Row> Batch::Serialize() const {
+std::vector<std::vector<std::string>> Batch::Serialize() const {
     DLOG(INFO) << "[Batch]: Batch::Serialize()\n";
 
-    std::vector<Row> result;
+    std::vector<std::vector<std::string>> result;
 
     if (Empty()) {
         DLOG(INFO) << "[Batch]: Batch::Serialized! Its empty!\n";
@@ -127,6 +157,10 @@ std::vector<Batch::Row> Batch::Serialize() const {
     DLOG(INFO) << "[Batch]: Batch::Serialized!\n";
 
     return result;
+}
+
+const Schema& Batch::GetSchema() const {
+    return schema_;
 }
 
 }  // namespace cngn

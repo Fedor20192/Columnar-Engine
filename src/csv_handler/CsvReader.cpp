@@ -112,42 +112,41 @@ void CsvReader::Chunk::SetRegion(const std::shared_ptr<MmapRegion>& region) {
 
 CsvReader::InputBuffer::InputBuffer(const std::string& filename) {
     region_ = std::make_shared<MmapRegion>(filename);
-    buffer_ = region_->buffer_;
-    buffer_sz_ = region_->buffer_sz_;
 }
 
 int CsvReader::InputBuffer::GetChar() {
-    if (buffer_pos_ >= buffer_sz_) {
+    if (buffer_pos_ >= region_->buffer_sz_) {
         return EOF;
     }
 
-    return static_cast<unsigned char>(buffer_[buffer_pos_++]);
+    return static_cast<unsigned char>(region_->buffer_[buffer_pos_++]);
 }
 
 int CsvReader::InputBuffer::Peek() const {
-    if (buffer_pos_ >= buffer_sz_) {
+    if (buffer_pos_ >= region_->buffer_sz_) {
         return EOF;
     }
-    return static_cast<unsigned char>(buffer_[buffer_pos_]);
+    return static_cast<unsigned char>(region_->buffer_[buffer_pos_]);
 }
 
 std::string_view CsvReader::InputBuffer::FindSymb(char symb) const {
-    auto pos = memchr(buffer_ + buffer_pos_, symb, buffer_sz_ - buffer_pos_);
+    auto pos = memchr(region_->buffer_ + buffer_pos_, symb, region_->buffer_sz_ - buffer_pos_);
     if (!pos) {
-        return std::string_view(buffer_ + buffer_pos_, buffer_sz_ - buffer_pos_);
+        return std::string_view(region_->buffer_ + buffer_pos_, region_->buffer_sz_ - buffer_pos_);
     }
-    return std::string_view(buffer_ + buffer_pos_, static_cast<const char*>(pos));
+    return std::string_view(region_->buffer_ + buffer_pos_, static_cast<const char*>(pos));
 }
 
 std::string_view CsvReader::InputBuffer::FindDels() const {
-    std::string_view current_view(buffer_ + buffer_pos_, buffer_sz_ - buffer_pos_);
+    std::string_view current_view(region_->buffer_ + buffer_pos_,
+                                  region_->buffer_sz_ - buffer_pos_);
     static constexpr char kDels[] = {Parameters::kDelimiter, Parameters::kLinebreak,
                                      Parameters::kQuote};
 
     size_t found = current_view.find_first_of(std::string_view(kDels, 3));
 
     if (found == std::string_view::npos) {
-        return std::string_view(buffer_ + buffer_pos_, buffer_sz_ - buffer_pos_);
+        return std::string_view(region_->buffer_ + buffer_pos_, region_->buffer_sz_ - buffer_pos_);
     }
     return current_view.substr(0, found);
 }
@@ -165,7 +164,7 @@ std::shared_ptr<CsvReader::MmapRegion> CsvReader::InputBuffer::GetRegion() const
 }
 
 size_t CsvReader::InputBuffer::GetSize() const {
-    return buffer_sz_;
+    return region_->buffer_sz_;
 }
 
 void CsvReader::LineState::FieldState::Reset() {

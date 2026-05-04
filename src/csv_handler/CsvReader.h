@@ -99,8 +99,6 @@ private:
 
     private:
         std::shared_ptr<MmapRegion> region_;
-        char* buffer_ = nullptr;
-        size_t buffer_sz_ = 0;
         size_t buffer_pos_ = 0;
     };
 

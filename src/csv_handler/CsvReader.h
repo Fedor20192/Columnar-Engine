@@ -11,8 +11,6 @@ public:
     struct MmapRegion;
 
     struct Parameters {
-        Parameters() {
-        }
 
         static constexpr char kDelimiter = ',';
         static constexpr char kQuote = '"';

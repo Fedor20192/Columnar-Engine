@@ -133,7 +133,8 @@ void Batch::AddColumn(Column&& column) {
 }
 
 std::vector<std::vector<std::string>> Batch::Serialize() const {
-    DLOG(INFO) << "[Batch]: Batch::Serialize()\n";
+    DLOG(INFO) << "[Batch]: Serializing...\n" << "Columns count: " << ColumnCount() << "\n"
+                "Rows count: " << RowCount() << "\n";
 
     std::vector<std::vector<std::string>> result;
 
@@ -154,7 +155,7 @@ std::vector<std::vector<std::string>> Batch::Serialize() const {
         }
     }
 
-    DLOG(INFO) << "[Batch]: Batch::Serialized!\n";
+    DLOG(INFO) << "[Batch]: Serialized!\n";
 
     return result;
 }

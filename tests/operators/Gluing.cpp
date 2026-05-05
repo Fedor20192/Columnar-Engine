@@ -53,12 +53,12 @@ TEST_CASE_METHOD(GlogFixture, "Simple gluing", "[Gluing Operator]") {
     REQUIRE(ans->ColumnCount() == 3);
     REQUIRE(ans->RowCount() == 1);
 
-    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int64>>((*ans)[0][0]) ==
-            static_cast<int64_t>(16));
-    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int64>>((*ans)[1][0]) ==
-            static_cast<int64_t>(14));
-    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int64>>((*ans)[2][0]) ==
-            static_cast<int64_t>(8));
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int128>>((*ans)[0][0]) ==
+            static_cast<__int128_t>(16));
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int128>>((*ans)[1][0]) ==
+            static_cast<__int128_t>(14));
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int128>>((*ans)[2][0]) ==
+            static_cast<__int128_t>(8));
 
     REQUIRE_FALSE(glue->Next());
 

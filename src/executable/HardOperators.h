@@ -13,7 +13,7 @@
 using QueryGenerator =
     std::function<std::unique_ptr<cngn::operators::Operator>(const std::string&)>;
 
-constexpr int kQueriesCount = 5;
+constexpr int kQueriesCount = 6;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -99,6 +99,13 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
 
         return std::make_unique<cngn::operators::Aggregation>(std::move(scan), std::vector<cngn::operators::AggregationMeta>{
             {cngn::operators::AggregationType::Distinct, std::make_shared<cngn::operators::SelectExpression>("UserID"), "count" }
+        });
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<cngn::operators::Scan>(filename, cngn::Schema({{"SearchPhrase", cngn::Type::String}}));
+
+        return std::make_unique<cngn::operators::Aggregation>(std::move(scan), std::vector<cngn::operators::AggregationMeta>{
+            {cngn::operators::AggregationType::Distinct, std::make_shared<cngn::operators::SelectExpression>("SearchPhrase"), "count" }
         });
     }
 };

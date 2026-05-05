@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 
 #include "HardOperators.h"
@@ -26,6 +27,8 @@ int main(int argc, char* argv[]) {
     for (int i = start_query; i < finish_query; i++) {
         DLOG(INFO) << "[QueriesExecute]: Starting execute query number " << num << '\n';
 
+        auto start_time = std::chrono::high_resolution_clock::now();
+
         auto query = kGenerators[i](filename);
 
         query->Open();
@@ -42,6 +45,10 @@ int main(int argc, char* argv[]) {
         }
 
         query->Close();
+
+        auto finish_time = std::chrono::high_resolution_clock::now();
+
+        std::cout << "Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(finish_time - start_time).count() << " ms\n\n" << std::endl;
 
         DLOG(INFO) << "[QueriesExecute]: Query successfully executed\n";
     }

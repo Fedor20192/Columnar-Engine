@@ -42,7 +42,7 @@ void BatchedReader::SetIndices(std::vector<uint64_t> &&column_indices) {
 std::optional<Batch> BatchedReader::ReadBatch() {
     DLOG(INFO) << "[BatchedReader]: Trying read batch number " << num_of_batch_ << "\n";
     if (num_of_batch_ >= metadata_.GetBatchCnt()) {
-        DLOG(ERROR) << "[BatchedReader]: Num of batch is too much: " << num_of_batch_
+        DLOG(WARNING) << "[BatchedReader]: Num of batch is too much: " << num_of_batch_
                     << " >= " << metadata_.GetBatchCnt() << "\n";
         return std::nullopt;
     }

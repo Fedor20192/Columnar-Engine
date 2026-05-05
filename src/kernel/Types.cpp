@@ -94,6 +94,9 @@ std::string ToString(const PhysTypeVariant &x) {
             if constexpr (std::is_same_v<NowType, PhysicalType<Type::Int128>>) {
                 std::string ans;
                 T tmp = value;
+                if (tmp < 0) {
+                    tmp = -tmp;
+                }
 
                 do {
                     ans += '0' + tmp % 10;

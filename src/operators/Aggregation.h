@@ -8,6 +8,7 @@ namespace operators {
 
 enum class AggregationType {
     Sum,
+    Distinct,
 };
 
 struct AggregationMeta {

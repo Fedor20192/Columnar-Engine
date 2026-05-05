@@ -22,7 +22,7 @@ void BatchedWriter::WriteBatch(const Batch& batch) {
 
     const size_t row_cnt = batch[0].Size();
 
-    size_t now_offset = 0;
+    size_t now_offset = file_.tellp();
     std::vector<size_t> columns_offsets;
     columns_offsets.reserve(batch.ColumnCount());
     for (size_t column_index = 0; column_index < batch.ColumnCount(); ++column_index) {

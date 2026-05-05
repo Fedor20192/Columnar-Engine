@@ -34,7 +34,7 @@ static ArrayType<type_1> Divv(const ArrayType<type_1> &a, const ArrayType<type_2
         if (b[i] == 0) {
             throw std::logic_error("[Div]: division by zero");
         }
-        ans[i] = a[i] / b[i];
+        ans[i] = a[i] / static_cast<PhysicalType<type_1>>(b[i]);
     }
 
     return ans;
@@ -69,7 +69,7 @@ Column Div(const Column &a, const Column &b) {
     });
 }
 
-__int128_t Sum(const Column &a) {
+PhysTypeVariant Sum(const Column &a) {
     Type type = a.GetType();
     if (type == Type::Bool || type == Type::Timestamp || type == Type::Date ||
         type == Type::String || type == Type::MetaString) {

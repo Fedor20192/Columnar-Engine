@@ -13,7 +13,7 @@
 using QueryGenerator =
     std::function<std::unique_ptr<cngn::operators::Operator>(const std::string&)>;
 
-constexpr int kQueriesCount = 4;
+constexpr int kQueriesCount = 5;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -94,4 +94,11 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
                  "avg"},
             });
     },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<cngn::operators::Scan>(filename, cngn::Schema({{"UserID", cngn::Type::Int64}}));
+
+        return std::make_unique<cngn::operators::Aggregation>(std::move(scan), std::vector<cngn::operators::AggregationMeta>{
+            {cngn::operators::AggregationType::Distinct, std::make_shared<cngn::operators::SelectExpression>("UserID"), "count" }
+        });
+    }
 };

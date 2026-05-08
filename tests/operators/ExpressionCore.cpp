@@ -65,3 +65,17 @@ TEST_CASE_METHOD(GlogFixture, "Dividing different types", "[Div expression]") {
     REQUIRE(ans.GetData() == cngn::ArrayTypeVariant(std::vector<__int128_t>{500000000000000001ll, 0,
                                                                             1, -2, 1, 3, 2, -4}));
 }
+
+TEST_CASE_METHOD(GlogFixture, "Simple min_max", "[MinMax expression]") {
+    cngn::Column integer(std::vector{14, 00, 88, -6, 32, -69, -8, -19});
+    cngn::Column str(std::vector<std::string_view>{"aboba", "aacb", "aabc", "aacba"});
+
+    auto ans_str = cngn::operators::Min(str);
+    auto ans_int = cngn::operators::Max(integer);
+
+    REQUIRE(ans_int.has_value());
+    REQUIRE(ans_str.has_value());
+
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int32>>(ans_int.value()) == 88);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::String>>(ans_str.value()) == "aabc");
+}

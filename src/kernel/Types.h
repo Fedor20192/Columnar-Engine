@@ -24,12 +24,12 @@ enum class Type {
 
 struct Date {
     uint32_t days;
-    bool operator==(const Date &rhs) const = default;
+    auto operator<=>(const Date &rhs) const = default;
 };
 
 struct Timestamp {
     uint64_t seconds;
-    bool operator==(const Timestamp &) const = default;
+    auto operator<=>(const Timestamp &) const = default;
 };
 
 template <Type>

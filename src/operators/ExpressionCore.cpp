@@ -34,11 +34,49 @@ static ArrayType<type_1> Divv(const ArrayType<type_1> &a, const ArrayType<type_2
         if (b[i] == 0) {
             throw std::logic_error("[Div]: division by zero");
         }
-        ans[i] = a[i] / b[i];
+        ans[i] = a[i] / static_cast<PhysicalType<type_1>>(b[i]);
     }
 
     return ans;
 }
+
+
+template <Type type, typename Comparator>
+static std::optional<PhysicalType<type>> MinMax(const ArrayType<type>& arr) {
+    if (arr.empty()) {
+        return std::nullopt;
+    }
+
+    Comparator cmp;
+
+    auto ans = arr[0];
+
+    for (size_t i = 1; i < arr.size(); i++) {
+        if (cmp(arr[i], ans)) {
+            ans = arr[i];
+        }
+    }
+
+    return ans;
+}
+
+
+std::optional<PhysTypeVariant> Min(const Column &a) {
+    return DispatchOnType(a.GetType(), [&]<Type type>() -> std::optional<PhysTypeVariant> {
+        const auto& arr = std::get<ArrayType<type>>(a.GetData());
+        return MinMax<type, std::less<PhysicalType<type>>>(arr);
+
+    });
+}
+
+std::optional<PhysTypeVariant> Max(const Column &a) {
+    return DispatchOnType(a.GetType(), [&]<Type type>() -> std::optional<PhysTypeVariant> {
+        const auto& arr = std::get<ArrayType<type>>(a.GetData());
+        return MinMax<type, std::greater<PhysicalType<type>>>(arr);
+
+    });
+}
+
 
 Column NotEqual(const Column &a, const Column &b) {
     const auto type = a.GetType();
@@ -69,7 +107,7 @@ Column Div(const Column &a, const Column &b) {
     });
 }
 
-__int128_t Sum(const Column &a) {
+PhysTypeVariant Sum(const Column &a) {
     Type type = a.GetType();
     if (type == Type::Bool || type == Type::Timestamp || type == Type::Date ||
         type == Type::String || type == Type::MetaString) {

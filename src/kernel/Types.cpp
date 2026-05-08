@@ -93,19 +93,22 @@ std::string ToString(const PhysTypeVariant &x) {
             using NowType = std::decay_t<T>;
             if constexpr (std::is_same_v<NowType, PhysicalType<Type::Int128>>) {
                 std::string ans;
-                if (value < 0) {
-                    ans += "-";
-                }
-
                 T tmp = value;
+                if (tmp < 0) {
+                    tmp = -tmp;
+                }
 
                 do {
                     ans += '0' + tmp % 10;
                     tmp /= 10;
-                } while (value > 0);
+                } while (tmp > 0);
+
+                std::reverse(ans.begin(), ans.end());
+                if (value < 0) {
+                    ans += "-";
+                }
 
                 return ans;
-
             } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::Bool>>) {
                 return std::to_string(static_cast<unsigned char>(value));
             } else if constexpr (std::is_same_v<NowType, PhysicalType<Type::Date>>) {

@@ -75,6 +75,7 @@ public:
     std::shared_ptr<char[]> GetOwningBuffer() const {
         return buffer_ptr_;
     }
+
     template <Type type>
     void PushBack(const PhysicalType<type>& value) {
         std::visit(
@@ -85,6 +86,8 @@ public:
 
                 if constexpr (std::is_same_v<Elem, Expected>) {
                     arr.push_back(value);
+                } else {
+                    throw std::runtime_error("[Column::PushBack:] type mismatch");
                 }
             },
             array_);

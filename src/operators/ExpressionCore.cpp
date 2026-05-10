@@ -115,9 +115,9 @@ PhysTypeVariant Sum(const Column &a) {
             "[Sum]: WTF? You are trying to sum ");  // todo: написать тип в выбросе
     }
 
-    return DispatchOnType(type, [&]<Type type>() -> __int128_t {
+    return DispatchOnType(type, [&]<Type type>() -> PhysicalType<Type::Int128> {
         if constexpr (IsArithmetic<type>) {
-            __int128_t sum = 0;
+            PhysicalType<Type::Int128> sum = 0;
             const auto &arr = std::get<ArrayType<type>>(a.GetData());
 
             for (size_t i = 0; i < arr.size(); i++) {

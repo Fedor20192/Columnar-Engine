@@ -9,6 +9,7 @@
 #include "Gluing.h"
 #include "Projector.h"
 #include "Scan.h"
+#include "Sort.h"
 
 using QueryGenerator =
     std::function<std::unique_ptr<cngn::operators::Operator>(const std::string&)>;
@@ -29,6 +30,8 @@ using ProjectionMeta = cngn::operators::ProjectionMeta;
 using Scan = cngn::operators::Scan;
 using Schema = cngn::Schema;
 using SelectExpression = cngn::operators::SelectExpression;
+using Sort = cngn::operators::Sort;
+using SortKey = cngn::operators::SortKey;
 using Type = cngn::Type;
 
 constexpr int kQueriesCount = 8;
@@ -139,5 +142,5 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
             std::vector<GroupByMeta>{
                 {std::make_shared<SelectExpression>("AdvEngineID"), "AdvEngineID"}});
 
-        return aggr;
+        return std::make_unique<Sort>(std::move(aggr), std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "AdvEngineID"}}, false);
     }};

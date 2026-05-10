@@ -64,7 +64,7 @@ std::optional<Batch> BatchedReader::ReadBatch() {
         auto read_column = [this]<Type type>(uint32_t cnt) {
             std::shared_ptr<char[]> ptr;
             auto read = Reader().operator()<PhysicalType<type>>(file_, cnt, ptr);
-            return Column(std::move(read), ptr);
+            return Column(std::move(read), {ptr});
         };
 
         DLOG(INFO) << "[BatchedReader]: Batched Reader trying read column number " << column_index

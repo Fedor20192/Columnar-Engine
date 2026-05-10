@@ -35,7 +35,7 @@ using SortKey = cngn::operators::SortKey;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 9;
+constexpr int kQueriesCount = 10;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -162,4 +162,40 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
             std::move(aggr),
             std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "RegionID"}}, 10,
             false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"RegionID", Type::Int32},
+                                                             {"AdvEngineID", Type::Int16},
+                                                             {"ResolutionWidth", Type::Int16},
+                                                             {"UserID", Type::Int64}}));
+
+        auto aggr = std::make_unique<Aggregation>(
+            std::move(scan),
+            std::vector<AggregationMeta>{
+                {AggregationType::Sum, std::make_shared<SelectExpression>("AdvEngineID"), "sum_adv"},
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "c"},
+                {AggregationType::Sum, std::make_shared<SelectExpression>("ResolutionWidth"),
+                 "sum_res"},
+                {AggregationType::Distinct, std::make_shared<SelectExpression>("UserID"),
+                 "distinct_users"},
+            },
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("RegionID"), "RegionID"}});
+
+        auto proj = std::make_unique<Projector>(
+            std::move(aggr),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("RegionID"), "RegionID"},
+                {std::make_shared<SelectExpression>("sum_adv"), "SUM(AdvEngineID)"},
+                {std::make_shared<SelectExpression>("c"), "c"},
+                {std::make_shared<BinaryExpression>(BinaryExpressionType::Div,
+                                                    std::make_shared<SelectExpression>("sum_res"),
+                                                    std::make_shared<SelectExpression>("c")),
+                 "AVG(ResolutionWidth)"},
+                {std::make_shared<SelectExpression>("distinct_users"), "COUNT(DISTINCT UserID)"},
+            });
+
+        return std::make_unique<TopK>(
+            std::move(proj),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}}, 10, false);
     }};

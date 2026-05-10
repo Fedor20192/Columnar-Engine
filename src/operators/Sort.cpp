@@ -1,12 +1,16 @@
 #include "Sort.h"
 
 #include <numeric>
+#include <queue>
 
 namespace cngn {
 namespace operators {
 
-Sort::Sort(std::unique_ptr<Operator> next_operator, std::vector<SortKey> sort_meta, bool is_high_order)
-    : next_operator_(std::move(next_operator)), sort_meta_(std::move(sort_meta)), is_high_order_(is_high_order) {
+Sort::Sort(std::unique_ptr<Operator> next_operator, std::vector<SortKey> sort_meta,
+           bool is_high_order)
+    : next_operator_(std::move(next_operator)),
+      sort_meta_(std::move(sort_meta)),
+      is_high_order_(is_high_order) {
     if (next_operator_ == nullptr) {
         throw std::invalid_argument("[Sort]: next_operator is nullptr");
     }
@@ -75,7 +79,7 @@ std::optional<std::shared_ptr<Batch>> Sort::Next() {
     return ReorderRows(glued, indices);
 }
 
-std::shared_ptr<Batch> Sort::GlueBatches(const std::vector<std::shared_ptr<Batch>> &batches) {
+std::shared_ptr<Batch> Sort::GlueBatches(const std::vector<std::shared_ptr<Batch>>& batches) {
     if (batches.empty()) {
         throw std::invalid_argument("[Sort]: no batches to glue");
     }
@@ -100,14 +104,14 @@ std::shared_ptr<Batch> Sort::GlueBatches(const std::vector<std::shared_ptr<Batch
             const auto& col = (*batches[batch_num])[col_idx];
             const auto& col_data = std::get<ArrayType<type>>(col.GetData());
             column_data.insert(column_data.end(), col_data.begin(), col_data.end());
-            
+
             const auto& other_buffers = col.GetOwningBuffer();
             buffers.insert(buffers.end(), other_buffers.begin(), other_buffers.end());
         }
 
         return Column(std::move(column_data), std::move(buffers));
     };
-    
+
     for (size_t col_idx = 0; col_idx < cols_cnt; col_idx++) {
         result->AddColumn(DispatchOnType((*batches[0])[col_idx].GetType(), add_col, col_idx));
     }
@@ -116,11 +120,11 @@ std::shared_ptr<Batch> Sort::GlueBatches(const std::vector<std::shared_ptr<Batch
 }
 
 std::shared_ptr<Batch> Sort::ReorderRows(const std::shared_ptr<Batch>& batch,
-                                          const std::vector<size_t>& indices) {
+                                         const std::vector<size_t>& indices) {
     auto result = std::make_shared<Batch>(batch->GetSchema());
 
     for (size_t col_idx = 0; col_idx < batch->ColumnCount(); ++col_idx) {
-        const Column& col = (*batch)[col_idx];
+        Column col = (*batch)[col_idx];
         result->AddColumn(DispatchOnType(col.GetType(), [&]<Type t>() {
             const auto& arr = std::get<ArrayType<t>>(col.GetData());
             ArrayType<t> data;
@@ -130,6 +134,124 @@ std::shared_ptr<Batch> Sort::ReorderRows(const std::shared_ptr<Batch>& batch,
             }
             return Column(std::move(data), col.GetOwningBuffer());
         }));
+    }
+
+    return result;
+}
+
+TopK::TopK(std::unique_ptr<Operator> next_operator, std::vector<SortKey> sort_meta, size_t k,
+           bool is_high_order)
+    : next_operator_(std::move(next_operator)),
+      sort_meta_(std::move(sort_meta)),
+      k_(k),
+      is_high_order_(is_high_order) {
+
+    if (k_ == 0) {
+        throw std::invalid_argument("[TopK]: k must be greater than 0");
+    }
+    if (sort_meta_.empty()) {
+        throw std::invalid_argument("[TopK]: sort_meta is empty");
+    }
+    if (next_operator_ == nullptr) {
+        throw std::invalid_argument("[TopK]: next_operator is nullptr");
+    }
+}
+
+void TopK::Open() {
+    next_operator_->Open();
+}
+
+void TopK::Close() {
+    next_operator_->Close();
+}
+
+std::optional<std::shared_ptr<Batch>> TopK::Next() {
+    if (finished_) {
+        return std::nullopt;
+    }
+    finished_ = true;
+
+    struct HeapRow {
+        std::vector<PhysTypeVariant> keys;
+        std::vector<PhysTypeVariant> cols;
+    };
+
+    auto cmp = [&](const HeapRow& a, const HeapRow& b) {
+        for (size_t k = 0; k < sort_meta_.size(); k++) {
+            if (a.keys[k] == b.keys[k]) {
+                continue;
+            }
+            return is_high_order_ ? a.keys[k] < b.keys[k] : a.keys[k] > b.keys[k];
+        }
+        return false;
+    };
+
+    std::priority_queue<HeapRow, std::vector<HeapRow>, decltype(cmp)> pq(cmp);
+
+    std::optional<Schema> schema;
+
+    while (auto batch_opt = next_operator_->Next()) {
+        auto batch = batch_opt.value();
+
+        if (!schema) {
+            schema = batch->GetSchema();
+        }
+
+        std::vector<Column> key_cols;
+        key_cols.reserve(sort_meta_.size());
+        for (const auto& sk : sort_meta_) {
+            key_cols.push_back(sk.expression->Calculate(batch));
+        }
+
+        const size_t rows = batch->RowCount();
+        for (size_t row = 0; row < rows; ++row) {
+            HeapRow hr;
+            hr.keys.reserve(sort_meta_.size());
+            hr.cols.reserve(batch->ColumnCount());
+
+            for (const auto& kc : key_cols) {
+                hr.keys.push_back(kc[row]);
+            }
+
+            for (size_t c = 0; c < batch->ColumnCount(); ++c) {
+                PhysTypeVariant val = (*batch)[c][row];
+                if (std::holds_alternative<PhysicalType<Type::String>>(val)) {
+                    val = std::string(std::get<PhysicalType<Type::String>>(val));
+                }
+                hr.cols.push_back(std::move(val));
+            }
+
+            pq.push(std::move(hr));
+            if (pq.size() > k_) {
+                pq.pop();
+            }
+        }
+    }
+
+    if (pq.empty()) {
+        return std::nullopt;
+    }
+
+    std::vector<HeapRow> rows;
+    rows.reserve(pq.size());
+    while (!pq.empty()) {
+        rows.push_back(pq.top());
+        pq.pop();
+    }
+    std::reverse(rows.begin(), rows.end());
+
+    const size_t n_cols = rows[0].cols.size();
+    auto result = std::make_shared<Batch>(*schema);
+
+    for (size_t c = 0; c < n_cols; ++c) {
+        Type col_type = static_cast<Type>(rows[0].cols[c].index());
+        Column col(col_type, rows.size());
+        for (const auto& hr : rows) {
+            DispatchOnType(col_type, [&]<Type t>() {
+                col.PushBack<t>(std::get<PhysicalType<t>>(hr.cols[c]));
+            });
+        }
+        result->AddColumn(std::move(col));
     }
 
     return result;

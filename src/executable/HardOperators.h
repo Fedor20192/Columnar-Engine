@@ -33,8 +33,9 @@ using SelectExpression = cngn::operators::SelectExpression;
 using Sort = cngn::operators::Sort;
 using SortKey = cngn::operators::SortKey;
 using Type = cngn::Type;
+using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 8;
+constexpr int kQueriesCount = 9;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -142,5 +143,23 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
             std::vector<GroupByMeta>{
                 {std::make_shared<SelectExpression>("AdvEngineID"), "AdvEngineID"}});
 
-        return std::make_unique<Sort>(std::move(aggr), std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "AdvEngineID"}}, false);
+        return std::make_unique<Sort>(
+            std::move(aggr),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "AdvEngineID"}},
+            false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"RegionID", Type::Int32}, {"UserID", Type::Int64}}));
+
+        auto aggr = std::make_unique<Aggregation>(
+            std::move(scan),
+            std::vector<AggregationMeta>{
+                {AggregationType::Distinct, std::make_shared<SelectExpression>("UserID"), "count"}},
+            std::vector<GroupByMeta>{{std::make_shared<SelectExpression>("RegionID"), "RegionID"}});
+
+        return std::make_unique<TopK>(
+            std::move(aggr),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "RegionID"}}, 10,
+            false);
     }};

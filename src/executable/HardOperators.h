@@ -35,7 +35,7 @@ using SortKey = cngn::operators::SortKey;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 13;
+constexpr int kQueriesCount = 18;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -145,8 +145,7 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
 
         return std::make_unique<Sort>(
             std::move(aggr),
-            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "AdvEngineID"}},
-            false);
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "count"}}, false);
     },
     [](const std::string& filename) {
         auto scan = std::make_unique<Scan>(
@@ -160,7 +159,7 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
 
         return std::make_unique<TopK>(
             std::move(aggr),
-            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "RegionID"}}, 10,
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "count"}}, 10,
             false);
     },
     [](const std::string& filename) {
@@ -218,8 +217,8 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
 
         return std::make_unique<TopK>(
             std::move(aggr),
-            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "MobilePhoneModel"}},
-            10, false);
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "count"}}, 10,
+            false);
     },
     [](const std::string& filename) {
         auto scan = std::make_unique<Scan>(filename, Schema({{"MobilePhone", Type::Int16},
@@ -243,8 +242,8 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
 
         return std::make_unique<TopK>(
             std::move(aggr),
-            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "MobilePhoneModel"}},
-            10, false);
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "count"}}, 10,
+            false);
     },
     [](const std::string& filename) {
         auto scan = std::make_unique<Scan>(filename, Schema({{"SearchPhrase", Type::String}}));
@@ -264,6 +263,99 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
 
         return std::make_unique<TopK>(
             std::move(aggr),
-            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "SearchPhrase"}},
-            10, false);
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "count"}}, 10,
+            false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"SearchPhrase", Type::String}, {"UserID", Type::Int64}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_unique<SelectExpression>("SearchPhrase"),
+                std::make_unique<ConstantExpression>(std::string_view(""))));
+
+        auto aggr = std::make_unique<Aggregation>(
+            std::move(filter),
+            std::vector<AggregationMeta>{
+                {AggregationType::Distinct, std::make_unique<SelectExpression>("UserID"), "count"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
+
+        return std::make_unique<TopK>(
+            std::move(aggr),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "count"}}, 10,
+            false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"SearchEngineID", Type::Int16}, {"SearchPhrase", Type::String}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_unique<SelectExpression>("SearchPhrase"),
+                std::make_unique<ConstantExpression>(std::string_view(""))));
+
+        auto aggr = std::make_unique<Aggregation>(
+            std::move(filter),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_unique<ConstantExpression>(0), "count"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("SearchEngineID"), "SearchEngineID"},
+                {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
+
+        return std::make_unique<TopK>(
+            std::move(aggr),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "count"}}, 10,
+            false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"UserID", Type::Int64}}));
+
+        auto aggr = std::make_unique<Aggregation>(
+            std::move(scan),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_unique<ConstantExpression>(0), "count"}},
+            std::vector<GroupByMeta>{{std::make_shared<SelectExpression>("UserID"), "UserID"}});
+
+        return std::make_unique<TopK>(
+            std::move(aggr),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "count"}}, 10,
+            false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"UserID", Type::Int64}, {"SearchPhrase", Type::String}}));
+
+        auto aggr = std::make_unique<Aggregation>(
+            std::move(scan),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_unique<ConstantExpression>(0), "count"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("UserID"), "UserID"},
+                {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
+
+        return std::make_unique<TopK>(
+            std::move(aggr),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "count"}}, 10,
+            false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"UserID", Type::Int64}, {"SearchPhrase", Type::String}}));
+
+        auto aggr = std::make_unique<Aggregation>(
+            std::move(scan),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_unique<ConstantExpression>(0), "count"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("UserID"), "UserID"},
+                {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
+
+        return std::make_unique<TopK>(
+            std::move(aggr),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("UserID"), "UserID"}}, 10,
+            true);
     }};

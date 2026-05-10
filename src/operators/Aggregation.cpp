@@ -311,7 +311,7 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
             agg_cols.push_back(meta.expression->Calculate(*batch_ptr));
         }
 
-        std::unordered_map<Key, std::vector<size_t>, VectorHash> group_rows;
+        __gnu_pbds::gp_hash_table<Key, std::vector<size_t>, VectorHash> group_rows;
         for (size_t row = 0; row < rows; ++row) {
             group_rows[MakeKey(key_cols, row)].push_back(row);
         }
@@ -356,24 +356,35 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
     out_cols.reserve(nk + n);
 
     for (size_t k = 0; k < nk; ++k) {
-        Column col(key_out_types[k], n_groups);
-        for (const auto& gr : results) {
-            DispatchOnType(key_out_types[k], [&]<Type t>() {
-                col.PushBack<t>(std::get<PhysicalType<t>>(gr.key[k]));
-            });
-        }
-        out_cols.push_back(std::move(col));
+        auto get_col = [&]<Type type>() {
+            ArrayType<type> data;
+            data.reserve(n_groups);
+
+            for (const auto& gr : results) {
+                data.push_back(std::get<PhysicalType<type>>(gr.key[k]));
+            }
+
+            return Column(std::move(data));
+        };
+
+        out_cols.push_back(DispatchOnType(key_out_types[k], std::move(get_col)));
     }
 
     for (size_t j = 0; j < n; ++j) {
         Type agg_type = results[0].agg_cols[j].GetType();
-        Column col(agg_type, n_groups);
-        for (const auto& gr : results) {
-            DispatchOnType(agg_type, [&]<Type t>() {
-                col.PushBack<t>(std::get<PhysicalType<t>>(gr.agg_cols[j][0]));
-            });
-        }
-        out_cols.push_back(std::move(col));
+
+        auto get_col = [&]<Type type>() {
+            ArrayType<type> data;
+            data.reserve(n_groups);
+
+            for (const auto& gr : results) {
+                data.push_back(std::get<PhysicalType<type>>(gr.agg_cols[j][0]));
+            }
+
+            return Column(std::move(data));
+        };
+
+        out_cols.push_back(DispatchOnType(agg_type, std::move(get_col)));
     }
 
     std::vector<Schema::ColumnData> schema_data;
@@ -382,7 +393,8 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
         schema_data.emplace_back(group_by_[k].result_column_name, key_out_types[k]);
     }
     for (size_t j = 0; j < n; ++j) {
-        schema_data.emplace_back(aggregation_meta_[j].result_column_name, results[0].agg_cols[j].GetType());
+        schema_data.emplace_back(aggregation_meta_[j].result_column_name,
+                                 results[0].agg_cols[j].GetType());
     }
 
     auto result = std::make_shared<Batch>(Schema(std::move(schema_data)));

@@ -1,5 +1,6 @@
 #include "Sort.h"
 
+#include <glog/logging.h>
 #include <numeric>
 #include <queue>
 
@@ -28,6 +29,7 @@ void Sort::Close() {
 }
 
 std::optional<std::shared_ptr<Batch>> Sort::Next() {
+    DLOG(INFO) << "[Sort]: Started\n";
     if (finished_) {
         return std::nullopt;
     }
@@ -76,10 +78,13 @@ std::optional<std::shared_ptr<Batch>> Sort::Next() {
     };
     std::sort(indices.begin(), indices.end(), std::move(cmp));
 
+    DLOG(INFO) << "[Sort]: Finished\n";
+
     return ReorderRows(glued, indices);
 }
 
 std::shared_ptr<Batch> Sort::GlueBatches(const std::vector<std::shared_ptr<Batch>>& batches) {
+    DLOG(INFO) << "[Sort::GlueBatches]: Started\n";
     if (batches.empty()) {
         throw std::invalid_argument("[Sort]: no batches to glue");
     }
@@ -116,11 +121,14 @@ std::shared_ptr<Batch> Sort::GlueBatches(const std::vector<std::shared_ptr<Batch
         result->AddColumn(DispatchOnType((*batches[0])[col_idx].GetType(), add_col, col_idx));
     }
 
+    DLOG(INFO) << "[Sort::GlueBatches]: Finished\n";
+
     return result;
 }
 
 std::shared_ptr<Batch> Sort::ReorderRows(const std::shared_ptr<Batch>& batch,
                                          const std::vector<size_t>& indices) {
+    DLOG(INFO) << "[Sort::ReorderRows]: Started\n";
     auto result = std::make_shared<Batch>(batch->GetSchema());
 
     for (size_t col_idx = 0; col_idx < batch->ColumnCount(); ++col_idx) {
@@ -135,6 +143,8 @@ std::shared_ptr<Batch> Sort::ReorderRows(const std::shared_ptr<Batch>& batch,
             return Column(std::move(data), col.GetOwningBuffer());
         }));
     }
+
+    DLOG(INFO) << "[Sort::ReorderRows]: Finished\n";
 
     return result;
 }
@@ -166,6 +176,7 @@ void TopK::Close() {
 }
 
 std::optional<std::shared_ptr<Batch>> TopK::Next() {
+    DLOG(INFO) << "[TopK]: Started\n";
     if (finished_) {
         return std::nullopt;
     }
@@ -253,6 +264,8 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
         }
         result->AddColumn(std::move(col));
     }
+
+    DLOG(INFO) << "[TopK]: Finished\n";
 
     return result;
 }

@@ -35,7 +35,7 @@ using SortKey = cngn::operators::SortKey;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 10;
+constexpr int kQueriesCount = 13;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -172,15 +172,15 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
         auto aggr = std::make_unique<Aggregation>(
             std::move(scan),
             std::vector<AggregationMeta>{
-                {AggregationType::Sum, std::make_shared<SelectExpression>("AdvEngineID"), "sum_adv"},
+                {AggregationType::Sum, std::make_shared<SelectExpression>("AdvEngineID"),
+                 "sum_adv"},
                 {AggregationType::Count, std::make_shared<ConstantExpression>(0), "c"},
                 {AggregationType::Sum, std::make_shared<SelectExpression>("ResolutionWidth"),
                  "sum_res"},
                 {AggregationType::Distinct, std::make_shared<SelectExpression>("UserID"),
                  "distinct_users"},
             },
-            std::vector<GroupByMeta>{
-                {std::make_shared<SelectExpression>("RegionID"), "RegionID"}});
+            std::vector<GroupByMeta>{{std::make_shared<SelectExpression>("RegionID"), "RegionID"}});
 
         auto proj = std::make_unique<Projector>(
             std::move(aggr),
@@ -196,6 +196,74 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
             });
 
         return std::make_unique<TopK>(
-            std::move(proj),
-            std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}}, 10, false);
+            std::move(proj), std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}},
+            10, false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"MobilePhoneModel", Type::String}, {"UserID", Type::Int64}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_unique<SelectExpression>("MobilePhoneModel"),
+                std::make_unique<ConstantExpression>(std::string_view(""))));
+
+        auto aggr = std::make_unique<Aggregation>(
+            std::move(filter),
+            std::vector<AggregationMeta>{
+                {AggregationType::Distinct, std::make_unique<SelectExpression>("UserID"), "count"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("MobilePhoneModel"), "MobilePhoneModel"}});
+
+        return std::make_unique<TopK>(
+            std::move(aggr),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "MobilePhoneModel"}},
+            10, false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"MobilePhone", Type::Int16},
+                                                             {"MobilePhoneModel", Type::String},
+                                                             {"UserID", Type::Int64}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_unique<SelectExpression>("MobilePhoneModel"),
+                std::make_unique<ConstantExpression>(std::string_view(""))));
+
+        auto aggr = std::make_unique<Aggregation>(
+            std::move(filter),
+            std::vector<AggregationMeta>{
+                {AggregationType::Distinct, std::make_unique<SelectExpression>("UserID"), "count"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("MobilePhone"), "MobilePhone"},
+                {std::make_shared<SelectExpression>("MobilePhoneModel"), "MobilePhoneModel"},
+            });
+
+        return std::make_unique<TopK>(
+            std::move(aggr),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "MobilePhoneModel"}},
+            10, false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"SearchPhrase", Type::String}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_unique<SelectExpression>("SearchPhrase"),
+                std::make_unique<ConstantExpression>(std::string_view(""))));
+
+        auto aggr = std::make_unique<Aggregation>(
+            std::move(filter),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_unique<ConstantExpression>(0), "count"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
+
+        return std::make_unique<TopK>(
+            std::move(aggr),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "SearchPhrase"}},
+            10, false);
     }};

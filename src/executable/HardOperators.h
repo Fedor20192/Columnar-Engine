@@ -20,6 +20,7 @@ using AggregationType = cngn::operators::AggregationType;
 using BinaryExpression = cngn::operators::BinaryExpression;
 using BinaryExpressionType = cngn::operators::BinaryExpressionType;
 using ConstantExpression = cngn::operators::ConstantExpression;
+using ContainsExpression = cngn::operators::ContainsExpression;
 using Count = cngn::operators::Count;
 using ExtractMinute = cngn::operators::ExtractMinute;
 using Filter = cngn::operators::Filter;
@@ -36,7 +37,7 @@ using SortKey = cngn::operators::SortKey;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 20;
+constexpr int kQueriesCount = 21;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -395,4 +396,13 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
             std::make_shared<BinaryExpression>(
                 BinaryExpressionType::Eq, std::make_unique<SelectExpression>("UserID"),
                 std::make_unique<ConstantExpression>(static_cast<int64_t>(435090932899640449))));
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"URL", Type::String}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan), std::make_shared<ContainsExpression>(
+                                 std::make_shared<SelectExpression>("URL"), "google"));
+
+        return std::make_unique<Count>(std::move(filter));
     }};

@@ -66,6 +66,50 @@ TEST_CASE_METHOD(GlogFixture, "Dividing different types", "[Div expression]") {
                                                                             1, -2, 1, 3, 2, -4}));
 }
 
+TEST_CASE_METHOD(GlogFixture, "Contains string_view match", "[Contains expression]") {
+    char buffer[] = "foobar\0foobaz\0hello\0";
+    cngn::Column col(std::vector{std::string_view(buffer, 6), std::string_view(buffer + 7, 6),
+                                 std::string_view(buffer + 14, 5)});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(
+        cngn::operators::Contains(col, "foo").GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == 1);
+    REQUIRE(ans[1] == 1);
+    REQUIRE(ans[2] == 0);
+}
+
+TEST_CASE_METHOD(GlogFixture, "Contains metastring match", "[Contains expression]") {
+    cngn::Column col(std::vector<std::string>{"hello world", "foobar", "baz"});
+
+    auto ans =
+        std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::Contains(col, "oo").GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == 0);
+    REQUIRE(ans[1] == 1);
+    REQUIRE(ans[2] == 0);
+}
+
+TEST_CASE_METHOD(GlogFixture, "Contains empty substr", "[Contains expression]") {
+    cngn::Column col(std::vector<std::string>{"abc", "", "xyz"});
+
+    auto ans =
+        std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::Contains(col, "").GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == 1);
+    REQUIRE(ans[1] == 1);
+    REQUIRE(ans[2] == 1);
+}
+
+TEST_CASE_METHOD(GlogFixture, "Contains wrong type throws", "[Contains expression]") {
+    cngn::Column col(std::vector<int64_t>{1, 2, 3});
+
+    REQUIRE_THROWS(cngn::operators::Contains(col, "x"));
+}
+
 TEST_CASE_METHOD(GlogFixture, "Simple min_max", "[MinMax expression]") {
     cngn::Column integer(std::vector{14, 00, 88, -6, 32, -69, -8, -19});
     cngn::Column str(std::vector<std::string_view>{"aboba", "aacb", "aabc", "aacba"});

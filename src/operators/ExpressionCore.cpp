@@ -141,6 +141,29 @@ Column ExtractMinuteFromCol(const Column &a) {
     DLOG(INFO) << "[ExtractMinuteFromCol]: Finished\n";
 }
 
+Column Contains(const Column &a, const std::string &substr) {
+    const Type type = a.GetType();
+
+    if (type != Type::String && type != Type::MetaString) {
+        throw std::invalid_argument("[Contains]: type must be string or metastring");
+    }
+
+    return DispatchOnType(type, [&]<Type type>() -> Column {
+        if constexpr (type == Type::String || type == Type::MetaString) {
+            ArrayType<Type::Bool> ans(a.Size());
+            const auto &arr = std::get<ArrayType<type>>(a.GetData());
+
+            for (size_t i = 0; i < a.Size(); i++) {
+                ans[i] = arr[i].find(substr) != std::string::npos;
+            }
+
+            return Column(std::move(ans));
+        }
+
+        throw std::invalid_argument("[Contains]: type must be string or metastring");
+    });
+}
+
 PhysTypeVariant Sum(const Column &a) {
     Type type = a.GetType();
     if (type == Type::Bool || type == Type::Timestamp || type == Type::Date ||

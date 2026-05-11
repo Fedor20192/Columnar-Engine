@@ -50,6 +50,43 @@ TEST_CASE_METHOD(GlogFixture, "Neq Constants Expression", "[Binary expressions]"
     }
 }
 
+TEST_CASE_METHOD(GlogFixture, "ContainsExpression on string column", "[Contains expression]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto col = std::make_shared<cngn::operators::SelectExpression>("name123");
+    auto contains = std::make_shared<cngn::operators::ContainsExpression>(col, "ir");
+
+    auto ans = contains->Calculate(batch);
+
+    REQUIRE(ans.Size() == batch->RowCount());
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[0]) == 1);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[1]) == 0);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[2]) == 1);
+}
+
+TEST_CASE_METHOD(GlogFixture, "ContainsExpression no match", "[Contains expression]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto col = std::make_shared<cngn::operators::SelectExpression>("name123");
+    auto contains = std::make_shared<cngn::operators::ContainsExpression>(col, "xyz");
+
+    auto ans = contains->Calculate(batch);
+
+    REQUIRE(ans.Size() == batch->RowCount());
+    for (size_t i = 0; i < ans.Size(); i++) {
+        REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[i]) == 0);
+    }
+}
+
+TEST_CASE_METHOD(GlogFixture, "ContainsExpression on non-string throws", "[Contains expression]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto col = std::make_shared<cngn::operators::SelectExpression>("a");
+    auto contains = std::make_shared<cngn::operators::ContainsExpression>(col, "1");
+
+    REQUIRE_THROWS(contains->Calculate(batch));
+}
+
 TEST_CASE_METHOD(GlogFixture, "Neq Expression", "[Binary expressions]") {
     auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
 

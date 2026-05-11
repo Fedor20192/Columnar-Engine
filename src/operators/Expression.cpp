@@ -39,5 +39,10 @@ Column ExtractMinute::Calculate(std::shared_ptr<Batch> batch) const {
     return ExtractMinuteFromCol(res);
 }
 
+Column ContainsExpression::Calculate(std::shared_ptr<Batch> batch) const {
+    const Column res = expression->Calculate(batch);
+    return Contains(std::move(res), substr);
+}
+
 }  // namespace operators
 }  // namespace cngn

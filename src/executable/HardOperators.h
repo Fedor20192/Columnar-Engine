@@ -37,7 +37,7 @@ using SortKey = cngn::operators::SortKey;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 23;
+constexpr int kQueriesCount = 24;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -434,22 +434,21 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
             10, false);
     },
     [](const std::string& filename) {
-        auto scan = std::make_unique<Scan>(
-            filename, Schema({{"URL", Type::String},
-                              {"Title", Type::String},
-                              {"SearchPhrase", Type::String},
-                              {"UserID", Type::Int64}}));
+        auto scan = std::make_unique<Scan>(filename, Schema({{"URL", Type::String},
+                                                             {"Title", Type::String},
+                                                             {"SearchPhrase", Type::String},
+                                                             {"UserID", Type::Int64}}));
 
         auto filter = std::make_unique<Filter>(
             std::move(scan),
             std::make_shared<BinaryExpression>(
                 BinaryExpressionType::And,
-                std::make_shared<ContainsExpression>(
-                    std::make_shared<SelectExpression>("Title"), "Google"),
+                std::make_shared<ContainsExpression>(std::make_shared<SelectExpression>("Title"),
+                                                     "Google"),
                 std::make_shared<BinaryExpression>(
                     BinaryExpressionType::And,
-                    std::make_shared<ContainsExpression>(
-                        std::make_shared<SelectExpression>("URL"), ".google.", true),
+                    std::make_shared<ContainsExpression>(std::make_shared<SelectExpression>("URL"),
+                                                         ".google.", true),
                     std::make_shared<BinaryExpression>(
                         BinaryExpressionType::Neq,
                         std::make_shared<SelectExpression>("SearchPhrase"),
@@ -470,4 +469,17 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
         return std::make_unique<TopK>(
             std::move(aggr), std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}},
             10, false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"URL", Type::String}, {"EventTime", Type::Timestamp}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan), std::make_shared<ContainsExpression>(
+                                 std::make_shared<SelectExpression>("URL"), "google"));
+
+        return std::make_unique<TopK>(
+            std::move(filter),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("EventTime"), "EventTime"}},
+            10, true);
     }};

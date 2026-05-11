@@ -39,7 +39,9 @@ std::optional<std::shared_ptr<Batch>> Sort::Next() {
     std::vector<std::shared_ptr<Batch>> batches;
 
     while (auto batch = next_operator_->Next()) {
-        batches.push_back(std::move(batch.value()));
+        if (batch.value()->RowCount() > 0) {
+            batches.push_back(std::move(batch.value()));
+        }
     }
 
     if (batches.empty()) {
@@ -206,6 +208,10 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
     while (auto batch_opt = next_operator_->Next()) {
         auto batch = batch_opt.value();
 
+        if (batch->RowCount() == 0) {
+            continue;
+        }
+
         if (!schema) {
             schema = batch->GetSchema();
         }
@@ -216,7 +222,10 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
             key_cols.push_back(sk.expression->Calculate(batch));
         }
 
-        owning_buffers.reserve(owning_buffers.size() + batch->ColumnCount());
+        for (size_t c = 0; c < batch->ColumnCount(); ++c) {
+            const auto& buffers = (*batch)[c].GetOwningBuffer();
+            owning_buffers.insert(owning_buffers.end(), buffers.begin(), buffers.end());
+        }
 
         const size_t rows = batch->RowCount();
         for (size_t row = 0; row < rows; ++row) {
@@ -229,11 +238,7 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
             }
 
             for (size_t c = 0; c < batch->ColumnCount(); ++c) {
-                const auto& col = (*batch)[c];
-                const auto& buffers = col.GetOwningBuffer();
-                owning_buffers.insert(owning_buffers.end(), buffers.begin(), buffers.end());
-                PhysTypeVariant val = col[row];
-                hr.cols.push_back(std::move(val));
+                hr.cols.push_back((*batch)[c][row]);
             }
 
             pq.push(std::move(hr));
@@ -260,13 +265,14 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
 
     for (size_t c = 0; c < n_cols; ++c) {
         Type col_type = static_cast<Type>(rows[0].cols[c].index());
-        Column col(col_type, rows.size());
-        for (const auto& hr : rows) {
-            DispatchOnType(col_type, [&]<Type t>() {
-                col.PushBack<t>(std::get<PhysicalType<t>>(hr.cols[c]));
-            });
-        }
-        result->AddColumn(std::move(col));
+        DispatchOnType(col_type, [&]<Type t>() {
+            ArrayType<t> col_data;
+            col_data.reserve(rows.size());
+            for (const auto& hr : rows) {
+                col_data.push_back(std::get<PhysicalType<t>>(hr.cols[c]));
+            }
+            result->AddColumn(Column(std::move(col_data), owning_buffers));
+        });
     }
 
     DLOG(INFO) << "[TopK]: Finished\n";

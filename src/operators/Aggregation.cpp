@@ -55,7 +55,7 @@ struct IAggregationState {
 };
 
 class SumState : public IAggregationState {
-    static const Type kSumType = Type::Int128;
+    static constexpr Type kSumType = Type::Int128;
 
 public:
     void Update(const Column& col) override {

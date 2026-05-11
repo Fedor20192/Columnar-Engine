@@ -201,6 +201,8 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
 
     std::optional<Schema> schema;
 
+    std::vector<std::shared_ptr<char[]>> owning_buffers;
+
     while (auto batch_opt = next_operator_->Next()) {
         auto batch = batch_opt.value();
 
@@ -214,6 +216,8 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
             key_cols.push_back(sk.expression->Calculate(batch));
         }
 
+        owning_buffers.reserve(owning_buffers.size() + batch->ColumnCount());
+
         const size_t rows = batch->RowCount();
         for (size_t row = 0; row < rows; ++row) {
             HeapRow hr;
@@ -225,10 +229,10 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
             }
 
             for (size_t c = 0; c < batch->ColumnCount(); ++c) {
-                PhysTypeVariant val = (*batch)[c][row];
-                if (std::holds_alternative<PhysicalType<Type::String>>(val)) {
-                    val = std::string(std::get<PhysicalType<Type::String>>(val));
-                }
+                const auto& col = (*batch)[c];
+                const auto& buffers = col.GetOwningBuffer();
+                owning_buffers.insert(owning_buffers.end(), buffers.begin(), buffers.end());
+                PhysTypeVariant val = col[row];
                 hr.cols.push_back(std::move(val));
             }
 

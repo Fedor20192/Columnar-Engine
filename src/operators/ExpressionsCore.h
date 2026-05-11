@@ -7,6 +7,8 @@ namespace operators {
 
 Column NotEqual(const Column &, const Column &);
 
+Column Equal(const Column &, const Column &);
+
 Column Div(const Column &, const Column &);
 
 Column ExtractMinuteFromCol(const Column &);

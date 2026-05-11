@@ -36,6 +36,10 @@ int main(int argc, char* argv[]) {
         query->Open();
 
         while (auto ans = query->Next()) {
+            const auto& batch = ans.value();
+            if (batch->RowCount() == 0) {
+                continue;
+            }
             const auto& serialized = ans.value()->Serialize();
             for (const auto& row : serialized) {
                 for (const auto& column : row) {
@@ -50,12 +54,21 @@ int main(int argc, char* argv[]) {
 
         auto finish_time = std::chrono::high_resolution_clock::now();
 
-        std::cout << "Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(finish_time - start_time).count() << " ms\n\n" << std::endl;
+        std::cout << "Time: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(finish_time - start_time)
+                         .count()
+                  << " ms\n\n"
+                  << std::endl;
 
         DLOG(INFO) << "[QueriesExecute]: Query successfully executed\n";
     }
 
-    std::cout << "Total time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - global_start_time).count() << " ms\n\n" << std::endl;
+    std::cout << "Total time: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(
+                     std::chrono::high_resolution_clock::now() - global_start_time)
+                     .count()
+              << " ms\n\n"
+              << std::endl;
 
     return 0;
 }

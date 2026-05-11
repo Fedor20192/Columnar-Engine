@@ -87,6 +87,15 @@ Column NotEqual(const Column &a, const Column &b) {
     return Column(std::move(bool_vec));
 }
 
+Column Equal(const Column &a, const Column &b) {
+    const auto type = a.GetType();
+
+    return Column(DispatchOnType(type, [&]<Type type>() -> ArrayType<Type::Bool> {
+        return Compare<type, std::equal_to<PhysicalType<type>>>(
+            std::get<ArrayType<type>>(a.GetData()), std::get<ArrayType<type>>(b.GetData()));
+    }));
+}
+
 Column Div(const Column &a, const Column &b) {
     const auto type_a = a.GetType();
 

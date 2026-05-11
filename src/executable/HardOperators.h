@@ -36,7 +36,7 @@ using SortKey = cngn::operators::SortKey;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 19;
+constexpr int kQueriesCount = 20;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -386,4 +386,13 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
             std::move(agg),
             std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "count"}}, 10,
             false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"UserID", Type::Int64}}));
+
+        return std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Eq, std::make_unique<SelectExpression>("UserID"),
+                std::make_unique<ConstantExpression>(static_cast<int64_t>(435090932899640449))));
     }};

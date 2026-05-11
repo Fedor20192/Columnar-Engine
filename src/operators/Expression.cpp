@@ -43,7 +43,7 @@ Column ExtractMinute::Calculate(std::shared_ptr<Batch> batch) const {
 
 Column ContainsExpression::Calculate(std::shared_ptr<Batch> batch) const {
     const Column res = expression->Calculate(batch);
-    return Contains(std::move(res), substr);
+    return Contains(std::move(res), substr, no);
 }
 
 }  // namespace operators

@@ -13,7 +13,7 @@ Column Div(const Column &, const Column &);
 
 Column ExtractMinuteFromCol(const Column &);
 
-Column Contains(const Column &, const std::string &);
+Column Contains(const Column &, const std::string &, bool);
 
 Column And(const Column &, const Column &);
 

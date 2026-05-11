@@ -72,7 +72,7 @@ TEST_CASE_METHOD(GlogFixture, "Contains string_view match", "[Contains expressio
                                  std::string_view(buffer + 14, 5)});
 
     auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(
-        cngn::operators::Contains(col, "foo").GetData());
+        cngn::operators::Contains(col, "foo", false).GetData());
 
     REQUIRE(ans.size() == 3);
     REQUIRE(ans[0] == 1);
@@ -83,20 +83,20 @@ TEST_CASE_METHOD(GlogFixture, "Contains string_view match", "[Contains expressio
 TEST_CASE_METHOD(GlogFixture, "Contains metastring match", "[Contains expression]") {
     cngn::Column col(std::vector<std::string>{"hello world", "foobar", "baz"});
 
-    auto ans =
-        std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::Contains(col, "oo").GetData());
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(
+        cngn::operators::Contains(col, "oo", true).GetData());
 
     REQUIRE(ans.size() == 3);
-    REQUIRE(ans[0] == 0);
-    REQUIRE(ans[1] == 1);
-    REQUIRE(ans[2] == 0);
+    REQUIRE(ans[0] == 1);
+    REQUIRE(ans[1] == 0);
+    REQUIRE(ans[2] == 1);
 }
 
 TEST_CASE_METHOD(GlogFixture, "Contains empty substr", "[Contains expression]") {
     cngn::Column col(std::vector<std::string>{"abc", "", "xyz"});
 
-    auto ans =
-        std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::Contains(col, "").GetData());
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(
+        cngn::operators::Contains(col, "", false).GetData());
 
     REQUIRE(ans.size() == 3);
     REQUIRE(ans[0] == 1);
@@ -107,7 +107,7 @@ TEST_CASE_METHOD(GlogFixture, "Contains empty substr", "[Contains expression]") 
 TEST_CASE_METHOD(GlogFixture, "Contains wrong type throws", "[Contains expression]") {
     cngn::Column col(std::vector<int64_t>{1, 2, 3});
 
-    REQUIRE_THROWS(cngn::operators::Contains(col, "x"));
+    REQUIRE_THROWS(cngn::operators::Contains(col, "x", false));
 }
 
 TEST_CASE_METHOD(GlogFixture, "And elementwise", "[And expression]") {

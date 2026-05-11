@@ -50,14 +50,15 @@ struct ExtractMinute : Expression {
 };
 
 struct ContainsExpression : Expression {
-    explicit ContainsExpression(std::shared_ptr<Expression> expression, std::string substr)
-        : expression(std::move(expression)), substr(std::move(substr)) {
+    explicit ContainsExpression(std::shared_ptr<Expression> expression, std::string substr, bool no = false)
+        : expression(std::move(expression)), substr(std::move(substr)), no(no) {
     }
 
     Column Calculate(std::shared_ptr<Batch> batch) const override;
 
     std::shared_ptr<Expression> expression;
     const std::string substr;
+    bool no;
 };
 
 struct BinaryExpression : Expression {

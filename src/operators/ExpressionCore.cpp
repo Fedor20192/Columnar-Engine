@@ -141,7 +141,7 @@ Column ExtractMinuteFromCol(const Column &a) {
     DLOG(INFO) << "[ExtractMinuteFromCol]: Finished\n";
 }
 
-Column Contains(const Column &a, const std::string &substr) {
+Column Contains(const Column &a, const std::string &substr, bool no) {
     const Type type = a.GetType();
 
     if (type != Type::String && type != Type::MetaString) {
@@ -154,7 +154,7 @@ Column Contains(const Column &a, const std::string &substr) {
             const auto &arr = std::get<ArrayType<type>>(a.GetData());
 
             for (size_t i = 0; i < a.Size(); i++) {
-                ans[i] = arr[i].find(substr) != std::string::npos;
+                ans[i] = (arr[i].find(substr) != std::string::npos) ^ no;
             }
 
             return Column(std::move(ans));

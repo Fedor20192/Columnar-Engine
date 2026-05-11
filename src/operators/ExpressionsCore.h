@@ -9,6 +9,8 @@ Column NotEqual(const Column &, const Column &);
 
 Column Div(const Column &, const Column &);
 
+Column ExtractMinuteFromCol(const Column &);
+
 PhysTypeVariant Sum(const Column &);
 
 std::optional<PhysTypeVariant> Min(const Column&);

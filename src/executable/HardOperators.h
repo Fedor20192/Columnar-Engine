@@ -21,6 +21,7 @@ using BinaryExpression = cngn::operators::BinaryExpression;
 using BinaryExpressionType = cngn::operators::BinaryExpressionType;
 using ConstantExpression = cngn::operators::ConstantExpression;
 using Count = cngn::operators::Count;
+using ExtractMinute = cngn::operators::ExtractMinute;
 using Filter = cngn::operators::Filter;
 using Gluing = cngn::operators::Gluing;
 using GroupByMeta = cngn::operators::GroupByMeta;
@@ -35,7 +36,7 @@ using SortKey = cngn::operators::SortKey;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 18;
+constexpr int kQueriesCount = 19;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -358,4 +359,31 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
             std::move(aggr),
             std::vector<SortKey>{{std::make_shared<SelectExpression>("UserID"), "UserID"}}, 10,
             true);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"UserID", Type::Int64},
+                                                             {"SearchPhrase", Type::String},
+                                                             {"EventTime", Type::Timestamp}}));
+
+        auto proj = std::make_unique<Projector>(
+            std::move(scan),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("UserID"), "UserID"},
+                {std::make_shared<ExtractMinute>(std::make_shared<SelectExpression>("EventTime")),
+                 "EventTime"},
+                {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
+
+        auto agg = std::make_unique<Aggregation>(
+            std::move(proj),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "count"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("UserID"), "UserID"},
+                {std::make_shared<SelectExpression>("EventTime"), "EventTime"},
+                {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
+
+        return std::make_unique<TopK>(
+            std::move(agg),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("count"), "count"}}, 10,
+            false);
     }};

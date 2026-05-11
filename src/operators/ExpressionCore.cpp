@@ -1,3 +1,7 @@
+#include <glog/logging.h>
+
+#include <functional>
+
 #include "ExpressionsCore.h"
 
 namespace cngn {
@@ -23,26 +27,24 @@ static ArrayType<Type::Bool> Compare(const ArrayType<type> &l, const ArrayType<t
 }
 
 template <Type type_1, Type type_2>
-requires IsArithmetic<type_1> && IsArithmetic<type_2>
-static ArrayType<type_1> Divv(const ArrayType<type_1> &a, const ArrayType<type_2> &b) {
+    requires IsArithmetic<type_1> && IsArithmetic<type_2>
+static ArrayType<type_1> Divv(
+    const ArrayType<type_1> &a, const ArrayType<type_2> &b,
+    std::function<PhysicalType<type_1>(PhysicalType<type_1>, PhysicalType<type_2>)> alu) {
     if (a.size() != b.size()) {
         throw std::logic_error("[Div]: different sizes");
     }
 
     ArrayType<type_1> ans(a.size());
     for (size_t i = 0; i < a.size(); i++) {
-        if (b[i] == 0) {
-            throw std::logic_error("[Div]: division by zero");
-        }
-        ans[i] = a[i] / static_cast<PhysicalType<type_1>>(b[i]);
+        ans[i] = alu(a[i], b[i]);
     }
 
     return ans;
 }
 
-
 template <Type type, typename Comparator>
-static std::optional<PhysicalType<type>> MinMax(const ArrayType<type>& arr) {
+static std::optional<PhysicalType<type>> MinMax(const ArrayType<type> &arr) {
     if (arr.empty()) {
         return std::nullopt;
     }
@@ -60,23 +62,19 @@ static std::optional<PhysicalType<type>> MinMax(const ArrayType<type>& arr) {
     return ans;
 }
 
-
 std::optional<PhysTypeVariant> Min(const Column &a) {
     return DispatchOnType(a.GetType(), [&]<Type type>() -> std::optional<PhysTypeVariant> {
-        const auto& arr = std::get<ArrayType<type>>(a.GetData());
+        const auto &arr = std::get<ArrayType<type>>(a.GetData());
         return MinMax<type, std::less<PhysicalType<type>>>(arr);
-
     });
 }
 
 std::optional<PhysTypeVariant> Max(const Column &a) {
     return DispatchOnType(a.GetType(), [&]<Type type>() -> std::optional<PhysTypeVariant> {
-        const auto& arr = std::get<ArrayType<type>>(a.GetData());
+        const auto &arr = std::get<ArrayType<type>>(a.GetData());
         return MinMax<type, std::greater<PhysicalType<type>>>(arr);
-
     });
 }
-
 
 Column NotEqual(const Column &a, const Column &b) {
     const auto type = a.GetType();
@@ -99,12 +97,39 @@ Column Div(const Column &a, const Column &b) {
         return DispatchOnType(type_b, [&arr_a, &b]<Type type_b>() -> Column {
             const auto &arr_b = std::get<ArrayType<type_b>>(b.GetData());
             if constexpr (IsArithmetic<type_a> && IsArithmetic<type_b>) {
-                return Column(Divv<type_a, type_b>(arr_a, arr_b));
+                auto arithmetic = [](auto a, auto b) {
+                    if (b == 0) {
+                        throw std::logic_error("[Div]: division by zero");
+                    }
+                    return a / static_cast<decltype(a)>(b);
+                };
+                return Column(Divv<type_a, type_b>(arr_a, arr_b, std::move(arithmetic)));
             }
             throw std::invalid_argument("[Div]: You are dividing non arithmetic objects");
         });
-
     });
+}
+
+Column ExtractMinuteFromCol(const Column &a) {
+    DLOG(INFO) << "[ExtractMinuteFromCol]: Started...\n";
+
+    return DispatchOnType(a.GetType(), [&]<Type type>() -> Column {
+        const auto &arr = std::get<ArrayType<type>>(a.GetData());
+        ArrayType<Type::Int64> ans(arr.size());
+        if constexpr (std::is_same_v<PhysicalType<type>, PhysicalType<Type::Timestamp>>) {
+            for (size_t i = 0; i < arr.size(); i++) {
+                ans[i] = (arr[i].seconds / 60) % 60;
+            }
+
+        } else {
+            throw std::invalid_argument(
+                "[ExtractMinuteFromCol]: You are trying to extract minute from non timestamp");
+        }
+
+        return Column(std::move(ans));
+    });
+
+    DLOG(INFO) << "[ExtractMinuteFromCol]: Finished\n";
 }
 
 PhysTypeVariant Sum(const Column &a) {

@@ -37,6 +37,15 @@ struct SelectExpression : Expression {
     const std::string column_name;
 };
 
+struct ExtractMinute : Expression {
+    explicit ExtractMinute(std::shared_ptr<Expression> expression) : expression(std::move(expression)) {
+    }
+
+    Column Calculate(std::shared_ptr<Batch> batch) const override;
+
+    std::shared_ptr<Expression> expression;
+};
+
 struct BinaryExpression : Expression {
     explicit BinaryExpression(const BinaryExpressionType type, std::shared_ptr<Expression> left_son,
                               std::shared_ptr<Expression> right_son)

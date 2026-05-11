@@ -311,7 +311,7 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
             agg_cols.push_back(meta.expression->Calculate(*batch_ptr));
         }
 
-        __gnu_pbds::gp_hash_table<Key, std::vector<size_t>, VectorHash> group_rows;
+        std::unordered_map<Key, std::vector<size_t>, VectorHash> group_rows;
         for (size_t row = 0; row < rows; ++row) {
             group_rows[MakeKey(key_cols, row)].push_back(row);
         }

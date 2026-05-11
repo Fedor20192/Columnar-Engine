@@ -24,6 +24,8 @@ int main(int argc, char* argv[]) {
         finish_query = num + 1;
     }
 
+    auto global_start_time = std::chrono::high_resolution_clock::now();
+
     for (int i = start_query; i < finish_query; i++) {
         DLOG(INFO) << "[QueriesExecute]: Starting execute query number " << num << '\n';
 
@@ -52,6 +54,8 @@ int main(int argc, char* argv[]) {
 
         DLOG(INFO) << "[QueriesExecute]: Query successfully executed\n";
     }
+
+    std::cout << "Total time: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - global_start_time).count() << " ms\n\n" << std::endl;
 
     return 0;
 }

@@ -87,6 +87,45 @@ TEST_CASE_METHOD(GlogFixture, "ContainsExpression on non-string throws", "[Conta
     REQUIRE_THROWS(contains->Calculate(batch));
 }
 
+TEST_CASE_METHOD(GlogFixture, "And Expression two contains", "[And expression]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto col = std::make_shared<cngn::operators::SelectExpression>("name123");
+    auto contains_ir = std::make_shared<cngn::operators::ContainsExpression>(col, "ir");
+    auto contains_irst = std::make_shared<cngn::operators::ContainsExpression>(col, "irst");
+
+    auto and_expr = std::make_shared<cngn::operators::BinaryExpression>(
+        cngn::operators::BinaryExpressionType::And, contains_ir, contains_irst);
+
+    auto ans = and_expr->Calculate(batch);
+
+    REQUIRE(ans.Size() == batch->RowCount());
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[0]) == 1);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[1]) == 0);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[2]) == 0);
+}
+
+TEST_CASE_METHOD(GlogFixture, "And Expression contains and neq", "[And expression]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto contains_ir = std::make_shared<cngn::operators::ContainsExpression>(
+        std::make_shared<cngn::operators::SelectExpression>("name123"), "ir");
+    auto neq_1 = std::make_shared<cngn::operators::BinaryExpression>(
+        cngn::operators::BinaryExpressionType::Neq,
+        std::make_shared<cngn::operators::SelectExpression>("a"),
+        std::make_shared<cngn::operators::ConstantExpression>(static_cast<int64_t>(1)));
+
+    auto and_expr = std::make_shared<cngn::operators::BinaryExpression>(
+        cngn::operators::BinaryExpressionType::And, contains_ir, neq_1);
+
+    auto ans = and_expr->Calculate(batch);
+
+    REQUIRE(ans.Size() == batch->RowCount());
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[0]) == 0);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[1]) == 0);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[2]) == 1);
+}
+
 TEST_CASE_METHOD(GlogFixture, "Neq Expression", "[Binary expressions]") {
     auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
 

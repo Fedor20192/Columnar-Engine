@@ -24,6 +24,8 @@ Column BinaryExpression::Calculate(std::shared_ptr<Batch> batch) const {
             return Equal(left_res, right_res);  
         case BinaryExpressionType::Div:
             return Div(left_res, right_res);
+        case BinaryExpressionType::And:
+            return And(left_res, right_res);
         default:
             throw std::logic_error("[BinaryExpression:Calculate]: Unknown expression type");
     }

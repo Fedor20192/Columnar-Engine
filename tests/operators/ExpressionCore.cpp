@@ -110,6 +110,49 @@ TEST_CASE_METHOD(GlogFixture, "Contains wrong type throws", "[Contains expressio
     REQUIRE_THROWS(cngn::operators::Contains(col, "x"));
 }
 
+TEST_CASE_METHOD(GlogFixture, "And elementwise", "[And expression]") {
+    cngn::Column l(std::vector<char>{1, 0, 1});
+    cngn::Column r(std::vector<char>{1, 1, 0});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::And(l, r).GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == 1);
+    REQUIRE(ans[1] == 0);
+    REQUIRE(ans[2] == 0);
+}
+
+TEST_CASE_METHOD(GlogFixture, "And all true", "[And expression]") {
+    cngn::Column l(std::vector<char>{1, 1, 1});
+    cngn::Column r(std::vector<char>{1, 1, 1});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::And(l, r).GetData());
+
+    REQUIRE(ans.size() == 3);
+    for (size_t i = 0; i < ans.size(); i++) {
+        REQUIRE(ans[i] == 1);
+    }
+}
+
+TEST_CASE_METHOD(GlogFixture, "And all false", "[And expression]") {
+    cngn::Column l(std::vector<char>{0, 0, 0});
+    cngn::Column r(std::vector<char>{1, 0, 1});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::And(l, r).GetData());
+
+    REQUIRE(ans.size() == 3);
+    for (size_t i = 0; i < ans.size(); i++) {
+        REQUIRE(ans[i] == 0);
+    }
+}
+
+TEST_CASE_METHOD(GlogFixture, "And non-bool throws", "[And expression]") {
+    cngn::Column l(std::vector<int64_t>{1, 0, 1});
+    cngn::Column r(std::vector<int64_t>{1, 1, 0});
+
+    REQUIRE_THROWS(cngn::operators::And(l, r));
+}
+
 TEST_CASE_METHOD(GlogFixture, "Simple min_max", "[MinMax expression]") {
     cngn::Column integer(std::vector{14, 00, 88, -6, 32, -69, -8, -19});
     cngn::Column str(std::vector<std::string_view>{"aboba", "aacb", "aabc", "aacba"});

@@ -9,6 +9,7 @@ enum class BinaryExpressionType {
     Neq,
     Eq,
     Div,
+    And,
 };
 
 struct Expression {

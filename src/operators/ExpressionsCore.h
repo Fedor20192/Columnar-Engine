@@ -15,6 +15,8 @@ Column ExtractMinuteFromCol(const Column &);
 
 Column Contains(const Column &, const std::string &);
 
+Column And(const Column &, const Column &);
+
 PhysTypeVariant Sum(const Column &);
 
 std::optional<PhysTypeVariant> Min(const Column&);

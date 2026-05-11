@@ -164,6 +164,26 @@ Column Contains(const Column &a, const std::string &substr) {
     });
 }
 
+Column And(const Column &a, const Column &b) {
+    const auto type = a.GetType();
+
+    return DispatchOnType(type, [&]<Type type>() -> Column {
+        if constexpr (type == Type::Bool) {
+            ArrayType<Type::Bool> ans(a.Size());
+            const auto &arr_a = std::get<ArrayType<type>>(a.GetData());
+            const auto &arr_b = std::get<ArrayType<type>>(b.GetData());
+
+            for (size_t i = 0; i < a.Size(); i++) {
+                ans[i] = arr_a[i] && arr_b[i];
+            }
+
+            return Column(std::move(ans));
+        }
+
+        throw std::invalid_argument("[And]: You are trying to use non bool objects");
+    });
+}
+
 PhysTypeVariant Sum(const Column &a) {
     Type type = a.GetType();
     if (type == Type::Bool || type == Type::Timestamp || type == Type::Date ||

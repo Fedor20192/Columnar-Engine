@@ -37,7 +37,7 @@ using SortKey = cngn::operators::SortKey;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 21;
+constexpr int kQueriesCount = 22;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -405,4 +405,31 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
                                  std::make_shared<SelectExpression>("URL"), "google"));
 
         return std::make_unique<Count>(std::move(filter));
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"URL", Type::String}, {"SearchPhrase", Type::String}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::And,
+                std::make_shared<ContainsExpression>(std::make_shared<SelectExpression>("URL"),
+                                                     "google"),
+                std::make_shared<BinaryExpression>(
+                    BinaryExpressionType::Neq, std::make_shared<SelectExpression>("SearchPhrase"),
+                    std::make_shared<ConstantExpression>(std::string_view("")))));
+
+        auto aggr = std::make_unique<Aggregation>(
+            std::move(filter),
+            std::vector<AggregationMeta>{
+                {AggregationType::Min, std::make_shared<SelectExpression>("URL"), "min_url"},
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "c"},
+            },
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
+
+        return std::make_unique<TopK>(
+            std::move(aggr), std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}},
+            10, false);
     }};

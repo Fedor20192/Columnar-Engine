@@ -37,7 +37,7 @@ using SortKey = cngn::operators::SortKey;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 24;
+constexpr int kQueriesCount = 27;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -482,4 +482,62 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
             std::move(filter),
             std::vector<SortKey>{{std::make_shared<SelectExpression>("EventTime"), "EventTime"}},
             10, true);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"SearchPhrase", Type::String}, {"EventTime", Type::Timestamp}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_shared<SelectExpression>("SearchPhrase"),
+                std::make_shared<ConstantExpression>(std::string_view(""))));
+
+        return std::make_unique<Projector>(
+            std::make_unique<TopK>(
+                std::move(filter),
+                std::vector<SortKey>{
+                    {std::make_shared<SelectExpression>("EventTime"), "EventTime"}},
+                10, true),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"SearchPhrase", Type::String}, {"EventTime", Type::Timestamp}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_shared<SelectExpression>("SearchPhrase"),
+                std::make_shared<ConstantExpression>(std::string_view(""))));
+
+        return std::make_unique<Projector>(
+            std::make_unique<TopK>(
+                std::move(filter),
+                std::vector<SortKey>{
+                    {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}},
+                10, true),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"SearchPhrase", Type::String}, {"EventTime", Type::Timestamp}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_shared<SelectExpression>("SearchPhrase"),
+                std::make_shared<ConstantExpression>(std::string_view(""))));
+
+        return std::make_unique<Projector>(
+            std::make_unique<TopK>(
+                std::move(filter),
+                std::vector<SortKey>{
+                    {std::make_shared<SelectExpression>("EventTime"), "EventTime"},
+                    {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}},
+                10, true),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
     }};

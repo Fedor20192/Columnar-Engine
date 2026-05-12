@@ -194,7 +194,7 @@ TEST_CASE_METHOD(GlogFixture, "Simple group by aggregation", "[Aggregation opera
 
     std::unordered_map<std::string, size_t> row_by_name;
     for (size_t i = 0; i < ans->RowCount(); ++i) {
-        row_by_name[std::get<std::string>((*ans)[0][i])] = i;
+        row_by_name[std::string(std::get<std::string_view>((*ans)[0][i]))] = i;
     }
 
     auto check = [&](const std::string& name, __int128_t sum_a, int32_t max_b, uint64_t distinct_d) {

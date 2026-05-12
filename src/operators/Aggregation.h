@@ -38,6 +38,8 @@ public:
     void Close() override;
 
 private:
+    std::optional<std::shared_ptr<Batch>> GlobalNext();
+
     std::unique_ptr<Operator> next_operator_;
     std::vector<AggregationMeta> aggregation_meta_;
     std::vector<GroupByMeta> group_by_;

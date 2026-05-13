@@ -7,7 +7,10 @@ namespace operators {
 
 enum class BinaryExpressionType {
     Neq,
+    Eq,
+    Gt,
     Div,
+    And,
 };
 
 struct Expression {
@@ -35,6 +38,37 @@ struct SelectExpression : Expression {
     Column Calculate(std::shared_ptr<Batch> batch) const override;
 
     const std::string column_name;
+};
+
+struct ExtractMinute : Expression {
+    explicit ExtractMinute(std::shared_ptr<Expression> expression)
+        : expression(std::move(expression)) {
+    }
+
+    Column Calculate(std::shared_ptr<Batch> batch) const override;
+
+    std::shared_ptr<Expression> expression;
+};
+
+struct ContainsExpression : Expression {
+    explicit ContainsExpression(std::shared_ptr<Expression> expression, std::string substr, bool no = false)
+        : expression(std::move(expression)), substr(std::move(substr)), no(no) {
+    }
+
+    Column Calculate(std::shared_ptr<Batch> batch) const override;
+
+    std::shared_ptr<Expression> expression;
+    const std::string substr;
+    bool no;
+};
+
+struct StrLenExpression : Expression {
+    explicit StrLenExpression(std::shared_ptr<Expression> expression) : expression(std::move(expression)) {
+    }
+
+    Column Calculate(std::shared_ptr<Batch> batch) const override;
+
+    std::shared_ptr<Expression> expression;
 };
 
 struct BinaryExpression : Expression {

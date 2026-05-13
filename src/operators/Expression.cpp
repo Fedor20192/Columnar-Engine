@@ -20,8 +20,14 @@ Column BinaryExpression::Calculate(std::shared_ptr<Batch> batch) const {
     switch (type) {
         case BinaryExpressionType::Neq:
             return NotEqual(left_res, right_res);
+        case BinaryExpressionType::Eq:
+            return Equal(left_res, right_res);
+        case BinaryExpressionType::Gt:
+            return Gt(left_res, right_res);
         case BinaryExpressionType::Div:
             return Div(left_res, right_res);
+        case BinaryExpressionType::And:
+            return And(left_res, right_res);
         default:
             throw std::logic_error("[BinaryExpression:Calculate]: Unknown expression type");
     }
@@ -30,6 +36,21 @@ Column BinaryExpression::Calculate(std::shared_ptr<Batch> batch) const {
 Column SelectExpression::Calculate(std::shared_ptr<Batch> batch) const {
     auto column = batch->GetColumnByName(column_name);
     return column;
+}
+
+Column ExtractMinute::Calculate(std::shared_ptr<Batch> batch) const {
+    const Column res = expression->Calculate(batch);
+    return ExtractMinuteFromCol(res);
+}
+
+Column ContainsExpression::Calculate(std::shared_ptr<Batch> batch) const {
+    const Column res = expression->Calculate(batch);
+    return Contains(std::move(res), substr, no);
+}
+
+Column StrLenExpression::Calculate(std::shared_ptr<Batch> batch) const {
+    const Column res = expression->Calculate(batch);
+    return StrLen(std::move(res));
 }
 
 }  // namespace operators

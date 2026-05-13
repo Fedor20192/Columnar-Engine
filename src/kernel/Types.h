@@ -288,6 +288,9 @@ auto DispatchOnType(Type type, Callable &&f, Args &&...args) {
         case Type::Int16:
             return std::forward<Callable>(f).template operator()<Type::Int16>(
                 std::forward<Args>(args)...);
+        case Type::Bool:
+            return std::forward<Callable>(f).template operator()<Type::Bool>(
+                std::forward<Args>(args)...);
         case Type::String:
             return std::forward<Callable>(f).template operator()<Type::String>(
                 std::forward<Args>(args)...);

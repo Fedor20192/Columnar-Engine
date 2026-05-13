@@ -1,5 +1,6 @@
 #include "Sort.h"
 
+#include <glog/logging.h>
 #include <numeric>
 #include <queue>
 
@@ -28,6 +29,7 @@ void Sort::Close() {
 }
 
 std::optional<std::shared_ptr<Batch>> Sort::Next() {
+    DLOG(INFO) << "[Sort]: Started\n";
     if (finished_) {
         return std::nullopt;
     }
@@ -37,7 +39,9 @@ std::optional<std::shared_ptr<Batch>> Sort::Next() {
     std::vector<std::shared_ptr<Batch>> batches;
 
     while (auto batch = next_operator_->Next()) {
-        batches.push_back(std::move(batch.value()));
+        if (batch.value()->RowCount() > 0) {
+            batches.push_back(std::move(batch.value()));
+        }
     }
 
     if (batches.empty()) {
@@ -76,10 +80,13 @@ std::optional<std::shared_ptr<Batch>> Sort::Next() {
     };
     std::sort(indices.begin(), indices.end(), std::move(cmp));
 
+    DLOG(INFO) << "[Sort]: Finished\n";
+
     return ReorderRows(glued, indices);
 }
 
 std::shared_ptr<Batch> Sort::GlueBatches(const std::vector<std::shared_ptr<Batch>>& batches) {
+    DLOG(INFO) << "[Sort::GlueBatches]: Started\n";
     if (batches.empty()) {
         throw std::invalid_argument("[Sort]: no batches to glue");
     }
@@ -116,11 +123,14 @@ std::shared_ptr<Batch> Sort::GlueBatches(const std::vector<std::shared_ptr<Batch
         result->AddColumn(DispatchOnType((*batches[0])[col_idx].GetType(), add_col, col_idx));
     }
 
+    DLOG(INFO) << "[Sort::GlueBatches]: Finished\n";
+
     return result;
 }
 
 std::shared_ptr<Batch> Sort::ReorderRows(const std::shared_ptr<Batch>& batch,
                                          const std::vector<size_t>& indices) {
+    DLOG(INFO) << "[Sort::ReorderRows]: Started\n";
     auto result = std::make_shared<Batch>(batch->GetSchema());
 
     for (size_t col_idx = 0; col_idx < batch->ColumnCount(); ++col_idx) {
@@ -135,6 +145,8 @@ std::shared_ptr<Batch> Sort::ReorderRows(const std::shared_ptr<Batch>& batch,
             return Column(std::move(data), col.GetOwningBuffer());
         }));
     }
+
+    DLOG(INFO) << "[Sort::ReorderRows]: Finished\n";
 
     return result;
 }
@@ -166,6 +178,7 @@ void TopK::Close() {
 }
 
 std::optional<std::shared_ptr<Batch>> TopK::Next() {
+    DLOG(INFO) << "[TopK]: Started\n";
     if (finished_) {
         return std::nullopt;
     }
@@ -190,8 +203,14 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
 
     std::optional<Schema> schema;
 
+    std::vector<std::shared_ptr<char[]>> owning_buffers;
+
     while (auto batch_opt = next_operator_->Next()) {
         auto batch = batch_opt.value();
+
+        if (batch->RowCount() == 0) {
+            continue;
+        }
 
         if (!schema) {
             schema = batch->GetSchema();
@@ -201,6 +220,11 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
         key_cols.reserve(sort_meta_.size());
         for (const auto& sk : sort_meta_) {
             key_cols.push_back(sk.expression->Calculate(batch));
+        }
+
+        for (size_t c = 0; c < batch->ColumnCount(); ++c) {
+            const auto& buffers = (*batch)[c].GetOwningBuffer();
+            owning_buffers.insert(owning_buffers.end(), buffers.begin(), buffers.end());
         }
 
         const size_t rows = batch->RowCount();
@@ -214,11 +238,7 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
             }
 
             for (size_t c = 0; c < batch->ColumnCount(); ++c) {
-                PhysTypeVariant val = (*batch)[c][row];
-                if (std::holds_alternative<PhysicalType<Type::String>>(val)) {
-                    val = std::string(std::get<PhysicalType<Type::String>>(val));
-                }
-                hr.cols.push_back(std::move(val));
+                hr.cols.push_back((*batch)[c][row]);
             }
 
             pq.push(std::move(hr));
@@ -245,14 +265,17 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
 
     for (size_t c = 0; c < n_cols; ++c) {
         Type col_type = static_cast<Type>(rows[0].cols[c].index());
-        Column col(col_type, rows.size());
-        for (const auto& hr : rows) {
-            DispatchOnType(col_type, [&]<Type t>() {
-                col.PushBack<t>(std::get<PhysicalType<t>>(hr.cols[c]));
-            });
-        }
-        result->AddColumn(std::move(col));
+        DispatchOnType(col_type, [&]<Type t>() {
+            ArrayType<t> col_data;
+            col_data.reserve(rows.size());
+            for (const auto& hr : rows) {
+                col_data.push_back(std::get<PhysicalType<t>>(hr.cols[c]));
+            }
+            result->AddColumn(Column(std::move(col_data), owning_buffers));
+        });
     }
+
+    DLOG(INFO) << "[TopK]: Finished\n";
 
     return result;
 }

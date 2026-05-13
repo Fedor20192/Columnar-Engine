@@ -4,6 +4,7 @@
 
 #include "ExpressionsCore.h"
 #include "glog/logging.h"
+#include "ankerl/unordered_dense.h"
 
 namespace cngn {
 namespace operators {
@@ -38,13 +39,10 @@ struct PhysTypeVariantHash {
     }
 };
 
-struct VectorHash {
-    size_t operator()(const std::vector<PhysTypeVariant>& vec) const {
-        size_t seed = vec.size();
-        for (const auto& v : vec) {
-            seed ^= PhysTypeVariantHash{}(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-        return seed;
+struct PhysTypeHash {
+    template <typename T>
+    size_t operator()(const T& x) const {
+        return PhysTypeVariantHash{}(PhysTypeVariant{x});
     }
 };
 
@@ -54,12 +52,29 @@ struct IAggregationState {
     virtual Column Finalize() = 0;
 };
 
-class SumState : public IAggregationState {
-    static const Type kSumType = Type::Int128;
+template <Type type>
+class ITypeAggregationState : public IAggregationState {
+public:
+    using IAggregationState::Update;
+    virtual void Update(const PhysicalType<type>&) = 0;
+};
+
+template <Type type>
+class SumState : public ITypeAggregationState<type> {
+    static constexpr Type kSumType = Type::Int128;
 
 public:
     void Update(const Column& col) override {
         sum_ += std::get<PhysicalType<kSumType>>(Sum(col));
+    }
+
+    void Update(const PhysicalType<type>& val) override {
+        if constexpr (type == Type::String || type == Type::MetaString || type == Type::Timestamp ||
+                      type == Type::Date) {
+            throw std::runtime_error("[SumState]: unsupported type for SUM");
+        } else {
+            sum_ += val;
+        }
     }
 
     Column Finalize() override {
@@ -70,13 +85,18 @@ private:
     PhysicalType<kSumType> sum_ = 0;
 };
 
-class DistinctState : public IAggregationState {
+template <Type type>
+class DistinctState : public ITypeAggregationState<type> {
 public:
     void Update(const Column& col) override {
-        storage_.push_back(col);
-        for (size_t i = 0; i < col.Size(); i++) {
-            seen_.insert({col[i], false});
+        const auto& data = std::get<ArrayType<type>>(col.GetData());
+        for (size_t i = 0; i < data.size(); i++) {
+            seen_.insert({data[i], false});
         }
+    }
+
+    void Update(const PhysicalType<type>& val) override {
+        seen_.insert({val, false});
     }
 
     Column Finalize() override {
@@ -84,13 +104,17 @@ public:
     }
 
 private:
-    __gnu_pbds::gp_hash_table<PhysTypeVariant, bool, PhysTypeVariantHash> seen_;
-    std::vector<Column> storage_;
+    __gnu_pbds::gp_hash_table<PhysicalType<type>, bool, PhysTypeHash> seen_;
 };
 
-class CountState : public IAggregationState {
+template <Type type>
+class CountState : public ITypeAggregationState<type> {
     void Update(const Column& col) override {
         count_ += col.Size();
+    }
+
+    void Update(const PhysicalType<type>&) override {
+        count_++;
     }
 
     Column Finalize() override {
@@ -101,117 +125,111 @@ private:
     PhysicalType<Type::UInt64> count_ = 0;
 };
 
-class MinState : public IAggregationState {
+template <Type type>
+class MinState : public ITypeAggregationState<type> {
 public:
     void Update(const Column& col) override {
         auto batch_min = Min(col);
         if (!batch_min) {
             return;
         }
-        if (!min_) {
-            min_ = batch_min;
-            return;
+        auto real_batch_min = std::get<PhysicalType<type>>(*batch_min);
+        if (!min_ || real_batch_min < *min_) {
+            min_ = real_batch_min;
         }
-        std::visit(
-            [this]<typename T>(const T& new_val) {
-                if (new_val < std::get<T>(*min_)) {
-                    *min_ = new_val;
-                }
-            },
-            *batch_min);
+    }
+
+    void Update(const PhysicalType<type>& val) override {
+        if (!min_ || val < *min_) {
+            min_ = val;
+        }
     }
 
     Column Finalize() override {
         if (!min_) {
             throw std::runtime_error("[MinState]: empty input");
         }
-        return std::visit([]<typename T>(T v) -> Column { return Column(std::vector<T>{v}); },
-                          *min_);
+        return Column(ArrayType<type>{*min_});
     }
 
 private:
-    std::optional<PhysTypeVariant> min_;
+    std::optional<PhysicalType<type>> min_;
 };
 
-class MaxState : public IAggregationState {
+template <Type type>
+class MaxState : public ITypeAggregationState<type> {
 public:
     void Update(const Column& col) override {
         auto batch_max = Max(col);
         if (!batch_max) {
             return;
         }
-        if (!max_) {
-            max_ = batch_max;
-            return;
+        auto real_batch_max = std::get<PhysicalType<type>>(*batch_max);
+        if (!max_ || real_batch_max > *max_) {
+            max_ = real_batch_max;
         }
-        std::visit(
-            [this]<typename T>(const T& new_val) {
-                if (new_val > std::get<T>(*max_)) {
-                    *max_ = new_val;
-                }
-            },
-            *batch_max);
+    }
+
+    void Update(const PhysicalType<type>& val) override {
+        if (!max_ || val > *max_) {
+            max_ = val;
+        }
     }
 
     Column Finalize() override {
         if (!max_) {
             throw std::runtime_error("[MaxState]: empty input");
         }
-        return std::visit([]<typename T>(T v) -> Column { return Column(std::vector<T>{v}); },
-                          *max_);
+        return Column(ArrayType<type>{*max_});
     }
 
 private:
-    std::optional<PhysTypeVariant> max_;
+    std::optional<PhysicalType<type>> max_;
 };
 
-Column Slice(const Column& col, const std::vector<size_t>& indices) {
-    if (col.GetType() == Type::String) {
-        Column result(Type::MetaString, indices.size());
-        const auto& arr = std::get<ArrayType<Type::String>>(col.GetData());
-        for (size_t i : indices) {
-            result.PushBack<Type::MetaString>(std::string(arr[i]));
-        }
-        return result;
+void MakeKey(const std::vector<Column>& key_cols, size_t row, std::string& key_buf) {
+    key_buf.clear();
+
+    for (const auto& kc : key_cols) {
+        DispatchOnType(kc.GetType(), [&]<Type type>() {
+            const auto val = std::get<PhysicalType<type>>(kc[row]);
+            if constexpr (std::is_same_v<PhysicalType<type>, PhysicalType<Type::String>> ||
+                          std::is_same_v<PhysicalType<type>, PhysicalType<Type::MetaString>>) {
+                uint32_t len = static_cast<uint32_t>(val.size());
+                key_buf.append(reinterpret_cast<const char*>(&len), sizeof(len));
+                key_buf.append(val.data(), len);
+            } else {
+                key_buf.append(reinterpret_cast<const char*>(&val), sizeof(val));
+            }
+        });
     }
-    Column result(col.GetType(), indices.size());
-    DispatchOnType(col.GetType(), [&]<Type t>() {
-        const auto& arr = std::get<ArrayType<t>>(col.GetData());
-        for (size_t i : indices) {
-            result.PushBack<t>(arr[i]);
-        }
-    });
-    return result;
 }
 
-std::vector<PhysTypeVariant> MakeKey(const std::vector<Column>& key_cols, size_t row) {
+std::vector<PhysTypeVariant> ExtractKey(const std::vector<Column>& key_cols, size_t row) {
     std::vector<PhysTypeVariant> key;
     key.reserve(key_cols.size());
     for (const auto& kc : key_cols) {
-        PhysTypeVariant val = kc[row];
-        if (std::holds_alternative<PhysicalType<Type::String>>(val)) {
-            key.push_back(std::string(std::get<PhysicalType<Type::String>>(val)));
-        } else {
-            key.push_back(std::move(val));
-        }
+        key.push_back(kc[row]);
     }
     return key;
 }
 
-std::unique_ptr<IAggregationState> MakeState(AggregationType type) {
-    switch (type) {
-        case AggregationType::Sum:
-            return std::make_unique<SumState>();
-        case AggregationType::Distinct:
-            return std::make_unique<DistinctState>();
-        case AggregationType::Min:
-            return std::make_unique<MinState>();
-        case AggregationType::Max:
-            return std::make_unique<MaxState>();
-        case AggregationType::Count:
-            return std::make_unique<CountState>();
-    }
-    throw std::invalid_argument("[MakeState]: unknown aggregation type");
+std::unique_ptr<IAggregationState> MakeState(AggregationType agg_type, Type col_type) {
+    return DispatchOnType(col_type, [agg_type]<Type type>() -> std::unique_ptr<IAggregationState> {
+        switch (agg_type) {
+            case AggregationType::Sum:
+                return std::make_unique<SumState<type>>();
+            case AggregationType::Distinct:
+                return std::make_unique<DistinctState<type>>();
+            case AggregationType::Min:
+                return std::make_unique<MinState<type>>();
+            case AggregationType::Max:
+                return std::make_unique<MaxState<type>>();
+            case AggregationType::Count:
+                return std::make_unique<CountState<type>>();
+        }
+        throw std::invalid_argument("[MakeState]: unknown aggregation type");
+    });
 }
 
 }  // namespace
@@ -245,46 +263,22 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
     }
     finished_ = true;
 
-    const size_t n = aggregation_meta_.size();
-
     if (group_by_.empty()) {
-        std::vector<std::unique_ptr<IAggregationState>> states;
-        states.reserve(n);
-        for (const auto& meta : aggregation_meta_) {
-            states.push_back(MakeState(meta.type));
-        }
-
-        while (auto batch = next_operator_->Next()) {
-            for (size_t i = 0; i < n; i++) {
-                states[i]->Update(aggregation_meta_[i].expression->Calculate(*batch));
-            }
-        }
-
-        std::vector<Column> columns;
-        columns.reserve(n);
-        for (auto& state : states) {
-            columns.push_back(state->Finalize());
-        }
-
-        std::vector<Schema::ColumnData> schema_data;
-        schema_data.reserve(n);
-        for (size_t i = 0; i < n; i++) {
-            schema_data.push_back({aggregation_meta_[i].result_column_name, columns[i].GetType()});
-        }
-
-        auto result = std::make_shared<Batch>(Schema(std::move(schema_data)));
-        for (auto& col : columns) {
-            result->AddColumn(std::move(col));
-        }
-
-        DLOG(INFO) << "[Aggregation]: Finished\n";
-        return result;
+        return GlobalNext();
     }
 
+    const size_t n = aggregation_meta_.size();
     const size_t nk = group_by_.size();
-    using Key = std::vector<PhysTypeVariant>;
-    std::unordered_map<Key, std::vector<std::unique_ptr<IAggregationState>>, VectorHash> groups;
+
+    ankerl::unordered_dense::map<std::string, size_t> index_map;
+    std::vector<std::vector<PhysTypeVariant>> group_keys;
+    std::vector<std::vector<std::unique_ptr<IAggregationState>>> group_states;
     std::vector<Type> key_out_types;
+
+    std::vector<std::vector<std::shared_ptr<char[]>>> owning_buffers(nk + n);
+
+    std::string key_buf;
+    key_buf.reserve(256);
 
     while (auto batch_ptr = next_operator_->Next()) {
         const size_t rows = (*batch_ptr)->RowCount();
@@ -294,86 +288,94 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
 
         std::vector<Column> key_cols;
         key_cols.reserve(nk);
-        for (const auto& meta : group_by_) {
-            key_cols.push_back(meta.expression->Calculate(*batch_ptr));
+        for (size_t i = 0; i < nk; i++) {
+            key_cols.push_back(group_by_[i].expression->Calculate(*batch_ptr));
+            const auto& buffer = key_cols.back().GetOwningBuffer();
+            owning_buffers[i].insert(owning_buffers[i].end(), buffer.begin(), buffer.end());
         }
 
         if (key_out_types.empty()) {
             for (const auto& kc : key_cols) {
-                Type t = kc.GetType();
-                key_out_types.push_back(t == Type::String ? Type::MetaString : t);
+                key_out_types.push_back(kc.GetType());
             }
         }
 
         std::vector<Column> agg_cols;
         agg_cols.reserve(n);
-        for (const auto& meta : aggregation_meta_) {
-            agg_cols.push_back(meta.expression->Calculate(*batch_ptr));
+        for (size_t i = 0; i < n; i++) {
+            agg_cols.push_back(aggregation_meta_[i].expression->Calculate(*batch_ptr));
+            const auto& buffer = agg_cols.back().GetOwningBuffer();
+            owning_buffers[nk + i].insert(owning_buffers[nk + i].end(), buffer.begin(),
+                                          buffer.end());
         }
 
-        std::unordered_map<Key, std::vector<size_t>, VectorHash> group_rows;
-        for (size_t row = 0; row < rows; ++row) {
-            group_rows[MakeKey(key_cols, row)].push_back(row);
-        }
-
-        for (const auto& [key, indices] : group_rows) {
-            auto [it, inserted] = groups.try_emplace(key);
+        std::vector<size_t> row_group_idx(rows);
+        for (size_t row = 0; row < rows; row++) {
+            MakeKey(key_cols, row, key_buf);
+            auto [it, inserted] = index_map.try_emplace(key_buf, group_states.size());
             if (inserted) {
-                it->second.reserve(n);
-                for (const auto& meta : aggregation_meta_) {
-                    it->second.push_back(MakeState(meta.type));
+                group_keys.push_back(ExtractKey(key_cols, row));
+                auto& states = group_states.emplace_back();
+                states.reserve(n);
+                for (size_t i = 0; i < n; i++) {
+                    states.push_back(MakeState(aggregation_meta_[i].type, agg_cols[i].GetType()));
                 }
             }
-            for (size_t j = 0; j < n; ++j) {
-                it->second[j]->Update(Slice(agg_cols[j], indices));
-            }
+            row_group_idx[row] = it->second;
+        }
+
+        for (size_t j = 0; j < n; j++) {
+            DispatchOnType(agg_cols[j].GetType(), [&]<Type type>() {
+                const auto& data = std::get<ArrayType<type>>(agg_cols[j].GetData());
+                for (size_t row = 0; row < rows; row++) {
+                    auto* state = static_cast<ITypeAggregationState<type>*>(
+                        group_states[row_group_idx[row]][j].get());
+                    state->Update(data[row]);
+                }
+            });
         }
     }
 
-    if (groups.empty()) {
+    if (group_states.empty()) {
         return std::nullopt;
     }
 
-    struct GroupResult {
-        Key key;
-        std::vector<Column> agg_cols;
-    };
-    std::vector<GroupResult> results;
-    results.reserve(groups.size());
-    for (auto& [key, states] : groups) {
-        GroupResult gr;
-        gr.key = key;
-        gr.agg_cols.reserve(n);
-        for (auto& state : states) {
-            gr.agg_cols.push_back(state->Finalize());
-        }
-        results.push_back(std::move(gr));
-    }
+    const size_t n_groups = group_states.size();
 
-    const size_t n_groups = results.size();
+    std::vector<std::vector<Column>> group_results;
+    group_results.reserve(n_groups);
+    for (auto& states : group_states) {
+        auto& gr = group_results.emplace_back();
+        gr.reserve(n);
+        for (auto& state : states) {
+            gr.push_back(state->Finalize());
+        }
+    }
 
     std::vector<Column> out_cols;
     out_cols.reserve(nk + n);
 
     for (size_t k = 0; k < nk; ++k) {
-        Column col(key_out_types[k], n_groups);
-        for (const auto& gr : results) {
-            DispatchOnType(key_out_types[k], [&]<Type t>() {
-                col.PushBack<t>(std::get<PhysicalType<t>>(gr.key[k]));
-            });
-        }
-        out_cols.push_back(std::move(col));
+        out_cols.push_back(DispatchOnType(key_out_types[k], [&]<Type type>() {
+            ArrayType<type> data;
+            data.reserve(n_groups);
+            for (const auto& key : group_keys) {
+                data.push_back(std::get<PhysicalType<type>>(key[k]));
+            }
+            return Column(std::move(data), owning_buffers[k]);
+        }));
     }
 
     for (size_t j = 0; j < n; ++j) {
-        Type agg_type = results[0].agg_cols[j].GetType();
-        Column col(agg_type, n_groups);
-        for (const auto& gr : results) {
-            DispatchOnType(agg_type, [&]<Type t>() {
-                col.PushBack<t>(std::get<PhysicalType<t>>(gr.agg_cols[j][0]));
-            });
-        }
-        out_cols.push_back(std::move(col));
+        Type agg_type = group_results[0][j].GetType();
+        out_cols.push_back(DispatchOnType(agg_type, [&]<Type type>() {
+            ArrayType<type> data;
+            data.reserve(n_groups);
+            for (const auto& gr : group_results) {
+                data.push_back(std::get<PhysicalType<type>>(gr[j][0]));
+            }
+            return Column(std::move(data), owning_buffers[nk + j]);
+        }));
     }
 
     std::vector<Schema::ColumnData> schema_data;
@@ -382,11 +384,64 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
         schema_data.emplace_back(group_by_[k].result_column_name, key_out_types[k]);
     }
     for (size_t j = 0; j < n; ++j) {
-        schema_data.emplace_back(aggregation_meta_[j].result_column_name, results[0].agg_cols[j].GetType());
+        schema_data.emplace_back(aggregation_meta_[j].result_column_name,
+                                 group_results[0][j].GetType());
     }
 
     auto result = std::make_shared<Batch>(Schema(std::move(schema_data)));
     for (auto& col : out_cols) {
+        result->AddColumn(std::move(col));
+    }
+
+    DLOG(INFO) << "[Aggregation]: Finished\n";
+    return result;
+}
+
+std::optional<std::shared_ptr<Batch>> Aggregation::GlobalNext() {
+    const size_t n = aggregation_meta_.size();
+    std::vector<std::unique_ptr<IAggregationState>> states;
+    std::vector<std::shared_ptr<char[]>> owning_buffers;
+
+    while (auto batch = next_operator_->Next()) {
+        std::vector<Column> cols;
+        cols.reserve(n);
+        owning_buffers.reserve(owning_buffers.size() + n);
+        for (size_t i = 0; i < n; i++) {
+            cols.push_back(aggregation_meta_[i].expression->Calculate(*batch));
+            const auto& buffer = cols.back().GetOwningBuffer();
+            owning_buffers.insert(owning_buffers.end(), buffer.begin(), buffer.end());
+        }
+
+        if (states.empty()) {
+            states.reserve(n);
+            for (size_t i = 0; i < n; i++) {
+                states.push_back(MakeState(aggregation_meta_[i].type, cols[i].GetType()));
+            }
+        }
+
+        for (size_t i = 0; i < n; i++) {
+            states[i]->Update(cols[i]);
+        }
+    }
+
+    if (states.empty()) {
+        return std::nullopt;
+    }
+
+    std::vector<Column> columns;
+    columns.reserve(n);
+    for (auto& state : states) {
+        columns.push_back(state->Finalize());
+    }
+
+    std::vector<Schema::ColumnData> schema_data;
+    schema_data.reserve(n);
+    for (size_t i = 0; i < n; i++) {
+        schema_data.push_back({aggregation_meta_[i].result_column_name, columns[i].GetType()});
+    }
+
+    auto result = std::make_shared<Batch>(Schema(std::move(schema_data)));
+    for (auto& col : columns) {
         result->AddColumn(std::move(col));
     }
 

@@ -45,16 +45,6 @@ struct PhysTypeHash {
     }
 };
 
-struct VectorHash {
-    size_t operator()(const std::vector<PhysTypeVariant>& vec) const {
-        size_t seed = vec.size();
-        for (const auto& v : vec) {
-            seed ^= PhysTypeVariantHash{}(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-        return seed;
-    }
-};
-
 struct IAggregationState {
     virtual ~IAggregationState() = default;
     virtual void Update(const Column& col) = 0;
@@ -196,7 +186,25 @@ private:
     std::optional<PhysicalType<type>> max_;
 };
 
-std::vector<PhysTypeVariant> MakeKey(const std::vector<Column>& key_cols, size_t row) {
+void MakeKey(const std::vector<Column>& key_cols, size_t row, std::string& key_buf) {
+    key_buf.clear();
+
+    for (const auto& kc : key_cols) {
+        DispatchOnType(kc.GetType(), [&]<Type type>() {
+            const auto val = std::get<PhysicalType<type>>(kc[row]);
+            if constexpr (std::is_same_v<PhysicalType<type>, PhysicalType<Type::String>> ||
+                          std::is_same_v<PhysicalType<type>, PhysicalType<Type::MetaString>>) {
+                uint32_t len = static_cast<uint32_t>(val.size());
+                key_buf.append(reinterpret_cast<const char*>(&len), sizeof(len));
+                key_buf.append(val.data(), len);
+            } else {
+                key_buf.append(reinterpret_cast<const char*>(&val), sizeof(val));
+            }
+        });
+    }
+}
+
+std::vector<PhysTypeVariant> ExtractKey(const std::vector<Column>& key_cols, size_t row) {
     std::vector<PhysTypeVariant> key;
     key.reserve(key_cols.size());
     for (const auto& kc : key_cols) {
@@ -260,11 +268,16 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
 
     const size_t n = aggregation_meta_.size();
     const size_t nk = group_by_.size();
-    using Key = std::vector<PhysTypeVariant>;
-    std::unordered_map<Key, std::vector<std::unique_ptr<IAggregationState>>, VectorHash> groups;
+
+    std::unordered_map<std::string, size_t> index_map;
+    std::vector<std::vector<PhysTypeVariant>> group_keys;
+    std::vector<std::vector<std::unique_ptr<IAggregationState>>> group_states;
     std::vector<Type> key_out_types;
 
     std::vector<std::vector<std::shared_ptr<char[]>>> owning_buffers(nk + n);
+
+    std::string key_buf;
+    key_buf.reserve(256);
 
     while (auto batch_ptr = next_operator_->Next()) {
         const size_t rows = (*batch_ptr)->RowCount();
@@ -275,8 +288,7 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
         std::vector<Column> key_cols;
         key_cols.reserve(nk);
         for (size_t i = 0; i < nk; i++) {
-            const auto& meta = group_by_[i];
-            key_cols.push_back(meta.expression->Calculate(*batch_ptr));
+            key_cols.push_back(group_by_[i].expression->Calculate(*batch_ptr));
             const auto& buffer = key_cols.back().GetOwningBuffer();
             owning_buffers[i].insert(owning_buffers[i].end(), buffer.begin(), buffer.end());
         }
@@ -290,92 +302,79 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
         std::vector<Column> agg_cols;
         agg_cols.reserve(n);
         for (size_t i = 0; i < n; i++) {
-            const auto& meta = aggregation_meta_[i];
-            agg_cols.push_back(meta.expression->Calculate(*batch_ptr));
-
+            agg_cols.push_back(aggregation_meta_[i].expression->Calculate(*batch_ptr));
             const auto& buffer = agg_cols.back().GetOwningBuffer();
             owning_buffers[nk + i].insert(owning_buffers[nk + i].end(), buffer.begin(),
                                           buffer.end());
+        }
+
+        std::vector<size_t> row_group_idx(rows);
+        for (size_t row = 0; row < rows; row++) {
+            MakeKey(key_cols, row, key_buf);
+            auto [it, inserted] = index_map.try_emplace(key_buf, group_states.size());
+            if (inserted) {
+                group_keys.push_back(ExtractKey(key_cols, row));
+                auto& states = group_states.emplace_back();
+                states.reserve(n);
+                for (size_t i = 0; i < n; i++) {
+                    states.push_back(MakeState(aggregation_meta_[i].type, agg_cols[i].GetType()));
+                }
+            }
+            row_group_idx[row] = it->second;
         }
 
         for (size_t j = 0; j < n; j++) {
             DispatchOnType(agg_cols[j].GetType(), [&]<Type type>() {
                 const auto& data = std::get<ArrayType<type>>(agg_cols[j].GetData());
                 for (size_t row = 0; row < rows; row++) {
-                    auto key = MakeKey(key_cols, row);
-                    auto [it, inserted] = groups.try_emplace(key);
-
-                    if (inserted) {
-                        it->second.reserve(n);
-                        for (size_t i = 0; i < n; i++) {
-                            it->second.push_back(
-                                MakeState(aggregation_meta_[i].type, agg_cols[i].GetType()));
-                        }
-                    }
-
-                    auto typed_state =
-                        static_cast<ITypeAggregationState<type>*>(it->second[j].get());
-                    typed_state->Update(data[row]);
+                    auto* state = static_cast<ITypeAggregationState<type>*>(
+                        group_states[row_group_idx[row]][j].get());
+                    state->Update(data[row]);
                 }
             });
         }
     }
 
-    if (groups.empty()) {
+    if (group_states.empty()) {
         return std::nullopt;
     }
 
-    struct GroupResult {
-        Key key;
-        std::vector<Column> agg_cols;
-    };
-    std::vector<GroupResult> results;
-    results.reserve(groups.size());
-    for (auto& [key, states] : groups) {
-        GroupResult gr;
-        gr.key = key;
-        gr.agg_cols.reserve(n);
-        for (auto& state : states) {
-            gr.agg_cols.push_back(state->Finalize());
-        }
-        results.push_back(std::move(gr));
-    }
+    const size_t n_groups = group_states.size();
 
-    const size_t n_groups = results.size();
+    std::vector<std::vector<Column>> group_results;
+    group_results.reserve(n_groups);
+    for (auto& states : group_states) {
+        auto& gr = group_results.emplace_back();
+        gr.reserve(n);
+        for (auto& state : states) {
+            gr.push_back(state->Finalize());
+        }
+    }
 
     std::vector<Column> out_cols;
     out_cols.reserve(nk + n);
 
     for (size_t k = 0; k < nk; ++k) {
-        auto get_col = [&]<Type type>() {
+        out_cols.push_back(DispatchOnType(key_out_types[k], [&]<Type type>() {
             ArrayType<type> data;
             data.reserve(n_groups);
-
-            for (const auto& gr : results) {
-                data.push_back(std::get<PhysicalType<type>>(gr.key[k]));
+            for (const auto& key : group_keys) {
+                data.push_back(std::get<PhysicalType<type>>(key[k]));
             }
-
             return Column(std::move(data), owning_buffers[k]);
-        };
-
-        out_cols.push_back(DispatchOnType(key_out_types[k], std::move(get_col)));
+        }));
     }
 
     for (size_t j = 0; j < n; ++j) {
-        Type agg_type = results[0].agg_cols[j].GetType();
-
-        auto get_col = [&]<Type type>() {
+        Type agg_type = group_results[0][j].GetType();
+        out_cols.push_back(DispatchOnType(agg_type, [&]<Type type>() {
             ArrayType<type> data;
             data.reserve(n_groups);
-
-            for (const auto& gr : results) {
-                data.push_back(std::get<PhysicalType<type>>(gr.agg_cols[j][0]));
+            for (const auto& gr : group_results) {
+                data.push_back(std::get<PhysicalType<type>>(gr[j][0]));
             }
-
             return Column(std::move(data), owning_buffers[nk + j]);
-        };
-
-        out_cols.push_back(DispatchOnType(agg_type, std::move(get_col)));
+        }));
     }
 
     std::vector<Schema::ColumnData> schema_data;
@@ -385,7 +384,7 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
     }
     for (size_t j = 0; j < n; ++j) {
         schema_data.emplace_back(aggregation_meta_[j].result_column_name,
-                                 results[0].agg_cols[j].GetType());
+                                 group_results[0][j].GetType());
     }
 
     auto result = std::make_shared<Batch>(Schema(std::move(schema_data)));

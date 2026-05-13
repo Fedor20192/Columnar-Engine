@@ -78,8 +78,8 @@ public:
     }
 
     void Update(const PhysicalType<type>& val) override {
-        if constexpr (type == Type::String || type == Type::MetaString ||
-                      type == Type::Timestamp || type == Type::Date) {
+        if constexpr (type == Type::String || type == Type::MetaString || type == Type::Timestamp ||
+                      type == Type::Date) {
             throw std::runtime_error("[SumState]: unsupported type for SUM");
         } else {
             sum_ += val;
@@ -98,8 +98,6 @@ template <Type type>
 class DistinctState : public ITypeAggregationState<type> {
 public:
     void Update(const Column& col) override {
-        storage_.push_back(col);
-
         const auto& data = std::get<ArrayType<type>>(col.GetData());
         for (size_t i = 0; i < data.size(); i++) {
             seen_.insert({data[i], false});
@@ -116,7 +114,6 @@ public:
 
 private:
     __gnu_pbds::gp_hash_table<PhysicalType<type>, bool, PhysTypeHash> seen_;
-    std::vector<Column> storage_;
 };
 
 template <Type type>
@@ -198,7 +195,6 @@ public:
 private:
     std::optional<PhysicalType<type>> max_;
 };
-
 
 std::vector<PhysTypeVariant> MakeKey(const std::vector<Column>& key_cols, size_t row) {
     std::vector<PhysTypeVariant> key;
@@ -404,12 +400,16 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
 std::optional<std::shared_ptr<Batch>> Aggregation::GlobalNext() {
     const size_t n = aggregation_meta_.size();
     std::vector<std::unique_ptr<IAggregationState>> states;
+    std::vector<std::shared_ptr<char[]>> owning_buffers;
 
     while (auto batch = next_operator_->Next()) {
         std::vector<Column> cols;
         cols.reserve(n);
+        owning_buffers.reserve(owning_buffers.size() + n);
         for (size_t i = 0; i < n; i++) {
             cols.push_back(aggregation_meta_[i].expression->Calculate(*batch));
+            const auto& buffer = cols.back().GetOwningBuffer();
+            owning_buffers.insert(owning_buffers.end(), buffer.begin(), buffer.end());
         }
 
         if (states.empty()) {

@@ -4,6 +4,7 @@
 
 #include "ExpressionsCore.h"
 #include "glog/logging.h"
+#include "ankerl/unordered_dense.h"
 
 namespace cngn {
 namespace operators {
@@ -269,7 +270,7 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
     const size_t n = aggregation_meta_.size();
     const size_t nk = group_by_.size();
 
-    std::unordered_map<std::string, size_t> index_map;
+    ankerl::unordered_dense::map<std::string, size_t> index_map;
     std::vector<std::vector<PhysTypeVariant>> group_keys;
     std::vector<std::vector<std::unique_ptr<IAggregationState>>> group_states;
     std::vector<Type> key_out_types;

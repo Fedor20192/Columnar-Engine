@@ -96,6 +96,14 @@ Column Equal(const Column &a, const Column &b) {
     }));
 }
 
+Column Gt(const Column &a, const Column &b) {
+    const auto type = a.GetType();
+    return Column(DispatchOnType(type, [&]<Type type>() -> ArrayType<Type::Bool> {
+        return Compare<type, std::greater<PhysicalType<type>>>(
+            std::get<ArrayType<type>>(a.GetData()), std::get<ArrayType<type>>(b.GetData()));
+    }));
+}
+
 Column Div(const Column &a, const Column &b) {
     const auto type_a = a.GetType();
 
@@ -161,6 +169,29 @@ Column Contains(const Column &a, const std::string &substr, bool no) {
         }
 
         throw std::invalid_argument("[Contains]: type must be string or metastring");
+    });
+}
+
+Column StrLen(const Column &a) {
+    const Type type = a.GetType();
+
+    if (type != Type::String && type != Type::MetaString) {
+        throw std::invalid_argument("[StrLen]: type must be string or metastring");
+    }
+
+    return DispatchOnType(type, [&]<Type type>() -> Column {
+        if constexpr (type == Type::String || type == Type::MetaString) {
+            ArrayType<Type::UInt64> ans(a.Size());
+            const auto &arr = std::get<ArrayType<type>>(a.GetData());
+
+            for (size_t i = 0; i < a.Size(); i++) {
+                ans[i] = arr[i].size();
+            }
+
+            return Column(std::move(ans));
+        }
+
+        throw std::invalid_argument("[StrLen]: type must be string or metastring");
     });
 }
 

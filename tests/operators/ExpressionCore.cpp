@@ -153,6 +153,70 @@ TEST_CASE_METHOD(GlogFixture, "And non-bool throws", "[And expression]") {
     REQUIRE_THROWS(cngn::operators::And(l, r));
 }
 
+TEST_CASE_METHOD(GlogFixture, "Gt basic", "[Gt expression]") {
+    cngn::Column l(std::vector{3, 5, 1, 7});
+    cngn::Column r(std::vector{2, 5, 4, 0});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::Gt(l, r).GetData());
+
+    REQUIRE(ans.size() == 4);
+    REQUIRE(ans[0] == 1);
+    REQUIRE(ans[1] == 0);
+    REQUIRE(ans[2] == 0);
+    REQUIRE(ans[3] == 1);
+}
+
+TEST_CASE_METHOD(GlogFixture, "Gt all false", "[Gt expression]") {
+    cngn::Column l(std::vector<int64_t>{1, 2, 3});
+    cngn::Column r(std::vector<int64_t>{4, 5, 6});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::Gt(l, r).GetData());
+
+    REQUIRE(ans.size() == 3);
+    for (size_t i = 0; i < ans.size(); i++) {
+        REQUIRE(ans[i] == 0);
+    }
+}
+
+TEST_CASE_METHOD(GlogFixture, "Gt different types throws", "[Gt expression]") {
+    cngn::Column l(std::vector{1, 2, 3});
+    cngn::Column r(std::vector<int64_t>{4, 5, 6});
+
+    REQUIRE_THROWS(cngn::operators::Gt(l, r));
+}
+
+TEST_CASE_METHOD(GlogFixture, "StrLen string_view", "[StrLen expression]") {
+    char buffer[] = "hello\0world!\0hi\0";
+    cngn::Column col(std::vector{std::string_view(buffer, 5), std::string_view(buffer + 6, 6),
+                                 std::string_view(buffer + 13, 2)});
+
+    auto ans =
+        std::get<cngn::ArrayType<cngn::Type::UInt64>>(cngn::operators::StrLen(col).GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == 5);
+    REQUIRE(ans[1] == 6);
+    REQUIRE(ans[2] == 2);
+}
+
+TEST_CASE_METHOD(GlogFixture, "StrLen metastring", "[StrLen expression]") {
+    cngn::Column col(std::vector<std::string>{"abc", "", "hello world"});
+
+    auto ans =
+        std::get<cngn::ArrayType<cngn::Type::UInt64>>(cngn::operators::StrLen(col).GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == 3);
+    REQUIRE(ans[1] == 0);
+    REQUIRE(ans[2] == 11);
+}
+
+TEST_CASE_METHOD(GlogFixture, "StrLen wrong type throws", "[StrLen expression]") {
+    cngn::Column col(std::vector<int64_t>{1, 2, 3});
+
+    REQUIRE_THROWS(cngn::operators::StrLen(col));
+}
+
 TEST_CASE_METHOD(GlogFixture, "Simple min_max", "[MinMax expression]") {
     cngn::Column integer(std::vector{14, 00, 88, -6, 32, -69, -8, -19});
     cngn::Column str(std::vector<std::string_view>{"aboba", "aacb", "aabc", "aacba"});

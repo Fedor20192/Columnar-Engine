@@ -21,7 +21,9 @@ Column BinaryExpression::Calculate(std::shared_ptr<Batch> batch) const {
         case BinaryExpressionType::Neq:
             return NotEqual(left_res, right_res);
         case BinaryExpressionType::Eq:
-            return Equal(left_res, right_res);  
+            return Equal(left_res, right_res);
+        case BinaryExpressionType::Gt:
+            return Gt(left_res, right_res);
         case BinaryExpressionType::Div:
             return Div(left_res, right_res);
         case BinaryExpressionType::And:
@@ -44,6 +46,11 @@ Column ExtractMinute::Calculate(std::shared_ptr<Batch> batch) const {
 Column ContainsExpression::Calculate(std::shared_ptr<Batch> batch) const {
     const Column res = expression->Calculate(batch);
     return Contains(std::move(res), substr, no);
+}
+
+Column StrLenExpression::Calculate(std::shared_ptr<Batch> batch) const {
+    const Column res = expression->Calculate(batch);
+    return StrLen(std::move(res));
 }
 
 }  // namespace operators

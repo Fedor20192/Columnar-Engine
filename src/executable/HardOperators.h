@@ -34,10 +34,11 @@ using Schema = cngn::Schema;
 using SelectExpression = cngn::operators::SelectExpression;
 using Sort = cngn::operators::Sort;
 using SortKey = cngn::operators::SortKey;
+using StrLenExpression = cngn::operators::StrLenExpression;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 27;
+constexpr int kQueriesCount = 28;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -540,4 +541,49 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
                 10, true),
             std::vector<ProjectionMeta>{
                 {std::make_shared<SelectExpression>("SearchPhrase"), "SearchPhrase"}});
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(
+            filename, Schema({{"CounterID", Type::Int32}, {"URL", Type::String}}));
+
+        auto url_filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_shared<SelectExpression>("URL"),
+                std::make_shared<ConstantExpression>(std::string_view(""))));
+
+        auto proj_1 = std::make_unique<Projector>(
+            std::move(url_filter),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("CounterID"), "CounterID"},
+                {std::make_shared<StrLenExpression>(std::make_shared<SelectExpression>("URL")),
+                 "strlen"}});
+
+        auto agg = std::make_unique<Aggregation>(
+            std::move(proj_1),
+            std::vector<AggregationMeta>{
+                {AggregationType::Sum, std::make_shared<SelectExpression>("strlen"), "sum_strlen"},
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "count"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("CounterID"), "CounterID"}});
+
+        auto count_filter = std::make_unique<Filter>(
+            std::move(agg),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Gt, std::make_shared<SelectExpression>("count"),
+                std::make_shared<ConstantExpression>(static_cast<uint64_t>(100000))));
+
+        auto proj_2 = std::make_unique<Projector>(
+            std::move(count_filter),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("CounterID"), "CounterID"},
+                {std::make_shared<BinaryExpression>(
+                     BinaryExpressionType::Div, std::make_shared<SelectExpression>("sum_strlen"),
+                     std::make_shared<SelectExpression>("count")),
+                 "avg"},
+                {std::make_shared<SelectExpression>("count"), "count"}});
+
+        return std::make_unique<TopK>(
+            std::move(proj_2),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("avg"), "avg"}}, 25, false);
     }};

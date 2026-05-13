@@ -126,6 +126,63 @@ TEST_CASE_METHOD(GlogFixture, "And Expression contains and neq", "[And expressio
     REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[2]) == 1);
 }
 
+TEST_CASE_METHOD(GlogFixture, "Gt Expression column vs constant", "[Binary expressions]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto col = std::make_shared<cngn::operators::SelectExpression>("a");
+    auto constant = std::make_shared<cngn::operators::ConstantExpression>(static_cast<int64_t>(4));
+
+    auto gt = std::make_shared<cngn::operators::BinaryExpression>(
+        cngn::operators::BinaryExpressionType::Gt, col, constant);
+
+    auto ans = gt->Calculate(batch);
+
+    REQUIRE(ans.Size() == batch->RowCount());
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[0]) == 0);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[1]) == 1);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[2]) == 1);
+}
+
+TEST_CASE_METHOD(GlogFixture, "Gt Expression two constants equal", "[Binary expressions]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto lhs = std::make_shared<cngn::operators::ConstantExpression>(static_cast<int64_t>(5));
+    auto rhs = std::make_shared<cngn::operators::ConstantExpression>(static_cast<int64_t>(5));
+
+    auto gt = std::make_shared<cngn::operators::BinaryExpression>(
+        cngn::operators::BinaryExpressionType::Gt, lhs, rhs);
+
+    auto ans = gt->Calculate(batch);
+
+    REQUIRE(ans.Size() == batch->RowCount());
+    for (size_t i = 0; i < ans.Size(); i++) {
+        REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Bool>>(ans[i]) == 0);
+    }
+}
+
+TEST_CASE_METHOD(GlogFixture, "StrLenExpression on string column", "[StrLen expression]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto col = std::make_shared<cngn::operators::SelectExpression>("name123");
+    auto strlen_expr = std::make_shared<cngn::operators::StrLenExpression>(col);
+
+    auto ans = strlen_expr->Calculate(batch);
+
+    REQUIRE(ans.Size() == batch->RowCount());
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::UInt64>>(ans[0]) == 5);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::UInt64>>(ans[1]) == 6);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::UInt64>>(ans[2]) == 5);
+}
+
+TEST_CASE_METHOD(GlogFixture, "StrLenExpression on non-string throws", "[StrLen expression]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto col = std::make_shared<cngn::operators::SelectExpression>("a");
+    auto strlen_expr = std::make_shared<cngn::operators::StrLenExpression>(col);
+
+    REQUIRE_THROWS(strlen_expr->Calculate(batch));
+}
+
 TEST_CASE_METHOD(GlogFixture, "Neq Expression", "[Binary expressions]") {
     auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
 

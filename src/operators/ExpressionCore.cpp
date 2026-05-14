@@ -195,6 +195,39 @@ Column StrLen(const Column &a) {
     });
 }
 
+Column Regex(const Column &a, const std::string &modifiers, const std::regex &reg) {
+    return DispatchOnType(a.GetType(), [&]<Type type>() -> Column {
+        if constexpr (type == Type::String || type == Type::MetaString) {
+            const auto &data = std::get<ArrayType<type>>(a.GetData());
+
+            std::vector<size_t> sizes(data.size());
+            std::vector<char> buffer;
+
+            for (size_t i = 0; i < data.size(); i++) {
+                auto new_str = std::regex_replace(std::string(data[i]), reg, modifiers);
+                buffer.insert(buffer.end(), new_str.begin(), new_str.end());
+                sizes[i] = new_str.size();
+            }
+
+            const size_t buf_size = buffer.size();
+
+            auto shared_buf = std::make_shared<char[]>(buf_size);
+            std::memcpy(shared_buf.get(), buffer.data(), buf_size);
+
+            ArrayType<Type::String> ans;
+            ans.reserve(data.size());
+
+            for (size_t i = 0, pos = 0; i < data.size(); i++) {
+                ans.emplace_back(shared_buf.get() + pos, sizes[i]);
+                pos += sizes[i];
+            }
+
+            return Column(std::move(ans), {std::move(shared_buf)});
+        }
+        throw std::invalid_argument("[Regex]: type must be string or metastring");
+    });
+}
+
 Column And(const Column &a, const Column &b) {
     const auto type = a.GetType();
 

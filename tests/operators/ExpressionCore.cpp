@@ -217,6 +217,60 @@ TEST_CASE_METHOD(GlogFixture, "StrLen wrong type throws", "[StrLen expression]")
     REQUIRE_THROWS(cngn::operators::StrLen(col));
 }
 
+TEST_CASE_METHOD(GlogFixture, "Regex string_view simple replace", "[Regex expression]") {
+    char buffer[] = "foo\0bar\0boo\0";
+    cngn::Column col(std::vector{std::string_view(buffer, 3), std::string_view(buffer + 4, 3),
+                                 std::string_view(buffer + 8, 3)});
+
+    auto result = cngn::operators::Regex(col, "0", std::regex("o"));
+    const auto& ans = std::get<cngn::ArrayType<cngn::Type::String>>(result.GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == "f00");
+    REQUIRE(ans[1] == "bar");
+    REQUIRE(ans[2] == "b00");
+}
+
+TEST_CASE_METHOD(GlogFixture, "Regex metastring replace", "[Regex expression]") {
+    cngn::Column col(std::vector<std::string>{"hello", "world", "help"});
+
+    auto result = cngn::operators::Regex(col, "L", std::regex("l"));
+    const auto& ans = std::get<cngn::ArrayType<cngn::Type::String>>(result.GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == "heLLo");
+    REQUIRE(ans[1] == "worLd");
+    REQUIRE(ans[2] == "heLp");
+}
+
+TEST_CASE_METHOD(GlogFixture, "Regex no match", "[Regex expression]") {
+    cngn::Column col(std::vector<std::string>{"foo", "bar"});
+
+    auto result = cngn::operators::Regex(col, "Z", std::regex("xyz"));
+    const auto& ans = std::get<cngn::ArrayType<cngn::Type::String>>(result.GetData());
+
+    REQUIRE(ans.size() == 2);
+    REQUIRE(ans[0] == "foo");
+    REQUIRE(ans[1] == "bar");
+}
+
+TEST_CASE_METHOD(GlogFixture, "Regex empty replacement deletes match", "[Regex expression]") {
+    cngn::Column col(std::vector<std::string>{"hello", "world"});
+
+    auto result = cngn::operators::Regex(col, "", std::regex("l"));
+    const auto& ans = std::get<cngn::ArrayType<cngn::Type::String>>(result.GetData());
+
+    REQUIRE(ans.size() == 2);
+    REQUIRE(ans[0] == "heo");
+    REQUIRE(ans[1] == "word");
+}
+
+TEST_CASE_METHOD(GlogFixture, "Regex wrong type throws", "[Regex expression]") {
+    cngn::Column col(std::vector<int64_t>{1, 2, 3});
+
+    REQUIRE_THROWS(cngn::operators::Regex(col, "x", std::regex(".")));
+}
+
 TEST_CASE_METHOD(GlogFixture, "Simple min_max", "[MinMax expression]") {
     cngn::Column integer(std::vector{14, 00, 88, -6, 32, -69, -8, -19});
     cngn::Column str(std::vector<std::string_view>{"aboba", "aacb", "aabc", "aacba"});

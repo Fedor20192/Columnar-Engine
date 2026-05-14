@@ -29,6 +29,7 @@ using GroupByMeta = cngn::operators::GroupByMeta;
 using Operator = cngn::operators::Operator;
 using Projector = cngn::operators::Projector;
 using ProjectionMeta = cngn::operators::ProjectionMeta;
+using RegexExpression = cngn::operators::RegexExpression;
 using Scan = cngn::operators::Scan;
 using Schema = cngn::Schema;
 using SelectExpression = cngn::operators::SelectExpression;
@@ -38,7 +39,7 @@ using StrLenExpression = cngn::operators::StrLenExpression;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 28;
+constexpr int kQueriesCount = 29;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -586,4 +587,54 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
         return std::make_unique<TopK>(
             std::move(proj_2),
             std::vector<SortKey>{{std::make_shared<SelectExpression>("avg"), "avg"}}, 25, false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"Referer", Type::String}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_shared<SelectExpression>("Referer"),
+                std::make_shared<ConstantExpression>(std::string_view(""))));
+
+        auto proj_1 = std::make_unique<Projector>(
+            std::move(filter),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<RegexExpression>(std::make_shared<SelectExpression>("Referer"),
+                                                   R"(^https?://(?:www\.)?([^/]+)/.*$)", "$1"),
+                 "k"},
+                {std::make_shared<StrLenExpression>(std::make_shared<SelectExpression>("Referer")),
+                 "strlen"},
+                {std::make_shared<SelectExpression>("Referer"), "Referer"}});
+
+        auto agg = std::make_unique<Aggregation>(
+            std::move(proj_1),
+            std::vector<AggregationMeta>{
+                {AggregationType::Sum, std::make_shared<SelectExpression>("strlen"), "sum_strlen"},
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "c"},
+                {AggregationType::Min, std::make_shared<SelectExpression>("Referer"),
+                 "min_referer"}},
+            std::vector<GroupByMeta>{{std::make_shared<SelectExpression>("k"), "k"}});
+
+        auto having = std::make_unique<Filter>(
+            std::move(agg),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Gt, std::make_shared<SelectExpression>("c"),
+                std::make_shared<ConstantExpression>(static_cast<uint64_t>(100000))));
+
+        auto proj_2 = std::make_unique<Projector>(
+            std::move(having),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("k"), "k"},
+                {std::make_shared<BinaryExpression>(
+                     BinaryExpressionType::Div, std::make_shared<SelectExpression>("sum_strlen"),
+                     std::make_shared<SelectExpression>("c")),
+                 "l"},
+                {std::make_shared<SelectExpression>("c"), "c"},
+                {std::make_shared<SelectExpression>("min_referer"), "min_referer"},
+            });
+
+        return std::make_unique<TopK>(
+            std::move(proj_2), std::vector<SortKey>{{std::make_shared<SelectExpression>("l"), "l"}},
+            25, false);
     }};

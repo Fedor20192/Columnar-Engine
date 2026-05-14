@@ -53,5 +53,9 @@ Column StrLenExpression::Calculate(std::shared_ptr<Batch> batch) const {
     return StrLen(std::move(res));
 }
 
+Column RegexExpression::Calculate(std::shared_ptr<Batch> batch) const {
+    const Column res = expression->Calculate(batch);
+    return Regex(std::move(res), rep, reg);
+}
 }  // namespace operators
 }  // namespace cngn

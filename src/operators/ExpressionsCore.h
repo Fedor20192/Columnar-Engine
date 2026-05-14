@@ -1,5 +1,7 @@
 #pragma once
 
+#include <regex>
+
 #include "../kernel/Column.h"
 
 namespace cngn {
@@ -19,13 +21,15 @@ Column Contains(const Column &, const std::string &, bool);
 
 Column StrLen(const Column &);
 
+Column Regex(const Column &, const std::string &, const std::regex &);
+
 Column And(const Column &, const Column &);
 
 PhysTypeVariant Sum(const Column &);
 
-std::optional<PhysTypeVariant> Min(const Column&);
+std::optional<PhysTypeVariant> Min(const Column &);
 
-std::optional<PhysTypeVariant> Max(const Column&);
+std::optional<PhysTypeVariant> Max(const Column &);
 
-}
+}  // namespace operators
 }  // namespace cngn

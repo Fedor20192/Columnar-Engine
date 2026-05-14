@@ -39,7 +39,7 @@ using StrLenExpression = cngn::operators::StrLenExpression;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 29;
+constexpr int kQueriesCount = 30;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -637,4 +637,35 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
         return std::make_unique<TopK>(
             std::move(proj_2), std::vector<SortKey>{{std::make_shared<SelectExpression>("l"), "l"}},
             25, false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"ResolutionWidth", Type::Int16}}));
+
+        auto agg = std::make_unique<Aggregation>(
+            std::move(scan),
+            std::vector<AggregationMeta>{
+                {AggregationType::Sum, std::make_shared<SelectExpression>("ResolutionWidth"),
+                 "sum"},
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "c"}},
+            std::vector<GroupByMeta>{});
+
+        std::vector<ProjectionMeta> meta(90);
+
+        for (int i = 0; i < 90; i++) {
+            std::string name = "sum + " + std::to_string(i);
+
+            if (i == 0) {
+                meta[i] = ProjectionMeta{std::make_shared<SelectExpression>("sum"), name};
+            } else {
+                meta[i] = ProjectionMeta{
+                    std::make_shared<BinaryExpression>(
+                        BinaryExpressionType::Add, std::make_shared<SelectExpression>("sum"),
+                        std::make_shared<BinaryExpression>(
+                            BinaryExpressionType::Mul, std::make_shared<SelectExpression>("c"),
+                            std::make_shared<ConstantExpression>(i))),
+                    name};
+            }
+        }
+
+        return std::make_unique<Projector>(std::move(agg), std::move(meta));
     }};

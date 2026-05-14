@@ -271,6 +271,61 @@ TEST_CASE_METHOD(GlogFixture, "Regex wrong type throws", "[Regex expression]") {
     REQUIRE_THROWS(cngn::operators::Regex(col, "x", std::regex(".")));
 }
 
+TEST_CASE_METHOD(GlogFixture, "Add basic", "[Add expression]") {
+    cngn::Column l(std::vector{1, 2, 3, -5});
+    cngn::Column r(std::vector{4, -1, 0, 5});
+
+    auto ans = cngn::operators::Add(l, r);
+
+    REQUIRE(ans.Size() == l.Size());
+    REQUIRE(ans.GetData() == cngn::ArrayTypeVariant(std::vector{5, 1, 3, 0}));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Add different types Int128 + Int32", "[Add expression]") {
+    cngn::Column l(std::vector<__int128_t>{1000000000000000003ll, 0, -1});
+    cngn::Column r(std::vector{2, 111, 1});
+
+    auto ans = cngn::operators::Add(l, r);
+
+    REQUIRE(ans.Size() == l.Size());
+    REQUIRE(ans.GetData() ==
+            cngn::ArrayTypeVariant(std::vector<__int128_t>{1000000000000000005ll, 111, 0}));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Add non-arithmetic throws", "[Add expression]") {
+    cngn::Column l(std::vector<std::string>{"a", "b"});
+    cngn::Column r(std::vector<std::string>{"c", "d"});
+
+    REQUIRE_THROWS(cngn::operators::Add(l, r));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Mul basic", "[Mul expression]") {
+    cngn::Column l(std::vector{2, 3, -4, 0});
+    cngn::Column r(std::vector{5, -6, 7, 100});
+
+    auto ans = cngn::operators::Mul(l, r);
+
+    REQUIRE(ans.Size() == l.Size());
+    REQUIRE(ans.GetData() == cngn::ArrayTypeVariant(std::vector{10, -18, -28, 0}));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Mul different types UInt64 * Int32", "[Mul expression]") {
+    cngn::Column l(std::vector<uint64_t>{100, 0, 7});
+    cngn::Column r(std::vector{3, 999, 2});
+
+    auto ans = cngn::operators::Mul(l, r);
+
+    REQUIRE(ans.Size() == l.Size());
+    REQUIRE(ans.GetData() == cngn::ArrayTypeVariant(std::vector<uint64_t>{300, 0, 14}));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Mul non-arithmetic throws", "[Mul expression]") {
+    cngn::Column l(std::vector<std::string>{"a", "b"});
+    cngn::Column r(std::vector<std::string>{"c", "d"});
+
+    REQUIRE_THROWS(cngn::operators::Mul(l, r));
+}
+
 TEST_CASE_METHOD(GlogFixture, "Simple min_max", "[MinMax expression]") {
     cngn::Column integer(std::vector{14, 00, 88, -6, 32, -69, -8, -19});
     cngn::Column str(std::vector<std::string_view>{"aboba", "aacb", "aabc", "aacba"});

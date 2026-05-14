@@ -24,6 +24,10 @@ Column BinaryExpression::Calculate(std::shared_ptr<Batch> batch) const {
             return Equal(left_res, right_res);
         case BinaryExpressionType::Gt:
             return Gt(left_res, right_res);
+        case BinaryExpressionType::Add:
+            return Add(left_res, right_res);
+        case BinaryExpressionType::Mul:
+            return Mul(left_res, right_res);
         case BinaryExpressionType::Div:
             return Div(left_res, right_res);
         case BinaryExpressionType::And:

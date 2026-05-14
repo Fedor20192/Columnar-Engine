@@ -11,6 +11,8 @@ enum class BinaryExpressionType {
     Neq,
     Eq,
     Gt,
+    Add,
+    Mul,
     Div,
     And,
 };

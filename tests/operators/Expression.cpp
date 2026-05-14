@@ -220,6 +220,76 @@ TEST_CASE_METHOD(GlogFixture, "RegexExpression on non-string throws", "[Regex ex
     REQUIRE_THROWS(regex_expr->Calculate(batch));
 }
 
+TEST_CASE_METHOD(GlogFixture, "Add Expression column plus constant", "[Binary expressions]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto col = std::make_shared<cngn::operators::SelectExpression>("a");
+    auto constant =
+        std::make_shared<cngn::operators::ConstantExpression>(static_cast<int64_t>(10));
+
+    auto add = std::make_shared<cngn::operators::BinaryExpression>(
+        cngn::operators::BinaryExpressionType::Add, col, constant);
+
+    auto ans = add->Calculate(batch);
+
+    REQUIRE(ans.Size() == batch->RowCount());
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int64>>(ans[0]) == 11);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int64>>(ans[1]) == 15);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int64>>(ans[2]) == 18);
+}
+
+TEST_CASE_METHOD(GlogFixture, "Add Expression two constants", "[Binary expressions]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto lhs = std::make_shared<cngn::operators::ConstantExpression>(static_cast<int64_t>(7));
+    auto rhs = std::make_shared<cngn::operators::ConstantExpression>(static_cast<int64_t>(3));
+
+    auto add = std::make_shared<cngn::operators::BinaryExpression>(
+        cngn::operators::BinaryExpressionType::Add, lhs, rhs);
+
+    auto ans = add->Calculate(batch);
+
+    REQUIRE(ans.Size() == batch->RowCount());
+    for (size_t i = 0; i < ans.Size(); i++) {
+        REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int64>>(ans[i]) == 10);
+    }
+}
+
+TEST_CASE_METHOD(GlogFixture, "Mul Expression column times constant", "[Binary expressions]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto col = std::make_shared<cngn::operators::SelectExpression>("a");
+    auto constant =
+        std::make_shared<cngn::operators::ConstantExpression>(static_cast<int64_t>(3));
+
+    auto mul = std::make_shared<cngn::operators::BinaryExpression>(
+        cngn::operators::BinaryExpressionType::Mul, col, constant);
+
+    auto ans = mul->Calculate(batch);
+
+    REQUIRE(ans.Size() == batch->RowCount());
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int64>>(ans[0]) == 3);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int64>>(ans[1]) == 15);
+    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int64>>(ans[2]) == 24);
+}
+
+TEST_CASE_METHOD(GlogFixture, "Mul Expression two constants", "[Binary expressions]") {
+    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
+
+    auto lhs = std::make_shared<cngn::operators::ConstantExpression>(static_cast<int64_t>(6));
+    auto rhs = std::make_shared<cngn::operators::ConstantExpression>(static_cast<int64_t>(7));
+
+    auto mul = std::make_shared<cngn::operators::BinaryExpression>(
+        cngn::operators::BinaryExpressionType::Mul, lhs, rhs);
+
+    auto ans = mul->Calculate(batch);
+
+    REQUIRE(ans.Size() == batch->RowCount());
+    for (size_t i = 0; i < ans.Size(); i++) {
+        REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int64>>(ans[i]) == 42);
+    }
+}
+
 TEST_CASE_METHOD(GlogFixture, "Neq Expression", "[Binary expressions]") {
     auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
 

@@ -104,6 +104,42 @@ Column Gt(const Column &a, const Column &b) {
     }));
 }
 
+Column Add(const Column &a, const Column &b) {
+    const auto type_a = a.GetType();
+
+    return DispatchOnType(type_a, [&a, &b]<Type type_a>() -> Column {
+        const auto &arr_a = std::get<ArrayType<type_a>>(a.GetData());
+
+        const auto type_b = b.GetType();
+        return DispatchOnType(type_b, [&arr_a, &b]<Type type_b>() -> Column {
+            const auto &arr_b = std::get<ArrayType<type_b>>(b.GetData());
+            if constexpr (IsArithmetic<type_a> && IsArithmetic<type_b>) {
+                auto arithmetic = [](auto a, auto b) { return a + static_cast<decltype(a)>(b); };
+                return Column(Divv<type_a, type_b>(arr_a, arr_b, std::move(arithmetic)));
+            }
+            throw std::invalid_argument("[Add]: You are adding non arithmetic objects");
+        });
+    });
+}
+
+Column Mul(const Column &a, const Column &b) {
+    const auto type_a = a.GetType();
+
+    return DispatchOnType(type_a, [&a, &b]<Type type_a>() -> Column {
+        const auto &arr_a = std::get<ArrayType<type_a>>(a.GetData());
+
+        const auto type_b = b.GetType();
+        return DispatchOnType(type_b, [&arr_a, &b]<Type type_b>() -> Column {
+            const auto &arr_b = std::get<ArrayType<type_b>>(b.GetData());
+            if constexpr (IsArithmetic<type_a> && IsArithmetic<type_b>) {
+                auto arithmetic = [](auto a, auto b) { return a * static_cast<decltype(a)>(b); };
+                return Column(Divv<type_a, type_b>(arr_a, arr_b, std::move(arithmetic)));
+            }
+            throw std::invalid_argument("[Mul]: You are multiplying non arithmetic objects");
+        });
+    });
+}
+
 Column Div(const Column &a, const Column &b) {
     const auto type_a = a.GetType();
 

@@ -1,6 +1,7 @@
 #include "Sort.h"
 
 #include <glog/logging.h>
+
 #include <numeric>
 #include <queue>
 
@@ -187,6 +188,7 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
     struct HeapRow {
         std::vector<PhysTypeVariant> keys;
         std::vector<PhysTypeVariant> cols;
+        std::vector<std::shared_ptr<char[]>> row_buffers;
     };
 
     auto cmp = [&](const HeapRow& a, const HeapRow& b) {
@@ -202,8 +204,6 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
     std::priority_queue<HeapRow, std::vector<HeapRow>, decltype(cmp)> pq(cmp);
 
     std::optional<Schema> schema;
-
-    std::vector<std::shared_ptr<char[]>> owning_buffers;
 
     while (auto batch_opt = next_operator_->Next()) {
         auto batch = batch_opt.value();
@@ -222,26 +222,30 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
             key_cols.push_back(sk.expression->Calculate(batch));
         }
 
+        std::vector<std::shared_ptr<char[]>> bufs;
+        bufs.reserve(batch->ColumnCount());
         for (size_t c = 0; c < batch->ColumnCount(); ++c) {
-            const auto& buffers = (*batch)[c].GetOwningBuffer();
-            owning_buffers.insert(owning_buffers.end(), buffers.begin(), buffers.end());
+            const auto& buf = (*batch)[c].GetOwningBuffer();
+            bufs.insert(bufs.end(), buf.begin(), buf.end());
         }
 
         const size_t rows = batch->RowCount();
         for (size_t row = 0; row < rows; ++row) {
             HeapRow hr;
             hr.keys.reserve(sort_meta_.size());
-            hr.cols.reserve(batch->ColumnCount());
 
             for (const auto& kc : key_cols) {
                 hr.keys.push_back(kc[row]);
             }
 
-            for (size_t c = 0; c < batch->ColumnCount(); ++c) {
-                hr.cols.push_back((*batch)[c][row]);
+            if (pq.size() < k_ || cmp(hr, pq.top())) {
+                hr.cols.reserve(batch->ColumnCount());
+                for (size_t c = 0; c < batch->ColumnCount(); ++c) {
+                    hr.cols.push_back((*batch)[c][row]);
+                }
+                hr.row_buffers = bufs;
+                pq.push(std::move(hr));
             }
-
-            pq.push(std::move(hr));
             if (pq.size() > k_) {
                 pq.pop();
             }
@@ -266,12 +270,15 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
     for (size_t c = 0; c < n_cols; ++c) {
         Type col_type = static_cast<Type>(rows[0].cols[c].index());
         DispatchOnType(col_type, [&]<Type t>() {
+            std::vector<std::shared_ptr<char[]>> bufs;
+            bufs.reserve(rows.size());
             ArrayType<t> col_data;
             col_data.reserve(rows.size());
             for (const auto& hr : rows) {
                 col_data.push_back(std::get<PhysicalType<t>>(hr.cols[c]));
+                bufs.insert(bufs.end(), hr.row_buffers.begin(), hr.row_buffers.end());
             }
-            result->AddColumn(Column(std::move(col_data), owning_buffers));
+            result->AddColumn(Column(std::move(col_data), std::move(bufs)));
         });
     }
 

@@ -39,7 +39,7 @@ using StrLenExpression = cngn::operators::StrLenExpression;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 30;
+constexpr int kQueriesCount = 33;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -668,4 +668,120 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
         }
 
         return std::make_unique<Projector>(std::move(agg), std::move(meta));
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"SearchEngineID", Type::Int16},
+                                                             {"ClientIP", Type::Int32},
+                                                             {"IsRefresh", Type::Int16},
+                                                             {"ResolutionWidth", Type::Int16},
+                                                             {"SearchPhrase", Type::String}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_shared<SelectExpression>("SearchPhrase"),
+                std::make_shared<ConstantExpression>(std::string_view(""))));
+
+        auto agg = std::make_unique<Aggregation>(
+            std::move(filter),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "c"},
+                {AggregationType::Sum, std::make_shared<SelectExpression>("IsRefresh"),
+                 "sum_refresh"},
+                {AggregationType::Sum, std::make_shared<SelectExpression>("ResolutionWidth"),
+                 "sum_width"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("SearchEngineID"), "SearchEngineID"},
+                {std::make_shared<SelectExpression>("ClientIP"), "ClientIP"}});
+
+        auto proj = std::make_unique<Projector>(
+            std::move(agg),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("SearchEngineID"), "SearchEngineID"},
+                {std::make_shared<SelectExpression>("ClientIP"), "ClientIP"},
+                {std::make_shared<SelectExpression>("c"), "c"},
+                {std::make_shared<SelectExpression>("sum_refresh"), "sum_refresh"},
+                {std::make_shared<BinaryExpression>(BinaryExpressionType::Div,
+                                                    std::make_shared<SelectExpression>("sum_width"),
+                                                    std::make_shared<SelectExpression>("c")),
+                 "avg_width"}});
+
+        return std::make_unique<TopK>(
+            std::move(proj), std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}},
+            10, false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"WatchID", Type::Int64},
+                                                             {"ClientIP", Type::Int32},
+                                                             {"IsRefresh", Type::Int16},
+                                                             {"ResolutionWidth", Type::Int16},
+                                                             {"SearchPhrase", Type::String}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::Neq, std::make_shared<SelectExpression>("SearchPhrase"),
+                std::make_shared<ConstantExpression>(std::string_view(""))));
+
+        auto agg = std::make_unique<Aggregation>(
+            std::move(filter),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "c"},
+                {AggregationType::Sum, std::make_shared<SelectExpression>("IsRefresh"),
+                 "sum_refresh"},
+                {AggregationType::Sum, std::make_shared<SelectExpression>("ResolutionWidth"),
+                 "sum_width"}},
+            std::vector<GroupByMeta>{{std::make_shared<SelectExpression>("WatchID"), "WatchID"},
+                                     {std::make_shared<SelectExpression>("ClientIP"), "ClientIP"}});
+
+        auto proj = std::make_unique<Projector>(
+            std::move(agg),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("WatchID"), "WatchID"},
+                {std::make_shared<SelectExpression>("ClientIP"), "ClientIP"},
+                {std::make_shared<SelectExpression>("c"), "c"},
+                {std::make_shared<SelectExpression>("sum_refresh"), "sum_refresh"},
+                {std::make_shared<BinaryExpression>(BinaryExpressionType::Div,
+                                                    std::make_shared<SelectExpression>("sum_width"),
+                                                    std::make_shared<SelectExpression>("c")),
+                 "avg_width"}});
+
+        return std::make_unique<TopK>(
+            std::move(proj), std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}},
+            10, false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({
+                                                         {"WatchID", Type::Int64},
+                                                         {"ClientIP", Type::Int32},
+                                                         {"IsRefresh", Type::Int16},
+                                                         {"ResolutionWidth", Type::Int16},
+                                                     }));
+
+        auto agg = std::make_unique<Aggregation>(
+            std::move(scan),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "c"},
+                {AggregationType::Sum, std::make_shared<SelectExpression>("IsRefresh"),
+                 "sum_refresh"},
+                {AggregationType::Sum, std::make_shared<SelectExpression>("ResolutionWidth"),
+                 "sum_width"}},
+            std::vector<GroupByMeta>{{std::make_shared<SelectExpression>("WatchID"), "WatchID"},
+                                     {std::make_shared<SelectExpression>("ClientIP"), "ClientIP"}});
+
+        auto proj = std::make_unique<Projector>(
+            std::move(agg),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("WatchID"), "WatchID"},
+                {std::make_shared<SelectExpression>("ClientIP"), "ClientIP"},
+                {std::make_shared<SelectExpression>("c"), "c"},
+                {std::make_shared<SelectExpression>("sum_refresh"), "sum_refresh"},
+                {std::make_shared<BinaryExpression>(BinaryExpressionType::Div,
+                                                    std::make_shared<SelectExpression>("sum_width"),
+                                                    std::make_shared<SelectExpression>("c")),
+                 "avg_width"}});
+
+        return std::make_unique<TopK>(
+            std::move(proj), std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}},
+            10, false);
     }};

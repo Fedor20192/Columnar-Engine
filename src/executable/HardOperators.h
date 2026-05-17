@@ -39,7 +39,7 @@ using StrLenExpression = cngn::operators::StrLenExpression;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 33;
+constexpr int kQueriesCount = 36;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -784,4 +784,76 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
         return std::make_unique<TopK>(
             std::move(proj), std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}},
             10, false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({
+                                                         {"URL", Type::String},
+                                                     }));
+
+        auto agg = std::make_unique<Aggregation>(
+            std::move(scan),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "c"},
+            },
+            std::vector<GroupByMeta>{{std::make_shared<SelectExpression>("URL"), "URL"}});
+
+        return std::make_unique<TopK>(
+            std::move(agg), std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}},
+            10, false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({
+                                                         {"URL", Type::String},
+                                                     }));
+        auto agg = std::make_unique<Aggregation>(
+            std::move(scan),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "c"},
+            },
+            std::vector<GroupByMeta>{{std::make_shared<SelectExpression>("URL"), "URL"}});
+
+        auto proj = std::make_unique<Projector>(
+            std::move(agg), std::vector<ProjectionMeta>{
+                                {std::make_shared<ConstantExpression>(1), "one"},
+                                {std::make_shared<SelectExpression>("URL"), "URL"},
+                                {std::make_shared<SelectExpression>("c"), "c"},
+                            });
+
+        return std::make_unique<TopK>(
+            std::move(proj), std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}},
+            10, false);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({
+                                                         {"ClientIP", Type::Int32},
+                                                     }));
+
+        auto agg = std::make_unique<Aggregation>(
+            std::move(scan),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "c"},
+            },
+            std::vector<GroupByMeta>{{std::make_shared<SelectExpression>("ClientIP"), "ClientIP"}});
+
+        auto sort = std::make_unique<TopK>(
+            std::move(agg), std::vector<SortKey>{{std::make_shared<SelectExpression>("c"), "c"}},
+            10, false);
+
+        return std::make_unique<Projector>(
+            std::move(sort),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("ClientIP"), "ClientIP"},
+                {std::make_shared<BinaryExpression>(BinaryExpressionType::Add,
+                                                    std::make_shared<SelectExpression>("ClientIP"),
+                                                    std::make_shared<ConstantExpression>(-1)),
+                 "ClientIP_1"},
+                {std::make_shared<BinaryExpression>(BinaryExpressionType::Add,
+                                                    std::make_shared<SelectExpression>("ClientIP"),
+                                                    std::make_shared<ConstantExpression>(-2)),
+                 "ClientIP_2"},
+                {std::make_shared<BinaryExpression>(BinaryExpressionType::Add,
+                                                    std::make_shared<SelectExpression>("ClientIP"),
+                                                    std::make_shared<ConstantExpression>(-3)),
+                 "ClientIP_3"},
+                {std::make_shared<SelectExpression>("c"), "c"}});
     }};

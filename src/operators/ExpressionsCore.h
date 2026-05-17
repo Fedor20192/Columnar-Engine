@@ -31,9 +31,5 @@ Column And(const Column &, const Column &);
 
 PhysTypeVariant Sum(const Column &);
 
-std::optional<PhysTypeVariant> Min(const Column &);
-
-std::optional<PhysTypeVariant> Max(const Column &);
-
 }  // namespace operators
 }  // namespace cngn

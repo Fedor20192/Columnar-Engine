@@ -71,6 +71,14 @@ Column Gt(const Column &a, const Column &b) {
     }));
 }
 
+Column Geq(const Column &a, const Column &b) {
+    const auto type = a.GetType();
+    return Column(DispatchOnType(type, [&]<Type type>() -> ArrayType<Type::Bool> {
+        return Compare<type, std::greater_equal<PhysicalType<type>>>(
+            std::get<ArrayType<type>>(a.GetData()), std::get<ArrayType<type>>(b.GetData()));
+    }));
+}
+
 Column Add(const Column &a, const Column &b) {
     const auto type_a = a.GetType();
 

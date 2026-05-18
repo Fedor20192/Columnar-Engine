@@ -13,6 +13,8 @@ Column Equal(const Column &, const Column &);
 
 Column Gt(const Column &, const Column &);
 
+Column Geq(const Column &, const Column &);
+
 Column Add(const Column &, const Column &);
 
 Column Mul(const Column &, const Column &);

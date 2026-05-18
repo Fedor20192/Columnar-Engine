@@ -153,10 +153,11 @@ std::shared_ptr<Batch> Sort::ReorderRows(const std::shared_ptr<Batch>& batch,
 }
 
 TopK::TopK(std::unique_ptr<Operator> next_operator, std::vector<SortKey> sort_meta, size_t k,
-           bool is_high_order)
+           bool is_high_order, size_t offset)
     : next_operator_(std::move(next_operator)),
       sort_meta_(std::move(sort_meta)),
       k_(k),
+      offset_(offset),
       is_high_order_(is_high_order) {
 
     if (k_ == 0) {
@@ -238,7 +239,7 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
                 hr.keys.push_back(kc[row]);
             }
 
-            if (pq.size() < k_ || cmp(hr, pq.top())) {
+            if (pq.size() < k_ + offset_ || cmp(hr, pq.top())) {
                 hr.cols.reserve(batch->ColumnCount());
                 for (size_t c = 0; c < batch->ColumnCount(); ++c) {
                     hr.cols.push_back((*batch)[c][row]);
@@ -246,18 +247,21 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
                 hr.row_buffers = bufs;
                 pq.push(std::move(hr));
             }
-            if (pq.size() > k_) {
+            if (pq.size() > k_ + offset_) {
                 pq.pop();
             }
         }
     }
 
-    if (pq.empty()) {
+    if (pq.size() <= offset_) {
         return std::nullopt;
     }
 
     std::vector<HeapRow> rows;
-    rows.reserve(pq.size());
+    rows.reserve(pq.size() - offset_);
+    for (size_t i = 0; i < offset_; i++) {
+        pq.pop();
+    }
     while (!pq.empty()) {
         rows.push_back(pq.top());
         pq.pop();

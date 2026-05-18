@@ -352,12 +352,12 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
     const size_t n = aggregation_meta_.size();
     const size_t nk = group_by_.size();
 
-    ankerl::unordered_dense::map<std::string, size_t> index_map;
+    ankerl::unordered_dense::map<std::string_view, size_t> index_map;
     std::vector<PhysTypeVariant> group_keys;
     std::vector<std::unique_ptr<IAggregationState>> group_states;
     std::vector<Type> key_out_types;
 
-    StringArena key_arena;
+    StringArena key_arena, flat_key_arena;
 
     std::string key_buf;
     key_buf.reserve(256);
@@ -374,8 +374,10 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
         std::vector<size_t> row_group_idx(rows);
         for (size_t row = 0; row < rows; row++) {
             MakeKey(key_cols, row, key_buf);
-            auto [it, inserted] = index_map.try_emplace(key_buf, index_map.size());
-            if (inserted) {
+            auto it = index_map.find(key_buf);
+            if (it == index_map.end()) {
+                auto [new_it, _] = index_map.emplace(flat_key_arena.Copy(key_buf), index_map.size());
+                it = new_it;
                 size_t group_idx = group_keys.size();
                 ExtractKey(key_cols, row, group_keys);
                 for (size_t i = 0; i < nk; i++) {

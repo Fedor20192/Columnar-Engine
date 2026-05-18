@@ -3,6 +3,7 @@
 #include <ext/pb_ds/assoc_container.hpp>
 
 #include "ExpressionsCore.h"
+#include "StringArena.h"
 #include "ankerl/unordered_dense.h"
 #include "glog/logging.h"
 
@@ -356,7 +357,7 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
     std::vector<std::unique_ptr<IAggregationState>> group_states;
     std::vector<Type> key_out_types;
 
-    std::vector<std::vector<std::shared_ptr<char[]>>> owning_buffers(nk);
+    StringArena key_arena;
 
     std::string key_buf;
     key_buf.reserve(256);
@@ -379,17 +380,10 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
                 ExtractKey(key_cols, row, group_keys);
                 for (size_t i = 0; i < nk; i++) {
                     if (key_out_types[i] == Type::String) {
-                        const auto& data =
-                            std::get<PhysicalType<Type::String>>(group_keys[group_idx + i]);
-
-                        auto new_buf = std::make_shared<char[]>(data.size());
-                        std::copy(data.begin(), data.end(), new_buf.get());
-
-                        group_keys[group_idx + i] =
-                            PhysicalType<Type::String>(new_buf.get(), data.size());
-
-                        owning_buffers[i].push_back(std::move(new_buf));
-                    };
+                        auto& slot = group_keys[group_idx + i];
+                        slot = PhysicalType<Type::String>(
+                            key_arena.Copy(std::get<PhysicalType<Type::String>>(slot)));
+                    }
                 }
                 for (size_t i = 0; i < n; i++) {
                     MakeState(aggregation_meta_[i].type, agg_cols[i].GetType(), group_states);
@@ -410,6 +404,8 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
     std::vector<Column> out_cols;
     out_cols.reserve(nk + n);
 
+    auto key_buffers = key_arena.ReleaseBlocks();
+
     for (size_t k = 0; k < nk; ++k) {
         out_cols.push_back(DispatchOnType(key_out_types[k], [&]<Type type>() {
             ArrayType<type> data;
@@ -418,7 +414,11 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
                 const auto& key = group_keys[i];
                 data.push_back(std::get<PhysicalType<type>>(key));
             }
-            return Column(std::move(data), std::move(owning_buffers[k]));
+            if constexpr (type == Type::String) {
+                return Column(std::move(data), key_buffers);
+            } else {
+                return Column(std::move(data));
+            }
         }));
     }
 

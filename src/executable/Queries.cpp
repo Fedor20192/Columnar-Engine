@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
     auto global_start_time = std::chrono::high_resolution_clock::now();
 
     for (int i = start_query; i < finish_query; i++) {
-        std::cout << "[QueriesExecute]: Starting execute query number " << num << '\n';
+        std::cout << "[QueriesExecute]: Starting execute query number " << i << '\n';
 
         auto start_time = std::chrono::high_resolution_clock::now();
 

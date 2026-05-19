@@ -15,7 +15,11 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    const std::string filename = "aboba.chsv";
+    std::string filename = "aboba.chsv";
+
+    if (argc >= 3) {
+        filename = argv[2];
+    }
 
     int start_query = 0, finish_query = kQueriesCount;
 
@@ -27,7 +31,7 @@ int main(int argc, char* argv[]) {
     auto global_start_time = std::chrono::high_resolution_clock::now();
 
     for (int i = start_query; i < finish_query; i++) {
-        std::cout << "[QueriesExecute]: Starting execute query number " << i << '\n';
+        std::cerr << "[QueriesExecute]: Starting execute query number " << i << '\n';
 
         auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -54,7 +58,7 @@ int main(int argc, char* argv[]) {
 
         auto finish_time = std::chrono::high_resolution_clock::now();
 
-        std::cout << "Time: "
+        std::cerr << "Time: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(finish_time - start_time)
                          .count()
                   << " ms\n\n"
@@ -63,7 +67,7 @@ int main(int argc, char* argv[]) {
         DLOG(INFO) << "[QueriesExecute]: Query successfully executed\n";
     }
 
-    std::cout << "Total time: "
+    std::cerr << "Total time: "
               << std::chrono::duration_cast<std::chrono::milliseconds>(
                      std::chrono::high_resolution_clock::now() - global_start_time)
                      .count()

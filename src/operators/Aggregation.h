@@ -39,6 +39,11 @@ public:
 
 private:
     std::optional<std::shared_ptr<Batch>> GlobalNext();
+    std::vector<Column> PrepareKeyCols(size_t nk, std::vector<Type> &key_out_types,
+                                       const std::shared_ptr<Batch> &batch) const;
+    std::vector<Column> PrepareValueCols(size_t nv, const std::shared_ptr<Batch> &batch) const;
+    std::vector<Schema::ColumnData> GetSchemaData(
+        const std::vector<Column> &out_cols, const std::vector<Type> &key_out_types = {}) const;
 
     std::unique_ptr<Operator> next_operator_;
     std::vector<AggregationMeta> aggregation_meta_;

@@ -36,7 +36,7 @@ private:
 class TopK : public Operator {
 public:
     explicit TopK(std::unique_ptr<Operator> next_operator, std::vector<SortKey> sort_meta, size_t k,
-                  bool is_high_order);
+                  bool is_high_order, size_t offset = 0);
 
     void Open() override;
 
@@ -47,7 +47,7 @@ public:
 private:
     std::unique_ptr<Operator> next_operator_;
     std::vector<SortKey> sort_meta_;
-    size_t k_;
+    size_t k_, offset_;
     bool is_high_order_;
     bool finished_ = false;
 

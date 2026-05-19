@@ -24,6 +24,12 @@ Column BinaryExpression::Calculate(std::shared_ptr<Batch> batch) const {
             return Equal(left_res, right_res);
         case BinaryExpressionType::Gt:
             return Gt(left_res, right_res);
+        case BinaryExpressionType::Geq:
+            return Geq(left_res, right_res);
+        case BinaryExpressionType::Add:
+            return Add(left_res, right_res);
+        case BinaryExpressionType::Mul:
+            return Mul(left_res, right_res);
         case BinaryExpressionType::Div:
             return Div(left_res, right_res);
         case BinaryExpressionType::And:
@@ -53,5 +59,9 @@ Column StrLenExpression::Calculate(std::shared_ptr<Batch> batch) const {
     return StrLen(std::move(res));
 }
 
+Column RegexExpression::Calculate(std::shared_ptr<Batch> batch) const {
+    const Column res = expression->Calculate(batch);
+    return Regex(std::move(res), rep, reg);
+}
 }  // namespace operators
 }  // namespace cngn

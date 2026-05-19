@@ -8,6 +8,12 @@ namespace cngn {
 
 using SysSeconds = std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds>;
 
+Date::Date(const std::string &str) : days(Deserialize<Type::Date>(str).days) {
+}
+
+Timestamp::Timestamp(const std::string &str) : seconds(Deserialize<Type::Timestamp>(str).seconds) {
+}
+
 SysSeconds ParseDatetime(std::string_view s, bool need_time) {
     unsigned numbers[6];
 

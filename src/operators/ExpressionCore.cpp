@@ -43,39 +43,6 @@ static ArrayType<type_1> Divv(
     return ans;
 }
 
-template <Type type, typename Comparator>
-static std::optional<PhysicalType<type>> MinMax(const ArrayType<type> &arr) {
-    if (arr.empty()) {
-        return std::nullopt;
-    }
-
-    Comparator cmp;
-
-    auto ans = arr[0];
-
-    for (size_t i = 1; i < arr.size(); i++) {
-        if (cmp(arr[i], ans)) {
-            ans = arr[i];
-        }
-    }
-
-    return ans;
-}
-
-std::optional<PhysTypeVariant> Min(const Column &a) {
-    return DispatchOnType(a.GetType(), [&]<Type type>() -> std::optional<PhysTypeVariant> {
-        const auto &arr = std::get<ArrayType<type>>(a.GetData());
-        return MinMax<type, std::less<PhysicalType<type>>>(arr);
-    });
-}
-
-std::optional<PhysTypeVariant> Max(const Column &a) {
-    return DispatchOnType(a.GetType(), [&]<Type type>() -> std::optional<PhysTypeVariant> {
-        const auto &arr = std::get<ArrayType<type>>(a.GetData());
-        return MinMax<type, std::greater<PhysicalType<type>>>(arr);
-    });
-}
-
 Column NotEqual(const Column &a, const Column &b) {
     const auto type = a.GetType();
 
@@ -102,6 +69,50 @@ Column Gt(const Column &a, const Column &b) {
         return Compare<type, std::greater<PhysicalType<type>>>(
             std::get<ArrayType<type>>(a.GetData()), std::get<ArrayType<type>>(b.GetData()));
     }));
+}
+
+Column Geq(const Column &a, const Column &b) {
+    const auto type = a.GetType();
+    return Column(DispatchOnType(type, [&]<Type type>() -> ArrayType<Type::Bool> {
+        return Compare<type, std::greater_equal<PhysicalType<type>>>(
+            std::get<ArrayType<type>>(a.GetData()), std::get<ArrayType<type>>(b.GetData()));
+    }));
+}
+
+Column Add(const Column &a, const Column &b) {
+    const auto type_a = a.GetType();
+
+    return DispatchOnType(type_a, [&a, &b]<Type type_a>() -> Column {
+        const auto &arr_a = std::get<ArrayType<type_a>>(a.GetData());
+
+        const auto type_b = b.GetType();
+        return DispatchOnType(type_b, [&arr_a, &b]<Type type_b>() -> Column {
+            const auto &arr_b = std::get<ArrayType<type_b>>(b.GetData());
+            if constexpr (IsArithmetic<type_a> && IsArithmetic<type_b>) {
+                auto arithmetic = [](auto a, auto b) { return a + static_cast<decltype(a)>(b); };
+                return Column(Divv<type_a, type_b>(arr_a, arr_b, std::move(arithmetic)));
+            }
+            throw std::invalid_argument("[Add]: You are adding non arithmetic objects");
+        });
+    });
+}
+
+Column Mul(const Column &a, const Column &b) {
+    const auto type_a = a.GetType();
+
+    return DispatchOnType(type_a, [&a, &b]<Type type_a>() -> Column {
+        const auto &arr_a = std::get<ArrayType<type_a>>(a.GetData());
+
+        const auto type_b = b.GetType();
+        return DispatchOnType(type_b, [&arr_a, &b]<Type type_b>() -> Column {
+            const auto &arr_b = std::get<ArrayType<type_b>>(b.GetData());
+            if constexpr (IsArithmetic<type_a> && IsArithmetic<type_b>) {
+                auto arithmetic = [](auto a, auto b) { return a * static_cast<decltype(a)>(b); };
+                return Column(Divv<type_a, type_b>(arr_a, arr_b, std::move(arithmetic)));
+            }
+            throw std::invalid_argument("[Mul]: You are multiplying non arithmetic objects");
+        });
+    });
 }
 
 Column Div(const Column &a, const Column &b) {
@@ -192,6 +203,39 @@ Column StrLen(const Column &a) {
         }
 
         throw std::invalid_argument("[StrLen]: type must be string or metastring");
+    });
+}
+
+Column Regex(const Column &a, const std::string &modifiers, const std::regex &reg) {
+    return DispatchOnType(a.GetType(), [&]<Type type>() -> Column {
+        if constexpr (type == Type::String || type == Type::MetaString) {
+            const auto &data = std::get<ArrayType<type>>(a.GetData());
+
+            std::vector<size_t> sizes(data.size());
+            std::vector<char> buffer;
+
+            for (size_t i = 0; i < data.size(); i++) {
+                auto new_str = std::regex_replace(std::string(data[i]), reg, modifiers);
+                buffer.insert(buffer.end(), new_str.begin(), new_str.end());
+                sizes[i] = new_str.size();
+            }
+
+            const size_t buf_size = buffer.size();
+
+            auto shared_buf = std::make_shared<char[]>(buf_size);
+            std::memcpy(shared_buf.get(), buffer.data(), buf_size);
+
+            ArrayType<Type::String> ans;
+            ans.reserve(data.size());
+
+            for (size_t i = 0, pos = 0; i < data.size(); i++) {
+                ans.emplace_back(shared_buf.get() + pos, sizes[i]);
+                pos += sizes[i];
+            }
+
+            return Column(std::move(ans), {std::move(shared_buf)});
+        }
+        throw std::invalid_argument("[Regex]: type must be string or metastring");
     });
 }
 

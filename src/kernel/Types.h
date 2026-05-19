@@ -23,11 +23,21 @@ enum class Type {
 };
 
 struct Date {
+    Date() = default;
+    explicit Date(uint32_t days) : days(days) {
+    }
+    Date(const std::string &str);
+
     uint32_t days;
     auto operator<=>(const Date &rhs) const = default;
 };
 
 struct Timestamp {
+    Timestamp() = default;
+    explicit Timestamp(uint64_t seconds) : seconds(seconds) {
+    }
+    Timestamp(const std::string &str);
+
     uint64_t seconds;
     auto operator<=>(const Timestamp &) const = default;
 };

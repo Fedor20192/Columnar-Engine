@@ -1,5 +1,7 @@
 #pragma once
 
+#include <regex>
+
 #include "../kernel/Batch.h"
 
 namespace cngn {
@@ -9,6 +11,9 @@ enum class BinaryExpressionType {
     Neq,
     Eq,
     Gt,
+    Geq,
+    Add,
+    Mul,
     Div,
     And,
 };
@@ -51,7 +56,8 @@ struct ExtractMinute : Expression {
 };
 
 struct ContainsExpression : Expression {
-    explicit ContainsExpression(std::shared_ptr<Expression> expression, std::string substr, bool no = false)
+    explicit ContainsExpression(std::shared_ptr<Expression> expression, std::string substr,
+                                bool no = false)
         : expression(std::move(expression)), substr(std::move(substr)), no(no) {
     }
 
@@ -63,12 +69,26 @@ struct ContainsExpression : Expression {
 };
 
 struct StrLenExpression : Expression {
-    explicit StrLenExpression(std::shared_ptr<Expression> expression) : expression(std::move(expression)) {
+    explicit StrLenExpression(std::shared_ptr<Expression> expression)
+        : expression(std::move(expression)) {
     }
 
     Column Calculate(std::shared_ptr<Batch> batch) const override;
 
     std::shared_ptr<Expression> expression;
+};
+
+struct RegexExpression : Expression {
+    explicit RegexExpression(std::shared_ptr<Expression> expression, std::string pattern,
+                             std::string rep)
+        : expression(std::move(expression)), rep(std::move(rep)), reg(std::move(pattern)) {
+    }
+
+    Column Calculate(std::shared_ptr<Batch> batch) const override;
+
+    std::shared_ptr<Expression> expression;
+    const std::string rep;
+    const std::regex reg;
 };
 
 struct BinaryExpression : Expression {

@@ -217,16 +217,111 @@ TEST_CASE_METHOD(GlogFixture, "StrLen wrong type throws", "[StrLen expression]")
     REQUIRE_THROWS(cngn::operators::StrLen(col));
 }
 
-TEST_CASE_METHOD(GlogFixture, "Simple min_max", "[MinMax expression]") {
-    cngn::Column integer(std::vector{14, 00, 88, -6, 32, -69, -8, -19});
-    cngn::Column str(std::vector<std::string_view>{"aboba", "aacb", "aabc", "aacba"});
+TEST_CASE_METHOD(GlogFixture, "Regex string_view simple replace", "[Regex expression]") {
+    char buffer[] = "foo\0bar\0boo\0";
+    cngn::Column col(std::vector{std::string_view(buffer, 3), std::string_view(buffer + 4, 3),
+                                 std::string_view(buffer + 8, 3)});
 
-    auto ans_str = cngn::operators::Min(str);
-    auto ans_int = cngn::operators::Max(integer);
+    auto result = cngn::operators::Regex(col, "0", std::regex("o"));
+    const auto& ans = std::get<cngn::ArrayType<cngn::Type::String>>(result.GetData());
 
-    REQUIRE(ans_int.has_value());
-    REQUIRE(ans_str.has_value());
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == "f00");
+    REQUIRE(ans[1] == "bar");
+    REQUIRE(ans[2] == "b00");
+}
 
-    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::Int32>>(ans_int.value()) == 88);
-    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::String>>(ans_str.value()) == "aabc");
+TEST_CASE_METHOD(GlogFixture, "Regex metastring replace", "[Regex expression]") {
+    cngn::Column col(std::vector<std::string>{"hello", "world", "help"});
+
+    auto result = cngn::operators::Regex(col, "L", std::regex("l"));
+    const auto& ans = std::get<cngn::ArrayType<cngn::Type::String>>(result.GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == "heLLo");
+    REQUIRE(ans[1] == "worLd");
+    REQUIRE(ans[2] == "heLp");
+}
+
+TEST_CASE_METHOD(GlogFixture, "Regex no match", "[Regex expression]") {
+    cngn::Column col(std::vector<std::string>{"foo", "bar"});
+
+    auto result = cngn::operators::Regex(col, "Z", std::regex("xyz"));
+    const auto& ans = std::get<cngn::ArrayType<cngn::Type::String>>(result.GetData());
+
+    REQUIRE(ans.size() == 2);
+    REQUIRE(ans[0] == "foo");
+    REQUIRE(ans[1] == "bar");
+}
+
+TEST_CASE_METHOD(GlogFixture, "Regex empty replacement deletes match", "[Regex expression]") {
+    cngn::Column col(std::vector<std::string>{"hello", "world"});
+
+    auto result = cngn::operators::Regex(col, "", std::regex("l"));
+    const auto& ans = std::get<cngn::ArrayType<cngn::Type::String>>(result.GetData());
+
+    REQUIRE(ans.size() == 2);
+    REQUIRE(ans[0] == "heo");
+    REQUIRE(ans[1] == "word");
+}
+
+TEST_CASE_METHOD(GlogFixture, "Regex wrong type throws", "[Regex expression]") {
+    cngn::Column col(std::vector<int64_t>{1, 2, 3});
+
+    REQUIRE_THROWS(cngn::operators::Regex(col, "x", std::regex(".")));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Add basic", "[Add expression]") {
+    cngn::Column l(std::vector{1, 2, 3, -5});
+    cngn::Column r(std::vector{4, -1, 0, 5});
+
+    auto ans = cngn::operators::Add(l, r);
+
+    REQUIRE(ans.Size() == l.Size());
+    REQUIRE(ans.GetData() == cngn::ArrayTypeVariant(std::vector{5, 1, 3, 0}));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Add different types Int128 + Int32", "[Add expression]") {
+    cngn::Column l(std::vector<__int128_t>{1000000000000000003ll, 0, -1});
+    cngn::Column r(std::vector{2, 111, 1});
+
+    auto ans = cngn::operators::Add(l, r);
+
+    REQUIRE(ans.Size() == l.Size());
+    REQUIRE(ans.GetData() ==
+            cngn::ArrayTypeVariant(std::vector<__int128_t>{1000000000000000005ll, 111, 0}));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Add non-arithmetic throws", "[Add expression]") {
+    cngn::Column l(std::vector<std::string>{"a", "b"});
+    cngn::Column r(std::vector<std::string>{"c", "d"});
+
+    REQUIRE_THROWS(cngn::operators::Add(l, r));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Mul basic", "[Mul expression]") {
+    cngn::Column l(std::vector{2, 3, -4, 0});
+    cngn::Column r(std::vector{5, -6, 7, 100});
+
+    auto ans = cngn::operators::Mul(l, r);
+
+    REQUIRE(ans.Size() == l.Size());
+    REQUIRE(ans.GetData() == cngn::ArrayTypeVariant(std::vector{10, -18, -28, 0}));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Mul different types UInt64 * Int32", "[Mul expression]") {
+    cngn::Column l(std::vector<uint64_t>{100, 0, 7});
+    cngn::Column r(std::vector{3, 999, 2});
+
+    auto ans = cngn::operators::Mul(l, r);
+
+    REQUIRE(ans.Size() == l.Size());
+    REQUIRE(ans.GetData() == cngn::ArrayTypeVariant(std::vector<uint64_t>{300, 0, 14}));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Mul non-arithmetic throws", "[Mul expression]") {
+    cngn::Column l(std::vector<std::string>{"a", "b"});
+    cngn::Column r(std::vector<std::string>{"c", "d"});
+
+    REQUIRE_THROWS(cngn::operators::Mul(l, r));
 }

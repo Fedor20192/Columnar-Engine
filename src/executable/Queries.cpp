@@ -19,6 +19,7 @@ int main(int argc, char* argv[]) {
 
     if (argc >= 3) {
         filename = argv[2];
+        filename += ".chsv";
     }
 
     int start_query = 0, finish_query = kQueriesCount;

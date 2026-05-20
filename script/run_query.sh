@@ -6,4 +6,7 @@ COLUMNAR=$2
 OUTPUT=$3
 LOGS=$4
 
+mkdir -p "$(dirname "${OUTPUT}")"
+mkdir -p "$(dirname "${LOGS}")"
+
 ./build-release/src/executable/execute_query "${QUERY_NUM}" "${COLUMNAR}" > "${OUTPUT}" 2> "${LOGS}"

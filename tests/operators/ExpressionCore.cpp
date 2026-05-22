@@ -325,3 +325,104 @@ TEST_CASE_METHOD(GlogFixture, "Mul non-arithmetic throws", "[Mul expression]") {
 
     REQUIRE_THROWS(cngn::operators::Mul(l, r));
 }
+
+TEST_CASE_METHOD(GlogFixture, "Or elementwise", "[Or expression]") {
+    cngn::Column l(std::vector<char>{1, 0, 1});
+    cngn::Column r(std::vector<char>{1, 1, 0});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::Or(l, r).GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == 1);
+    REQUIRE(ans[1] == 1);
+    REQUIRE(ans[2] == 1);
+}
+
+TEST_CASE_METHOD(GlogFixture, "Or all true", "[Or expression]") {
+    cngn::Column l(std::vector<char>{1, 1, 1});
+    cngn::Column r(std::vector<char>{1, 0, 1});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::Or(l, r).GetData());
+
+    REQUIRE(ans.size() == 3);
+    for (size_t i = 0; i < ans.size(); i++) {
+        REQUIRE(ans[i] == 1);
+    }
+}
+
+TEST_CASE_METHOD(GlogFixture, "Or all false", "[Or expression]") {
+    cngn::Column l(std::vector<char>{0, 0, 0});
+    cngn::Column r(std::vector<char>{0, 0, 0});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Bool>>(cngn::operators::Or(l, r).GetData());
+
+    REQUIRE(ans.size() == 3);
+    for (size_t i = 0; i < ans.size(); i++) {
+        REQUIRE(ans[i] == 0);
+    }
+}
+
+TEST_CASE_METHOD(GlogFixture, "Or non-bool throws", "[Or expression]") {
+    cngn::Column l(std::vector<int64_t>{1, 0, 1});
+    cngn::Column r(std::vector<int64_t>{1, 1, 0});
+
+    REQUIRE_THROWS(cngn::operators::Or(l, r));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Case mixed predicate", "[Case expression]") {
+    cngn::Column pred(std::vector<char>{1, 0, 1});
+    cngn::Column when_true(std::vector<int64_t>{10, 20, 30});
+    cngn::Column when_false(std::vector<int64_t>{100, 200, 300});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Int64>>(
+        cngn::operators::Case(pred, when_true, when_false).GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == 10);
+    REQUIRE(ans[1] == 200);
+    REQUIRE(ans[2] == 30);
+}
+
+TEST_CASE_METHOD(GlogFixture, "Case all true predicate", "[Case expression]") {
+    cngn::Column pred(std::vector<char>{1, 1, 1});
+    cngn::Column when_true(std::vector<int64_t>{1, 2, 3});
+    cngn::Column when_false(std::vector<int64_t>{4, 5, 6});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Int64>>(
+        cngn::operators::Case(pred, when_true, when_false).GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == 1);
+    REQUIRE(ans[1] == 2);
+    REQUIRE(ans[2] == 3);
+}
+
+TEST_CASE_METHOD(GlogFixture, "Case all false predicate", "[Case expression]") {
+    cngn::Column pred(std::vector<char>{0, 0, 0});
+    cngn::Column when_true(std::vector<int64_t>{1, 2, 3});
+    cngn::Column when_false(std::vector<int64_t>{4, 5, 6});
+
+    auto ans = std::get<cngn::ArrayType<cngn::Type::Int64>>(
+        cngn::operators::Case(pred, when_true, when_false).GetData());
+
+    REQUIRE(ans.size() == 3);
+    REQUIRE(ans[0] == 4);
+    REQUIRE(ans[1] == 5);
+    REQUIRE(ans[2] == 6);
+}
+
+TEST_CASE_METHOD(GlogFixture, "Case type mismatch throws", "[Case expression]") {
+    cngn::Column pred(std::vector<char>{1, 0, 1});
+    cngn::Column when_true(std::vector<int64_t>{1, 2, 3});
+    cngn::Column when_false(std::vector<int32_t>{4, 5, 6});
+
+    REQUIRE_THROWS(cngn::operators::Case(pred, when_true, when_false));
+}
+
+TEST_CASE_METHOD(GlogFixture, "Case non-bool predicate throws", "[Case expression]") {
+    cngn::Column pred(std::vector<int64_t>{1, 0, 1});
+    cngn::Column when_true(std::vector<int64_t>{1, 2, 3});
+    cngn::Column when_false(std::vector<int64_t>{4, 5, 6});
+
+    REQUIRE_THROWS(cngn::operators::Case(pred, when_true, when_false));
+}

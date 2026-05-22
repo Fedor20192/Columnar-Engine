@@ -259,6 +259,57 @@ Column And(const Column &a, const Column &b) {
     });
 }
 
+Column Or(const Column &a, const Column &b) {
+    const auto type = a.GetType();
+
+    return DispatchOnType(type, [&]<Type type>() -> Column {
+        if constexpr (type == Type::Bool) {
+            ArrayType<Type::Bool> ans(a.Size());
+            const auto &arr_a = std::get<ArrayType<type>>(a.GetData());
+            const auto &arr_b = std::get<ArrayType<type>>(b.GetData());
+
+            for (size_t i = 0; i < a.Size(); i++) {
+                ans[i] = arr_a[i] || arr_b[i];
+            }
+
+            return Column(std::move(ans));
+        }
+
+        throw std::invalid_argument("[Or]: You are trying to use non bool objects");
+    });
+}
+
+Column Case(const Column &predicate, const Column &case_true, const Column &case_false) {
+    const auto type = predicate.GetType();
+    return DispatchOnType(type, [&]<Type type_pred>() -> Column {
+        if constexpr (type_pred == Type::Bool) {
+            const auto &arr_pred = std::get<ArrayType<type_pred>>(predicate.GetData());
+
+            const auto type_true = case_true.GetType();
+            const auto type_false = case_false.GetType();
+            if (type_true != type_false) {
+                throw std::invalid_argument("[Case]: true and false cases must be the same type");
+            }
+
+            return DispatchOnType(type_true, [&]<Type type>() -> Column {
+                const auto &arr_true = std::get<ArrayType<type>>(case_true.GetData());
+                const auto &arr_false = std::get<ArrayType<type>>(case_false.GetData());
+
+                ArrayType<type> ans;
+                ans.reserve(predicate.Size());
+
+                for (size_t i = 0; i < predicate.Size(); i++) {
+                    ans.push_back(arr_pred[i] ? arr_true[i] : arr_false[i]);
+                }
+
+                return Column(std::move(ans));
+            });
+        }
+
+        throw std::invalid_argument("[Case]: You are trying to use non bool objects");
+    });
+}
+
 PhysTypeVariant Sum(const Column &a) {
     Type type = a.GetType();
     if (type == Type::Bool || type == Type::Timestamp || type == Type::Date ||

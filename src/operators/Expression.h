@@ -16,6 +16,7 @@ enum class BinaryExpressionType {
     Mul,
     Div,
     And,
+    Or,
 };
 
 struct Expression {
@@ -89,6 +90,20 @@ struct RegexExpression : Expression {
     std::shared_ptr<Expression> expression;
     const std::string rep;
     const std::regex reg;
+};
+
+struct CaseExpression : Expression {
+    explicit CaseExpression(std::shared_ptr<Expression> predicate,
+                            std::shared_ptr<Expression> when_true,
+                            std::shared_ptr<Expression> when_false)
+        : pred(std::move(predicate)),
+          true_expr(std::move(when_true)),
+          false_expr(std::move(when_false)) {
+    }
+
+    Column Calculate(std::shared_ptr<Batch> batch) const override;
+
+    std::shared_ptr<Expression> pred, true_expr, false_expr;
 };
 
 struct BinaryExpression : Expression {

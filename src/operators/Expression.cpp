@@ -34,6 +34,8 @@ Column BinaryExpression::Calculate(std::shared_ptr<Batch> batch) const {
             return Div(left_res, right_res);
         case BinaryExpressionType::And:
             return And(left_res, right_res);
+        case BinaryExpressionType::Or:
+            return Or(left_res, right_res);
         default:
             throw std::logic_error("[BinaryExpression:Calculate]: Unknown expression type");
     }
@@ -62,6 +64,14 @@ Column StrLenExpression::Calculate(std::shared_ptr<Batch> batch) const {
 Column RegexExpression::Calculate(std::shared_ptr<Batch> batch) const {
     const Column res = expression->Calculate(batch);
     return Regex(std::move(res), rep, reg);
+}
+
+Column CaseExpression::Calculate(std::shared_ptr<Batch> batch) const {
+    const Column pred_res = pred->Calculate(batch);
+    const Column true_res = true_expr->Calculate(batch);
+    const Column false_res = false_expr->Calculate(batch);
+
+    return Case(std::move(pred_res), std::move(true_res), std::move(false_res));
 }
 }  // namespace operators
 }  // namespace cngn

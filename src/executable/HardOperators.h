@@ -19,6 +19,7 @@ using AggregationMeta = cngn::operators::AggregationMeta;
 using AggregationType = cngn::operators::AggregationType;
 using BinaryExpression = cngn::operators::BinaryExpression;
 using BinaryExpressionType = cngn::operators::BinaryExpressionType;
+using CaseExpression = cngn::operators::CaseExpression;
 using ConstantExpression = cngn::operators::ConstantExpression;
 using ContainsExpression = cngn::operators::ContainsExpression;
 using Count = cngn::operators::Count;
@@ -39,7 +40,7 @@ using StrLenExpression = cngn::operators::StrLenExpression;
 using Type = cngn::Type;
 using TopK = cngn::operators::TopK;
 
-constexpr int kQueriesCount = 39;
+constexpr int kQueriesCount = 41;
 
 const std::array<QueryGenerator, kQueriesCount> kGenerators = {
     [](const std::string& filename) {
@@ -1032,5 +1033,144 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
         return std::make_unique<Projector>(
             std::move(sort), std::vector<ProjectionMeta>{
                                  {std::make_shared<SelectExpression>("URL"), "URL"},
+                                 {std::make_shared<SelectExpression>("PageViews"), "PageViews"}});
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"TraficSourceID", Type::Int16},
+                                                             {"SearchEngineID", Type::Int16},
+                                                             {"AdvEngineID", Type::Int16},
+                                                             {"Referer", Type::String},
+                                                             {"CounterID", Type::Int32},
+                                                             {"Eventdate", Type::Date},
+                                                             {"IsRefresh", Type::Int16},
+                                                             {"URL", Type::String}}));
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::And,
+                std::make_shared<BinaryExpression>(
+                    BinaryExpressionType::And,
+                    std::make_shared<BinaryExpression>(
+                        BinaryExpressionType::Geq, std::make_shared<SelectExpression>("Eventdate"),
+                        std::make_shared<ConstantExpression>(cngn::Date("2013-07-01"))),
+                    std::make_shared<BinaryExpression>(
+                        BinaryExpressionType::Geq,
+                        std::make_shared<ConstantExpression>(cngn::Date("2013-07-31")),
+                        std::make_shared<SelectExpression>("Eventdate"))),
+                std::make_shared<BinaryExpression>(
+                    BinaryExpressionType::And,
+                    std::make_shared<BinaryExpression>(
+                        BinaryExpressionType::Eq, std::make_shared<SelectExpression>("CounterID"),
+                        std::make_shared<ConstantExpression>(62)),
+                    std::make_shared<BinaryExpression>(
+                        BinaryExpressionType::Eq, std::make_shared<SelectExpression>("IsRefresh"),
+                        std::make_shared<ConstantExpression>(static_cast<int16_t>(0))))));
+
+        auto case_proj = std::make_unique<Projector>(
+            std::move(filter),
+            std::vector<ProjectionMeta>{
+                {std::make_shared<SelectExpression>("TraficSourceID"), "TraficSourceID"},
+                {std::make_shared<SelectExpression>("SearchEngineID"), "SearchEngineID"},
+                {std::make_shared<SelectExpression>("AdvEngineID"), "AdvEngineID"},
+                {std::make_shared<CaseExpression>(
+                     std::make_shared<BinaryExpression>(
+                         BinaryExpressionType::And,
+                         std::make_shared<BinaryExpression>(
+                             BinaryExpressionType::Eq,
+                             std::make_shared<SelectExpression>("SearchEngineID"),
+                             std::make_shared<ConstantExpression>(static_cast<int16_t>(0))),
+                         std::make_shared<BinaryExpression>(
+                             BinaryExpressionType::Eq,
+                             std::make_shared<SelectExpression>("AdvEngineID"),
+                             std::make_shared<ConstantExpression>(static_cast<int16_t>(0)))),
+                     std::make_shared<SelectExpression>("Referer"),
+                     std::make_shared<ConstantExpression>(std::string_view(""))),
+                 "Src"},
+                {std::make_shared<SelectExpression>("URL"), "Dst"}});
+
+        auto agg = std::make_unique<Aggregation>(
+            std::move(case_proj),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "PageViews"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("TraficSourceID"), "TraficSourceID"},
+                {std::make_shared<SelectExpression>("SearchEngineID"), "SearchEngineID"},
+                {std::make_shared<SelectExpression>("AdvEngineID"), "AdvEngineID"},
+                {std::make_shared<SelectExpression>("Src"), "Src"},
+                {std::make_shared<SelectExpression>("Dst"), "Dst"}});
+
+        return std::make_unique<TopK>(
+            std::move(agg),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("PageViews"), "PageViews"}},
+            10, false, 1000);
+    },
+    [](const std::string& filename) {
+        auto scan = std::make_unique<Scan>(filename, Schema({{"URLHash", Type::Int64},
+                                                             {"Eventdate", Type::Date},
+                                                             {"CounterID", Type::Int32},
+                                                             {"TraficSourceID", Type::Int16},
+                                                             {"RefererHash", Type::Int64},
+                                                             {"IsRefresh", Type::Int16}}));
+
+        auto filter = std::make_unique<Filter>(
+            std::move(scan),
+            std::make_shared<BinaryExpression>(
+                BinaryExpressionType::And,
+                std::make_shared<BinaryExpression>(
+                    BinaryExpressionType::And,
+                    std::make_shared<BinaryExpression>(
+                        BinaryExpressionType::And,
+                        std::make_shared<BinaryExpression>(
+                            BinaryExpressionType::Geq,
+                            std::make_shared<SelectExpression>("Eventdate"),
+                            std::make_shared<ConstantExpression>(cngn::Date("2013-07-01"))),
+                        std::make_shared<BinaryExpression>(
+                            BinaryExpressionType::Geq,
+                            std::make_shared<ConstantExpression>(cngn::Date("2013-07-31")),
+                            std::make_shared<SelectExpression>("Eventdate"))),
+                    std::make_shared<BinaryExpression>(
+                        BinaryExpressionType::Or,
+                        std::make_shared<BinaryExpression>(
+                            BinaryExpressionType::Eq,
+                            std::make_shared<SelectExpression>("TraficSourceID"),
+                            std::make_shared<ConstantExpression>(static_cast<int16_t>(-1))),
+                        std::make_shared<BinaryExpression>(
+                            BinaryExpressionType::Eq,
+                            std::make_shared<SelectExpression>("TraficSourceID"),
+                            std::make_shared<ConstantExpression>(static_cast<int16_t>(6))))),
+                std::make_shared<BinaryExpression>(
+                    BinaryExpressionType::And,
+                    std::make_shared<BinaryExpression>(
+                        BinaryExpressionType::And,
+                        std::make_shared<BinaryExpression>(
+                            BinaryExpressionType::Eq,
+                            std::make_shared<SelectExpression>("IsRefresh"),
+                            std::make_shared<ConstantExpression>(static_cast<int16_t>(0))),
+                        std::make_shared<BinaryExpression>(
+                            BinaryExpressionType::Eq,
+                            std::make_shared<SelectExpression>("RefererHash"),
+                            std::make_shared<ConstantExpression>(
+                                static_cast<int64_t>(3594120000172545465ll)))),
+                    std::make_shared<BinaryExpression>(
+                        BinaryExpressionType::Eq, std::make_shared<SelectExpression>("CounterID"),
+                        std::make_shared<ConstantExpression>(62)))));
+
+        auto agg = std::make_unique<Aggregation>(
+            std::move(filter),
+            std::vector<AggregationMeta>{
+                {AggregationType::Count, std::make_shared<ConstantExpression>(0), "PageViews"}},
+            std::vector<GroupByMeta>{
+                {std::make_shared<SelectExpression>("URLHash"), "URLHash"},
+                {std::make_shared<SelectExpression>("Eventdate"), "Eventdate"}});
+
+        auto sort = std::make_unique<TopK>(
+            std::move(agg),
+            std::vector<SortKey>{{std::make_shared<SelectExpression>("PageViews"), "PageViews"}},
+            10, false, 100);
+
+        return std::make_unique<Projector>(
+            std::move(sort), std::vector<ProjectionMeta>{
+                                 {std::make_shared<SelectExpression>("URLHash"), "URLHash"},
+                                 {std::make_shared<SelectExpression>("Eventdate"), "Eventdate"},
                                  {std::make_shared<SelectExpression>("PageViews"), "PageViews"}});
     }};

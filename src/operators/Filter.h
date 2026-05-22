@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glog/logging.h>
+
 #include "Expression.h"
 #include "Operator.h"
 
@@ -26,6 +28,8 @@ public:
     }
 
     std::optional<std::shared_ptr<Batch>> Next() override {
+        DLOG(INFO) << "[Filter]: Trying read batch\n";
+
         std::shared_ptr<Batch> batch = next_operator_->Next().value_or(nullptr);
         if (!batch) {
             return std::nullopt;
@@ -40,7 +44,8 @@ public:
         const auto& schema = batch->GetSchema();
 
         if (good_rows == 0) {
-            return std::make_shared<Batch>(schema);
+            DLOG(INFO) << "[Filter]: No good rows\n";
+            return std::make_shared<Batch>(schema, true);
         }
         if (good_rows == batch->RowCount()) {
             return batch;
@@ -67,6 +72,7 @@ public:
                 DispatchOnType(schema.GetData()[col_num].column_type, std::move(construct_column)));
         }
 
+        DLOG(INFO) << "[Filter]: Successfully filtered batch\n";
         return std::make_shared<Batch>(std::move(ans));
     }
 

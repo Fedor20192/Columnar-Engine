@@ -363,6 +363,8 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
     key_buf.reserve(256);
 
     while (auto batch_ptr = next_operator_->Next()) {
+        DLOG(INFO) << "[Aggregation]: Next batch\n";
+
         const size_t rows = (*batch_ptr)->RowCount();
         if (rows == 0) {
             continue;
@@ -395,6 +397,8 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
         }
 
         UpdateStates(agg_cols, row_group_idx, group_states, rows, n);
+
+        DLOG(INFO) << "[Aggregation]: Batch prepared\n";
     }
 
     if (group_states.empty()) {

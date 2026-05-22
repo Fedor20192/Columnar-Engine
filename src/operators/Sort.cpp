@@ -258,11 +258,9 @@ std::optional<std::shared_ptr<Batch>> TopK::Next() {
     }
 
     std::vector<HeapRow> rows;
-    rows.reserve(pq.size() - offset_);
-    for (size_t i = 0; i < offset_; i++) {
-        pq.pop();
-    }
-    while (!pq.empty()) {
+    size_t result_size = pq.size() - offset_;
+    rows.reserve(result_size);
+    for (size_t i = 0; i < result_size; i++) {
         rows.push_back(pq.top());
         pq.pop();
     }

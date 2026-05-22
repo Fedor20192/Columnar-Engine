@@ -1,4 +1,6 @@
 #pragma once
+#include <glog/logging.h>
+
 #include "Expression.h"
 #include "Operator.h"
 
@@ -39,11 +41,16 @@ public:
     }
 
     std::optional<std::shared_ptr<Batch>> Next() override {
+        DLOG(INFO) << "[Projector]: Trying read batch\n";
+
         auto batch = next_operator_->Next().value_or(nullptr);
 
         if (!batch) {
+            DLOG(INFO) << "[Projector]: No more batches\n";
             return std::nullopt;
         }
+
+        DLOG(INFO) << "[Projector]: Batch successfully read\n";
 
         std::vector<Column> projected_columns;
         projected_columns.reserve(projections_.size());
@@ -55,6 +62,8 @@ public:
             projected_columns.emplace_back(expression->Calculate(batch));
             column_data.emplace_back(name, projected_columns.back().GetType());
         }
+
+        DLOG(INFO) << "[Projector]: Successfully read batch\n";
 
         return std::make_shared<Batch>(std::move(projected_columns),
                                        Schema(std::move(column_data)));

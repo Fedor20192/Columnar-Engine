@@ -7,6 +7,10 @@
 namespace cngn {
 namespace operators {
 
+template <Type type>
+concept IsArithmetic = type != Type::Timestamp && type != Type::Date && type != Type::MetaString &&
+                       type != Type::String && type != Type::Bool;
+
 Column NotEqual(const Column &, const Column &);
 
 Column Equal(const Column &, const Column &);

@@ -275,3 +275,39 @@ TEST_CASE_METHOD(GlogFixture, "TopK across two batches", "[Sort operator]") {
     REQUIRE((*ans)[0] == cngn::Column(std::vector<int64_t>{1, 2, 3, 5}));
     REQUIRE((*ans)[1] == cngn::Column(std::vector<int32_t>{10, 20, 30, 50}));
 }
+
+TEST_CASE_METHOD(GlogFixture, "TopK with offset", "[Sort operator]") {
+    cngn::Schema schema({
+        {"a", cngn::Type::Int64},
+        {"b", cngn::Type::Int32},
+    });
+
+    cngn::Batch batch(
+        std::vector{
+            cngn::Column(std::vector<int64_t>{5, 3, 8, 1, 4, 7, 2, 6}),
+            cngn::Column(std::vector<int32_t>{50, 30, 80, 10, 40, 70, 20, 60}),
+        },
+        schema);
+
+    cngn::BatchedWriter writer(kFilename, schema);
+    writer.WriteBatch(batch);
+    writer.WriteMetadata();
+    writer.Flush();
+
+    auto topk = std::make_unique<cngn::operators::TopK>(
+        std::make_unique<cngn::operators::Scan>(kFilename, schema),
+        std::vector<cngn::operators::SortKey>{
+            {std::make_shared<cngn::operators::SelectExpression>("a"), "a"},
+        },
+        3, false, 2);
+
+    topk->Open();
+    auto ans = topk->Next().value_or(nullptr);
+    REQUIRE_FALSE(topk->Next());
+    topk->Close();
+
+    REQUIRE(ans);
+    REQUIRE(ans->RowCount() == 3);
+    REQUIRE((*ans)[0] == cngn::Column(std::vector<int64_t>{6, 5, 4}));
+    REQUIRE((*ans)[1] == cngn::Column(std::vector<int32_t>{60, 50, 40}));
+}

@@ -43,7 +43,7 @@ std::optional<Batch> BatchedReader::ReadBatch() {
     DLOG(INFO) << "[BatchedReader]: Trying read batch number " << num_of_batch_ << "\n";
     if (num_of_batch_ >= metadata_.GetBatchCnt()) {
         DLOG(WARNING) << "[BatchedReader]: Num of batch is too much: " << num_of_batch_
-                    << " >= " << metadata_.GetBatchCnt() << "\n";
+                      << " >= " << metadata_.GetBatchCnt() << "\n";
         return std::nullopt;
     }
     file_.seekg(metadata_.GetBatchesOffsets()[num_of_batch_], std::ios::beg);
@@ -71,7 +71,10 @@ std::optional<Batch> BatchedReader::ReadBatch() {
                    << " from batch number " << num_of_batch_
                    << "\n"
                       "Offset = "
-                   << metadata_.GetColumnOffset(num_of_batch_, column_index);
+                   << metadata_.GetColumnOffset(num_of_batch_, column_index) << "\n"
+                   << "Type = " << DispatchOnType(column_type, []<Type type>() -> std::string {
+                          return SerializeType{}.operator()<type>();
+                      });
         file_.seekg(metadata_.GetColumnOffset(num_of_batch_, column_index), std::ios::beg);
         batch.AddColumn(DispatchOnType(column_type, read_column, rows_cnt));
     }

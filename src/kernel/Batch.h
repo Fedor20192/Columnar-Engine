@@ -17,7 +17,7 @@ public:
     Batch(Batch&&) noexcept = default;
     Batch& operator=(Batch&&) noexcept = default;
 
-    explicit Batch(const Schema& schema);
+    explicit Batch(const Schema& schema, bool is_empty = false);
     explicit Batch(const std::vector<Column>& columns, const Schema& schema);
 
     explicit Batch(CsvReader::Chunk&& chunk, const Schema& schema, size_t rows_count);

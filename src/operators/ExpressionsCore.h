@@ -35,6 +35,10 @@ Column Regex(const Column &, const std::string &, const std::regex &);
 
 Column And(const Column &, const Column &);
 
+Column Or(const Column &, const Column &);
+
+Column Case(const Column &, const Column &, const Column &);
+
 PhysTypeVariant Sum(const Column &);
 
 }  // namespace operators

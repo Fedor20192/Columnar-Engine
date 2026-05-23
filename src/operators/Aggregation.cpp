@@ -436,6 +436,8 @@ std::optional<std::shared_ptr<Batch>> Aggregation::Next() {
     key_buf.reserve(256);
 
     while (auto batch_ptr = next_operator_->Next()) {
+        DLOG(INFO) << "[Aggregation]: Next batch\n";
+
         const size_t rows = (*batch_ptr)->RowCount();
         if (rows == 0) {
             continue;

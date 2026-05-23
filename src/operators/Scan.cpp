@@ -66,10 +66,13 @@ void Scan::Open() {
 }
 
 std::optional<std::shared_ptr<Batch>> Scan::Next() {
+    DLOG(INFO) << "[Scan]: Trying read batch\n";
     auto batch = reader_.ReadBatch();
     if (batch.has_value()) {
+        DLOG(INFO) << "[Scan]: Successfully read batch\n";
         return std::make_shared<Batch>(std::move(batch.value()));
     }
+    DLOG(INFO) << "[Scan]: No more batches\n";
     return std::nullopt;
 }
 

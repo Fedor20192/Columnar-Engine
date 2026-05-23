@@ -6,7 +6,14 @@
 
 namespace cngn {
 
-Batch::Batch(const Schema& schema) : schema_(schema) {
+Batch::Batch(const Schema& schema, bool is_empty) : schema_(schema) {
+    columns_.reserve(schema_.GetColumnsCount());
+
+    if (is_empty) {
+        for (size_t i = 0; i < schema_.GetColumnsCount(); i++) {
+            columns_.emplace_back(schema_[i].column_type, 0);
+        }
+    }
 }
 
 Batch::Batch(const std::vector<Column>& columns, const Schema& schema)
@@ -133,8 +140,11 @@ void Batch::AddColumn(Column&& column) {
 }
 
 std::vector<std::vector<std::string>> Batch::Serialize() const {
-    DLOG(INFO) << "[Batch]: Serializing...\n" << "Columns count: " << ColumnCount() << "\n"
-                "Rows count: " << RowCount() << "\n";
+    DLOG(INFO) << "[Batch]: Serializing...\n"
+               << "Columns count: " << ColumnCount()
+               << "\n"
+                  "Rows count: "
+               << RowCount() << "\n";
 
     std::vector<std::vector<std::string>> result;
 

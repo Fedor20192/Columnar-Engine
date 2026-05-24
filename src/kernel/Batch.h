@@ -40,7 +40,7 @@ private:
     std::vector<Column> columns_;
     Schema schema_;
     std::shared_ptr<std::vector<char>> buffer_;
-    std::shared_ptr<CsvReader::MmapRegion> region_;
+    std::shared_ptr<MmapRegion> region_;
 };
 
 }  // namespace cngn

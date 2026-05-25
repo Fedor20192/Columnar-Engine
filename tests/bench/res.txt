@@ -1,43 +1,43 @@
 [QueriesExecute]: Starting execute query number 0
 99997497 
 
-Time: 94 ms
+Time: 82 ms
 
 
 [QueriesExecute]: Starting execute query number 1
 630500 
 
-Time: 197 ms
+Time: 122 ms
 
 
 [QueriesExecute]: Starting execute query number 2
 7280088 99997497 1513 
 
-Time: 218 ms
+Time: 198 ms
 
 
 [QueriesExecute]: Starting execute query number 3
 2528953029789715941 
 
-Time: 229 ms
+Time: 209 ms
 
 
 [QueriesExecute]: Starting execute query number 4
 17630976 
 
-Time: 3349 ms
+Time: 3248 ms
 
 
 [QueriesExecute]: Starting execute query number 5
 6019103 
 
-Time: 6707 ms
+Time: 6658 ms
 
 
 [QueriesExecute]: Starting execute query number 6
 2013-07-02 2013-07-31 
 
-Time: 329 ms
+Time: 165 ms
 
 
 [QueriesExecute]: Starting execute query number 7
@@ -60,7 +60,7 @@ Time: 329 ms
 7 3 
 22 1 
 
-Time: 196 ms
+Time: 133 ms
 
 
 [QueriesExecute]: Starting execute query number 8
@@ -75,7 +75,7 @@ Time: 196 ms
 107 272448 
 42 243181 
 
-Time: 6774 ms
+Time: 6438 ms
 
 
 [QueriesExecute]: Starting execute query number 9
@@ -90,7 +90,7 @@ Time: 6774 ms
 107 120470 1516690 1548 272448 
 51 98212 1435578 1579 211505 
 
-Time: 5408 ms
+Time: 5374 ms
 
 
 [QueriesExecute]: Starting execute query number 10
@@ -105,7 +105,7 @@ GT-P7300B 1907
 GT-I9500 1598 
 eagle75 1492 
 
-Time: 2578 ms
+Time: 2686 ms
 
 
 [QueriesExecute]: Starting execute query number 11
@@ -120,7 +120,7 @@ Time: 2578 ms
 32 iPad 9503 
 13 iPad 9417 
 
-Time: 1895 ms
+Time: 2197 ms
 
 
 [QueriesExecute]: Starting execute query number 12
@@ -135,7 +135,7 @@ galaxy table 16746
 экзоидные 16620 
 сколько мытищи 12317 
 
-Time: 3622 ms
+Time: 3631 ms
 
 
 [QueriesExecute]: Starting execute query number 13
@@ -150,7 +150,7 @@ Time: 3622 ms
 дружке помещение 8792 
 комбинирование смотреть 7572 
 
-Time: 5256 ms
+Time: 5394 ms
 
 
 [QueriesExecute]: Starting execute query number 14
@@ -165,7 +165,7 @@ Time: 5256 ms
 3 карелки 12815 
 2 дружке помещение 11946 
 
-Time: 4701 ms
+Time: 5425 ms
 
 
 [QueriesExecute]: Starting execute query number 15
@@ -180,7 +180,7 @@ Time: 4701 ms
 835157184735512989 5211 
 770542365400669095 4906 
 
-Time: 6880 ms
+Time: 6953 ms
 
 
 [QueriesExecute]: Starting execute query number 16
@@ -195,7 +195,7 @@ Time: 6880 ms
 835157184735512989  5209 
 770542365400669095  4906 
 
-Time: 11670 ms
+Time: 11821 ms
 
 
 [QueriesExecute]: Starting execute query number 17
@@ -210,7 +210,7 @@ Time: 11670 ms
 -9223308501352264398 фэс серии охорис интернет водительсинка 1.5 гостин 2 серии форту в красноярск 1 
 -9223280456965417565  8 
 
-Time: 11592 ms
+Time: 11770 ms
 
 
 [QueriesExecute]: Starting execute query number 18
@@ -225,7 +225,7 @@ Time: 11592 ms
 1313338681122956954 26  540 
 1313338681122956954 10  539 
 
-Time: 30124 ms
+Time: 32251 ms
 
 
 [QueriesExecute]: Starting execute query number 19
@@ -234,13 +234,13 @@ Time: 30124 ms
 435090932899640449 
 435090932899640449 
 
-Time: 198 ms
+Time: 187 ms
 
 
 [QueriesExecute]: Starting execute query number 20
 15911 
 
-Time: 10706 ms
+Time: 13411 ms
 
 
 [QueriesExecute]: Starting execute query number 21
@@ -255,7 +255,7 @@ Time: 10706 ms
 вспомню о названы монстэр http://tienskaia-moda-zhienskaia-obl.irr.ru/ch/google-c-38208 7 
 купить трудовані резюме мертный дина кабинский лежит заднее устан http://video.yandex.php?com=google.ru/arts/searchAutoSearch 7 
 
-Time: 4224 ms
+Time: 4311 ms
 
 
 [QueriesExecute]: Starting execute query number 22
@@ -270,7 +270,7 @@ Time: 4224 ms
 коптимиквиды юриста с роуз рая https://produkty%2Fpulove.ru/booklyattion-war-sinij-9182/women Легко на участные участников., Цены - Стильная парнем. Саганрог догадения : Турции, купить у 10 дне кольные машинки не представки - Новая с избиение спродажа: котята 2014 г.в. Цена: 47500-10ECO060 – -------- купить квартиру Оренбург (России Galantrax Flamiliada Google, Nо 18 фотоконверк Супер Кардиган 45 12 
 винки медведь смотрейлера начальник http://smeshariki.ru/a-folder-4/#page-3.2.1; WOW64; Edition=1&input_active/ видеорегионалу Google - модных Челябинск 40 35 
 
-Time: 21948 ms
+Time: 19541 ms
 
 
 [QueriesExecute]: Starting execute query number 23
@@ -285,7 +285,7 @@ Time: 21948 ms
 2013-07-01 21:22:40 http:%2F%2Fsapozhki-advertime-2/#page.google/dodge 
 2013-07-01 21:22:53 http:%2F%2Fsapozhki-advertime-2/#page.google/dodge 
 
-Time: 12901 ms
+Time: 17728 ms
 
 
 [QueriesExecute]: Starting execute query number 24
@@ -300,7 +300,7 @@ galaxy s4 zoom фильм
 брита ганам котлы на шерлок 
 анапа оперевянные волшебную 
 
-Time: 1558 ms
+Time: 1692 ms
 
 
 [QueriesExecute]: Starting execute query number 25
@@ -315,7 +315,7 @@ Time: 1558 ms
  прав 
  светы женске 2 сезон 
 
-Time: 1416 ms
+Time: 1367 ms
 
 
 [QueriesExecute]: Starting execute query number 26
@@ -330,7 +330,7 @@ galaxy s4 zoom фильм
 отдыха чем прокат 
 расписание мультиварка для 
 
-Time: 1370 ms
+Time: 1373 ms
 
 
 [QueriesExecute]: Starting execute query number 27
@@ -360,7 +360,7 @@ Time: 1370 ms
 230962 76 169223 
 77639 75 253961 
 
-Time: 5687 ms
+Time: 4112 ms
 
 
 [QueriesExecute]: Starting execute query number 28
@@ -390,13 +390,13 @@ gorod 80 110728 http://gorod/%3Fauto.ria.ua%2Fjob
 tambov.irr.ru 77 315318 http://tambov.irr.ru/0/c1/tgFtaeLDK0yb01A7xvQF08sjCFqQxn51 
 go.mail.ru 75 121380 http://go.mail.ru/ 
 
-Time: 124712 ms
+Time: 110366 ms
 
 
 [QueriesExecute]: Starting execute query number 29
 151345005230 151445002727 151545000224 151644997721 151744995218 151844992715 151944990212 152044987709 152144985206 152244982703 152344980200 152444977697 152544975194 152644972691 152744970188 152844967685 152944965182 153044962679 153144960176 153244957673 153344955170 153444952667 153544950164 153644947661 153744945158 153844942655 153944940152 154044937649 154144935146 154244932643 154344930140 154444927637 154544925134 154644922631 154744920128 154844917625 154944915122 155044912619 155144910116 155244907613 155344905110 155444902607 155544900104 155644897601 155744895098 155844892595 155944890092 156044887589 156144885086 156244882583 156344880080 156444877577 156544875074 156644872571 156744870068 156844867565 156944865062 157044862559 157144860056 157244857553 157344855050 157444852547 157544850044 157644847541 157744845038 157844842535 157944840032 158044837529 158144835026 158244832523 158344830020 158444827517 158544825014 158644822511 158744820008 158844817505 158944815002 159044812499 159144809996 159244807493 159344804990 159444802487 159544799984 159644797481 159744794978 159844792475 159944789972 160044787469 160144784966 160244782463 
 
-Time: 1496 ms
+Time: 1305 ms
 
 
 [QueriesExecute]: Starting execute query number 30
@@ -411,7 +411,7 @@ Time: 1496 ms
 2 -1743596151 1080 24 1559 
 2 -1125673878 1058 22 1587 
 
-Time: 6992 ms
+Time: 7567 ms
 
 
 [QueriesExecute]: Starting execute query number 31
@@ -426,7 +426,7 @@ Time: 6992 ms
 8187179741953146075 41269655 1 0 1368 
 5581899925183342605 2050260421 1 0 1917 
 
-Time: 7943 ms
+Time: 5662 ms
 
 
 [QueriesExecute]: Starting execute query number 32
@@ -441,7 +441,7 @@ Time: 7943 ms
 8740403056911509777 1615432634 1 0 0 
 8156744413230856864 -1216690514 1 0 0 
 
-Time: 41737 ms
+Time: 41977 ms
 
 
 [QueriesExecute]: Starting execute query number 33
@@ -456,7 +456,7 @@ http://kinopoisk.ru/vladimir.irr.ru 354690
 http://video.yandex.ru/search/?jenre=50&s_yers 318979 
 http://tienskaia-moda 289355 
 
-Time: 24817 ms
+Time: 26935 ms
 
 
 [QueriesExecute]: Starting execute query number 34
@@ -471,7 +471,7 @@ Time: 24817 ms
 1 http://video.yandex.ru/search/?jenre=50&s_yers 318979 
 1 http://tienskaia-moda 289355 
 
-Time: 13813 ms
+Time: 14782 ms
 
 
 [QueriesExecute]: Starting execute query number 35
@@ -486,7 +486,7 @@ Time: 13813 ms
 -807147100 -807147101 -807147102 -807147103 9880 
 -631062503 -631062504 -631062505 -631062506 9718 
 
-Time: 7479 ms
+Time: 7155 ms
 
 
 [QueriesExecute]: Starting execute query number 36
@@ -501,7 +501,7 @@ http://irr.ru/index.php?showalbum/login-kupalnik 4369
 http://irr.ru/index.php?showalbum/login-kapusta-advert27256.html_params 4058 
 http://komme%2F27.0.1453.116 Safari 3021 
 
-Time: 6922 ms
+Time: 5542 ms
 
 
 [QueriesExecute]: Starting execute query number 37
@@ -516,7 +516,7 @@ AUTO.ria.ua ™ - Аппер 14053
 OWAProfessign), продать 10919 
 Труси - Шоубиз 10157 
 
-Time: 13410 ms
+Time: 14503 ms
 
 
 [QueriesExecute]: Starting execute query number 38
@@ -531,22 +531,22 @@ http://kinopoisk.ru/exp?sid=373888 Version%2F12.16&he=768&wi=1280&lo=http:%2F%3F
 http://stalker-pub-20087898675494,960948/#page_type%3D0%26pz%3D0%26rleurl%3D%26CompPath%3D278885%26bid%3D0%26u_h%3D728%26fh_page=1080&with_exchangeTypeId=0&engineVolumeTo=&raceFrom=&engineVolumeFrom=&engineVolumeTo 2 
 http://video.yandex.php/topnews/artir.ua/advert/nizhnieies 2 
 
-Time: 15330 ms
+Time: 15079 ms
 
 
 [QueriesExecute]: Starting execute query number 39
--1 0 0 http://state=19945206/foto-4/login-2491724/?bundlers/search?text http://irr.ru/index.php?showalbum/login-kapusta-advert2755/?item=42004879&op_seo_entry=-1&sq_kitched 9 
--1 0 0 http://state=19945206/foto-4/login-1spb/event=little&category_id=1537597&lr=172&text=гагра http://irr.ru/index.php?showalbum/login-kupalnaya-ul-2-2/csrf-258-recept-Makarola.irr.ru/sort 9 
-5 0 0 http://kinopoisk.ru/?state http://wildberries.aspx#location/group_cod_1s=8570/page=5&s_yers=2006 9 
--1 0 0 http://state=19945206/foto-4/login-2006/makumirostova.ru/yandsearch?clid=48760?page2/accija http://irr.ru/index.php?showalbum/login-leniya7777294,938303130 9 
--1 0 0 http://state=19945206/foto-4/login-2006/makumirostova.ru/yandsearch/?q=сёнен-ай меня http://irr.ru/index.php?showalbum/login-leniya7777294,938303130 9 
--1 0 0 howalbum/login-kapustic/pr http://irr.ru/index.php?showalbum/login-leniya7777294,938303130 9 
--1 0 0 http://state=19945206/foto-4/login-2006/make=КАМЕРОВО ЗАЙТИ РОЛИК&clid=199000 http://irr.ru/index.php?showalbum/login-2526%2F%2Fwww.bonprix.ru/a-album/lilu/2.php?c=price[from]=&int[234][to]=&int 9 
--1 0 0 http://state=19945206/foto-4/login-2491724/?bundlers/search?text http://irr.ru/index.php?showalbum/login-kapusta-advert277655,0.0002/11/10#formature-inter PC 6.0 9 
-4 0 0  http://irr.ru/index.php?showalbum/login=http://video.yandex.ru/realty/flash 9 
-1 0 0 http://wildberrifiers?year_detailshops.xml?typ http://komme%2F27.0.1453.116 9 
+-1 0 0 http://state=19945206/foto-4/login-2006/makumirostova.ru/katja10uCUg&bvm=bv.48705608,d.bGE http://irr.ru/index.php?showalbum/login-leniya7777294,938303130 10 
+-1 0 0 http://state=19945206/foto-4/login-2491724/?bundlers/search?text http://irr.ru/index.php?showalbum/logabass.ru/cation&op_category_id=978184 10 
+-1 0 0 http://state=19945206/foto-4/login-2491724/?bundlers/search?text http://irr.ru/index.php?showalbum/login-kapusta-advertification/vacancycles/650963.47 Safari%2F537 10 
+-1 0 0 http://state=19945206/foto-4/login-2006/manga http://irr.ru/index.php?showalbum/login 10 
+-1 0 0 http://state=19&num=5&s_yers http://irr.ru/index.ru/widgetchrome%2F201001556&op_seo_entry 10 
+1 0 0  http://irr.ru/index.php?showalbum/ http://komme%2F27.0.1453.116 10 
+-1 0 0 http://state=19945206/foto-4/login-2491724/?bundlers/search?text http://irr.ru/index.php?showalbum/login-kapusta-advert27819122/13/313/26#formiruiushchina85/page4 10 
+5 0 0 http://state=19&num=5&s_yers http://sslow_13507.html?aspx?naId=6r7RoWvxU9qQ= 10 
+5 0 0 http://kinopoisk.ru/?state http://ssl.hurra.com/iframe 10 
+-1 0 0 ttp://state=19945206/foto- http://irr.ru/index.php?showalbum/login-leniya7777294,938303130 10 
 
-Time: 17085 ms
+Time: 14029 ms
 
 
 [QueriesExecute]: Starting execute query number 40
@@ -561,7 +561,7 @@ Time: 17085 ms
 2854320824527031829 2013-07-15 24 
 2873663931669944565 2013-07-15 24 
 
-Time: 6525 ms
+Time: 5263 ms
 
 
 [QueriesExecute]: Starting execute query number 41
@@ -576,13 +576,13 @@ Time: 6525 ms
 1509 638 1 
 1674 980 1 
 
-Time: 5515 ms
+Time: 4549 ms
 
 
 [QueriesExecute]: Starting execute query number 42
-Time: 3177 ms
+Time: 3197 ms
 
 
-Total time: 458800 ms
+Total time: 446409 ms
 
 

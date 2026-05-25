@@ -210,6 +210,7 @@ Column Regex(const Column &a, const std::string &modifiers, const std::regex &re
 
             std::vector<size_t> sizes(data.size());
             std::vector<char> buffer;
+            buffer.reserve(32 * data.size());
 
             for (size_t i = 0; i < data.size(); i++) {
                 auto new_str = std::regex_replace(std::string(data[i]), reg, modifiers);

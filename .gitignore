@@ -4,3 +4,4 @@ cmake-build-*
 build*
 tests/bench/hits.csv
 tests/bench/aboba.chsv
+!script/build.sh

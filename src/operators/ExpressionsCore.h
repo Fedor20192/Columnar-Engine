@@ -1,6 +1,6 @@
 #pragma once
 
-#include <regex>
+#include <re2/re2.h>
 
 #include "../kernel/Column.h"
 
@@ -31,7 +31,7 @@ Column Contains(const Column &, const std::string &, bool);
 
 Column StrLen(const Column &);
 
-Column Regex(const Column &, const std::string &, const std::regex &);
+Column Regex(const Column &, const re2::RE2 &);
 
 Column And(const Column &, const Column &);
 

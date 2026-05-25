@@ -183,39 +183,11 @@ TEST_CASE_METHOD(GlogFixture, "StrLenExpression on non-string throws", "[StrLen 
     REQUIRE_THROWS(strlen_expr->Calculate(batch));
 }
 
-TEST_CASE_METHOD(GlogFixture, "RegexExpression basic replace", "[Regex expression]") {
-    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
-
-    auto col = std::make_shared<cngn::operators::SelectExpression>("name123");
-    auto regex_expr = std::make_shared<cngn::operators::RegexExpression>(col, "ir", "XX");
-
-    auto ans = regex_expr->Calculate(batch);
-
-    REQUIRE(ans.Size() == batch->RowCount());
-    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::String>>(ans[0]) == "fXXst");
-    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::String>>(ans[1]) == "second");
-    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::String>>(ans[2]) == "thXXd");
-}
-
-TEST_CASE_METHOD(GlogFixture, "RegexExpression no match", "[Regex expression]") {
-    auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
-
-    auto col = std::make_shared<cngn::operators::SelectExpression>("name123");
-    auto regex_expr = std::make_shared<cngn::operators::RegexExpression>(col, "Z", "xyz");
-
-    auto ans = regex_expr->Calculate(batch);
-
-    REQUIRE(ans.Size() == batch->RowCount());
-    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::String>>(ans[0]) == "first");
-    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::String>>(ans[1]) == "second");
-    REQUIRE(std::get<cngn::PhysicalType<cngn::Type::String>>(ans[2]) == "third");
-}
-
 TEST_CASE_METHOD(GlogFixture, "RegexExpression on non-string throws", "[Regex expression]") {
     auto batch = std::make_shared<cngn::Batch>(DefaultTestConfig::DefaultPrepare());
 
     auto col = std::make_shared<cngn::operators::SelectExpression>("a");
-    auto regex_expr = std::make_shared<cngn::operators::RegexExpression>(col, ".", "X");
+    auto regex_expr = std::make_shared<cngn::operators::RegexExpression>(col, "X");
 
     REQUIRE_THROWS(regex_expr->Calculate(batch));
 }

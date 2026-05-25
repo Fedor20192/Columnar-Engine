@@ -63,7 +63,7 @@ Column StrLenExpression::Calculate(std::shared_ptr<Batch> batch) const {
 
 Column RegexExpression::Calculate(std::shared_ptr<Batch> batch) const {
     const Column res = expression->Calculate(batch);
-    return Regex(std::move(res), rep, reg);
+    return Regex(std::move(res), reg);
 }
 
 Column CaseExpression::Calculate(std::shared_ptr<Batch> batch) const {

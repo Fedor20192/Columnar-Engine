@@ -49,10 +49,9 @@ const std::vector<Schema::ColumnData>& Schema::GetData() const {
 
 std::vector<PhysTypeVariant> Schema::Serialize() const {
     std::vector<PhysTypeVariant> result;
-    const size_t sz = schema_.size();
-    result.reserve(sz * 2 + 1);
+    result.reserve(schema_.size() * 2 + 1);
 
-    result.emplace_back(sz);
+    result.push_back(schema_.size());
 
     for (size_t i = 0; i < schema_.size(); i++) {
         result.emplace_back(schema_[i].column_name);

@@ -7,10 +7,6 @@
 namespace cngn {
 namespace operators {
 
-template <Type type>
-concept IsArithmetic = type != Type::Timestamp && type != Type::Date && type != Type::MetaString &&
-                       type != Type::String && type != Type::Bool;
-
 template <Type type, typename Comparator>
 static ArrayType<Type::Bool> Compare(const ArrayType<type> &l, const ArrayType<type> &r) {
     if (l.size() != r.size()) {
@@ -144,7 +140,8 @@ Column ExtractMinuteFromCol(const Column &a) {
     return DispatchOnType(a.GetType(), [&]<Type type>() -> Column {
         const auto &arr = std::get<ArrayType<type>>(a.GetData());
         ArrayType<Type::Int64> ans(arr.size());
-        if constexpr (std::is_same_v<PhysicalType<type>, PhysicalType<Type::Timestamp>>) {
+        using RealType = PhysicalType<type>;
+        if constexpr (std::is_same_v<RealType, PhysicalType<Type::Timestamp>>) {
             for (size_t i = 0; i < arr.size(); i++) {
                 ans[i] = (arr[i].seconds / 60) % 60;
             }

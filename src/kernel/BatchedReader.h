@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <optional>
 
 #include "Batch.h"

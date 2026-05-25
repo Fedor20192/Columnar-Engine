@@ -203,7 +203,7 @@ Column StrLen(const Column &a) {
     });
 }
 
-Column Regex(const Column &a, const std::string &modifiers, const std::regex &reg) {
+Column Regex(const Column &a, const re2::RE2 &reg) {
     return DispatchOnType(a.GetType(), [&]<Type type>() -> Column {
         if constexpr (type == Type::String || type == Type::MetaString) {
             const auto &data = std::get<ArrayType<type>>(a.GetData());
@@ -213,9 +213,16 @@ Column Regex(const Column &a, const std::string &modifiers, const std::regex &re
             buffer.reserve(32 * data.size());
 
             for (size_t i = 0; i < data.size(); i++) {
-                auto new_str = std::regex_replace(std::string(data[i]), reg, modifiers);
-                buffer.insert(buffer.end(), new_str.begin(), new_str.end());
-                sizes[i] = new_str.size();
+                re2::StringPiece input(data[i].data(), data[i].size());
+
+                re2::StringPiece replacement;
+                if (re2::RE2::PartialMatch(input, reg, &replacement)) {
+                    buffer.insert(buffer.end(), replacement.data(),
+                                  replacement.data() + replacement.size());
+                    sizes[i] = replacement.size();
+                } else {
+                    sizes[i] = 0;
+                }
             }
 
             const size_t buf_size = buffer.size();

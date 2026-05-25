@@ -1,6 +1,6 @@
 #pragma once
 
-#include <regex>
+#include <re2/re2.h>
 
 #include "../kernel/Batch.h"
 
@@ -80,16 +80,14 @@ struct StrLenExpression : Expression {
 };
 
 struct RegexExpression : Expression {
-    explicit RegexExpression(std::shared_ptr<Expression> expression, std::string pattern,
-                             std::string rep)
-        : expression(std::move(expression)), rep(std::move(rep)), reg(std::move(pattern)) {
+    explicit RegexExpression(std::shared_ptr<Expression> expression, std::string pattern)
+        : expression(std::move(expression)), reg(std::move(pattern)) {
     }
 
     Column Calculate(std::shared_ptr<Batch> batch) const override;
 
     std::shared_ptr<Expression> expression;
-    const std::string rep;
-    const std::regex reg;
+    const re2::RE2 reg;
 };
 
 struct CaseExpression : Expression {

@@ -602,7 +602,7 @@ const std::array<QueryGenerator, kQueriesCount> kGenerators = {
             std::move(filter),
             std::vector<ProjectionMeta>{
                 {std::make_shared<RegexExpression>(std::make_shared<SelectExpression>("Referer"),
-                                                   R"(^https?://(?:www\.)?([^/]+)/.*$)", "$1"),
+                                                   R"(^https?://(?:www\.)?([^/]+)/.*$)"),
                  "k"},
                 {std::make_shared<StrLenExpression>(std::make_shared<SelectExpression>("Referer")),
                  "strlen"},

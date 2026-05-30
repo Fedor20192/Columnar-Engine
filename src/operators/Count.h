@@ -1,0 +1,62 @@
+#pragma once
+
+#include <memory>
+
+#include "Operator.h"
+#include "glog/logging.h"
+
+namespace cngn {
+namespace operators {
+class Count : public Operator {
+public:
+    explicit Count(std::unique_ptr<Operator>&& next_operator,
+                   std::string result_column_name = "count")
+        : result_column_name_(std::move(result_column_name)),
+          next_operator_(std::move(next_operator)) {
+    }
+
+    void Close() override {
+        next_operator_->Close();
+        finished_ = true;
+    }
+
+    void Open() override {
+        DLOG(INFO) << "[Count]: Open\n";
+        if (next_operator_) {
+            next_operator_->Open();
+        } else {
+            DLOG(WARNING) << "[Count]: Operator has no son. WTF?\n";
+        }
+        DLOG(INFO) << "[Count]: Close\n";
+    }
+
+    std::optional<std::shared_ptr<Batch>> Next() override {
+        DLOG(INFO) << "[Count]: Next\n";
+
+        if (finished_) {
+            return std::nullopt;
+        }
+        while (auto batch = next_operator_->Next()) {
+            if (batch.value()->Empty()) {
+                DLOG(WARNING) << "[Count]: Batch is empty\n";
+                continue;
+            }
+            count_ += (*batch.value())[0].Size();
+        }
+        finished_ = true;
+
+        DLOG(INFO) << "[Count]: Close\n"
+                      "Count = "
+                   << count_ << "\n";
+        return std::make_shared<Batch>(Batch({Column(ArrayType<Type::UInt64>{count_})},
+                                             Schema({{result_column_name_, Type::UInt64}})));
+    }
+
+private:
+    std::string result_column_name_;
+    std::unique_ptr<Operator> next_operator_;
+    size_t count_{0};
+    bool finished_{false};
+};
+}  // namespace operators
+}  // namespace cngn

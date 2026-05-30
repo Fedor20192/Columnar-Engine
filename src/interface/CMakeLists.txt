@@ -1,0 +1,6 @@
+project(CNGN_INTERFACE)
+set(SOURCES CHSVConverter.cpp)
+set(HEADERS CHSVConverter.h)
+add_library(columnar_engine STATIC ${SOURCES} ${HEADERS})
+target_include_directories(columnar_engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(columnar_engine glog::glog columnar_kernel csv_handler)

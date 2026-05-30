@@ -27,7 +27,8 @@ public:
         }
         capacity_ = 0;
         offset_ = 0;
-        return std::move(blocks_);
+        auto ans = std::move(blocks_);
+        return ans;
     }
 
 private:

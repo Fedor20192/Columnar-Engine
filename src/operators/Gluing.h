@@ -6,7 +6,7 @@ namespace operators {
 
 class Gluing : public Operator {
 public:
-    explicit Gluing(std::vector<std::unique_ptr<Operator>> &&next_operators)
+    explicit Gluing(std::vector<std::unique_ptr<Operator>> next_operators)
         : next_operators_(std::move(next_operators)) {
         if (next_operators_.empty()) {
             throw std::invalid_argument("[Gluing]: No children");

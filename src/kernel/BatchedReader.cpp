@@ -24,7 +24,7 @@ BatchedReader::BatchedReader(const std::string &filename) : file_(filename, std:
     DLOG(INFO) << "[BatchedReader]: Constructed BatchedReader!\n";
 }
 
-void BatchedReader::SetIndices(std::vector<uint64_t> &&column_indices) {
+void BatchedReader::SetIndices(std::vector<uint64_t> column_indices) {
     num_of_batch_ = 0;
     column_indices_ = std::move(column_indices);
 

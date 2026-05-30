@@ -50,10 +50,6 @@ private:
     size_t k_, offset_;
     bool is_high_order_;
     bool finished_ = false;
-
-    static std::shared_ptr<Batch> GlueBatches(const std::vector<std::shared_ptr<Batch>>& batches);
-    static std::shared_ptr<Batch> ReorderRows(const std::shared_ptr<Batch>& batch,
-                                              const std::vector<size_t>& indices);
 };
 
 }  // namespace operators

@@ -177,6 +177,7 @@ TEST_CASE_METHOD(GlogFixture, "Simple group by aggregation", "[Aggregation opera
             {cngn::operators::AggregationType::Sum, std::make_shared<cngn::operators::SelectExpression>("a"), "distinct_a"},
             {cngn::operators::AggregationType::Max, std::make_shared<cngn::operators::SelectExpression>("b"), "distinct_b"},
             {cngn::operators::AggregationType::Distinct, std::make_shared<cngn::operators::SelectExpression>("d"), "distinct_d"},
+            {cngn::operators::AggregationType::Count, std::make_shared<cngn::operators::ConstantExpression>(0), "count"},
         },
         std::vector<cngn::operators::GroupByMeta>{
             {std::make_shared<cngn::operators::SelectExpression>("name123"), "group_name"},
@@ -189,7 +190,7 @@ TEST_CASE_METHOD(GlogFixture, "Simple group by aggregation", "[Aggregation opera
 
     REQUIRE(ans);
 
-    REQUIRE(ans->ColumnCount() == 4);
+    REQUIRE(ans->ColumnCount() == 5);
     REQUIRE(ans->RowCount() == 12);
 
     std::unordered_map<std::string, size_t> row_by_name;
@@ -197,25 +198,26 @@ TEST_CASE_METHOD(GlogFixture, "Simple group by aggregation", "[Aggregation opera
         row_by_name[std::string(std::get<std::string_view>((*ans)[0][i]))] = i;
     }
 
-    auto check = [&](const std::string& name, __int128_t sum_a, int32_t max_b, uint64_t distinct_d) {
+    auto check = [&](const std::string& name, __int128_t sum_a, int32_t max_b, uint64_t distinct_d, uint64_t count) {
         const size_t i = row_by_name.at(name);
         REQUIRE(std::get<__int128_t>((*ans)[1][i]) == sum_a);
         REQUIRE(std::get<int32_t>((*ans)[2][i]) == max_b);
         REQUIRE(std::get<uint64_t>((*ans)[3][i]) == distinct_d);
+        REQUIRE(std::get<uint64_t>((*ans)[4][i]) == count);
     };
 
-    check("a",     4,    314,   2);
-    check("b",     2,   1467,   1);
-    check("boba",  2,    358,   1);
-    check("c",     6,   1232,   2);
-    check("d",     4,      4,   1);
-    check("e",    60,    545,   2);
-    check("ement", 5,   -234,   1);
-    check("f",     4,    789,   1);
-    check("balo",  1,    809,   1);
-    check("g",     3,     12,   2);
-    check("h",     1,     13,   1);
-    check("opa",   4,     13,   1);
+    check("a",     4,    314,   2, 2);
+    check("b",     2,   1467,   1, 1);
+    check("boba",  2,    358,   1, 1);
+    check("c",     6,   1232,   2, 2);
+    check("d",     4,      4,   1, 1);
+    check("e",    60,    545,   2, 2);
+    check("ement", 5,   -234,   1, 1);
+    check("f",     4,    789,   1, 1);
+    check("balo",  1,    809,   1, 1);
+    check("g",     3,     12,   2, 2);
+    check("h",     1,     13,   1, 1);
+    check("opa",   4,     13,   1, 1);
 
     REQUIRE_FALSE(sum->Next());
 

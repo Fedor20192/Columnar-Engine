@@ -16,7 +16,7 @@ public:
 
     const Metadata& GetMetadata() const;
 
-    void SetIndices(std::vector<uint64_t>&& column_indices);
+    void SetIndices(std::vector<uint64_t> column_indices);
 
 private:
     static Schema ReadSchema(std::ifstream& in);

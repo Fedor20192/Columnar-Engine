@@ -11,7 +11,7 @@
 #include "glog/logging.h"
 
 namespace cngn {
-constexpr size_t kRowsInBatch = 65536, kBatchInQueue = 100, kChunksInQueue = 10;
+constexpr size_t kRowsInBatch = 8192, kBatchInQueue = 100, kChunksInQueue = 10;
 
 void FromCsvToFormat(const std::string &schema_name, const std::string &source_name,
                      const std::string &table_name) {
